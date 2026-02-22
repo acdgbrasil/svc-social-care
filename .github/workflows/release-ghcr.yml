@@ -23,7 +23,7 @@ jobs:
       context: .
       dockerfile: Dockerfile
       registry: ${{ vars.REGISTRY != '' && vars.REGISTRY || 'ghcr.io' }}
-      image_namespace: ${{ vars.IMAGE_NAMESPACE != '' && vars.IMAGE_NAMESPACE || 'acdg' }}
+      image_namespace: ${{ vars.IMAGE_NAMESPACE != '' && vars.IMAGE_NAMESPACE || 'acdgbrasil' }}
       push: ${{ github.event_name != 'pull_request' }}
 
   publish-summary:

@@ -17,7 +17,7 @@ permissions:
 jobs:
   container-image:
     name: Build image and publish when applicable
-    uses: acdg/.github/.github/workflows/reusable-ghcr-build-push.yml@main
+    uses: acdgbrasil/.github/.github/workflows/reusable-ghcr-build-push.yml@main
     with:
       service: ${{ github.event.repository.name }}
       context: .

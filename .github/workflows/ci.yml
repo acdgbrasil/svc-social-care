@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   validate:
@@ -26,6 +27,18 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+
+      - name: Setup ORAS
+        uses: oras-project/setup-oras@v1
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Sync contracts
+        env:
+          CONTRACTS_REF: ${{ vars.CONTRACTS_REF != '' && vars.CONTRACTS_REF || 'ghcr.io/acdgbrasil/contracts:v1.0.0' }}
+        run: bun run contracts:sync
 
       - name: Typecheck
         run: bun run typecheck

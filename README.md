@@ -19,7 +19,20 @@ Servico base da organizacao ACDG para dominio de social care.
 ## Desenvolvimento local
 ```bash
 bun install
+bun run contracts:sync
 bun run dev
+```
+
+## Consumo de contratos
+- Fonte padrão: bundle OCI versionado no GHCR.
+- Tag padrão: `ghcr.io/acdgbrasil/contracts:v1.0.0`.
+- Para atualizar localmente:
+```bash
+bun run contracts:sync
+```
+- Para usar contratos locais durante desenvolvimento:
+```bash
+CONTRACTS_LOCAL_DIR=../contracts bun run contracts:sync
 ```
 
 ## Qualidade

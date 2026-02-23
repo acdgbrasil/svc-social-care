@@ -4,3 +4,6 @@ node_modules/
 !.env.example
 coverage/
 .DS_Store
+.contracts/
+.contracts-tmp/
+.tmp/

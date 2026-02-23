@@ -10,11 +10,15 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
+    "contracts:pull": "bash scripts/contracts/pull.sh",
+    "contracts:generate:types": "bash scripts/contracts/generate-types.sh",
+    "contracts:sync": "bun run contracts:pull && bun run contracts:generate:types",
     "typecheck": "bunx tsc --noEmit",
     "test": "bun test"
   },
   "devDependencies": {
     "bun-types": "latest",
+    "openapi-typescript": "^7.10.1",
     "typescript": "^5.6.3"
   }
 }

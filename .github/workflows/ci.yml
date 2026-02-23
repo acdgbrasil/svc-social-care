@@ -34,7 +34,7 @@ jobs:
       - name: Login to GHCR
         env:
           GHCR_USERNAME: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.ACDG_ORG_BW_SM_ACCESS_TOKEN_DEV }}
+          GHCR_TOKEN: ${{ github.token }}
         run: |
           echo "${GHCR_TOKEN}" | oras login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
 

@@ -7,3 +7,4 @@ coverage/
 .contracts/
 .contracts-tmp/
 .tmp/
+src/domain

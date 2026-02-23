@@ -53,7 +53,7 @@ async function main(): Promise<void> {
     await $`oras pull ${contractsRef} --output ${tmpDir}`;
 
     const bundlePath = (
-      await $`find ${tmpDir} -maxdepth 1 -type f -name "contracts-*.tgz" | head -n 1`.text()
+      await $`find ${tmpDir} -type f -name "contracts-*.tgz" | sort | head -n 1`.text()
     ).trim();
 
     if (!bundlePath) {

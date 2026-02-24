@@ -12,17 +12,17 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-testing.git", from: "6.2.3"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .executableTarget(
-            name: "social-care-s"
+            name: "social-care-s",
+            path: "Sources/social-care-s"
         ),
         .testTarget(
             name: "social-care-sTests",
             dependencies: [
                 "social-care-s",
                 .product(name: "Testing", package: "swift-testing"),
-            ]
+            ],
+            path: "Tests/social-care-sTests"
         ),
     ]
 )

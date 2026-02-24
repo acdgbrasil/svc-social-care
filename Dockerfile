@@ -11,6 +11,7 @@ COPY Package.swift Package.resolved ./
 RUN swift package resolve
 
 COPY Sources ./Sources
+COPY Tests ./Tests
 RUN swift build -c release --product social-care-s
 
 FROM swift:6.2-jammy-slim

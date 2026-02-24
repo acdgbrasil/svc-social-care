@@ -3,48 +3,66 @@
 Servico base da organizacao ACDG para dominio de social care.
 
 ## Stack
-- Runtime: Bun
-- Linguagem: TypeScript
-- Container: Docker + GHCR
+- Linguagem: Swift 6.2
+- Build/Test: Swift Package Manager (SwiftPM)
+- Plataforma alvo: Linux (containers Docker)
+- Container registry: GHCR
 
 ## Repositorio
 - GitHub: `https://github.com/acdgbrasil/svc-social-care`
 
-## Estrutura minima
-- `src/`: codigo fonte
-- `tests/`: testes automatizados
+## Status atual
+- Dominio concluido (Aggregates, Entities, Value Objects e testes).
+- Proximas etapas:
+  - Camada de `Application`
+  - Integracoes com database e servidores
+
+## Estrutura
+- `Sources/social-care-s/`: codigo fonte em Swift
+- `Tests/social-care-sTests/`: testes automatizados
 - `handbook/`: documentacao operacional
-- `.github/workflows/`: CI e release de imagem
+- `.github/workflows/`: CI e release/publish de imagem
 
 ## Desenvolvimento local
 ```bash
-bun install
-bun run contracts:sync
-bun run dev
-```
-
-## Consumo de contratos
-- Fonte padrão: bundle OCI versionado no GHCR.
-- Tag padrão: `ghcr.io/acdgbrasil/contracts:v1.0.0`.
-- Para atualizar localmente:
-```bash
-bun run contracts:sync
-```
-- Para usar contratos locais durante desenvolvimento:
-```bash
-CONTRACTS_LOCAL_DIR=../contracts bun run contracts:sync
+swift --version
+swift package resolve
+swift build
+swift run social-care-s
 ```
 
 ## Qualidade
 ```bash
-bun run typecheck
-bun test
+swift build -c release --product social-care-s
+swift test
+```
+
+## Docker
+Build da imagem local:
+
+```bash
+docker build -t svc-social-care:local .
+```
+
+Execucao local:
+
+```bash
+docker run --rm -p 3000:3000 svc-social-care:local
 ```
 
 ## Release
-- Imagem: `ghcr.io/acdg/svc-social-care`
+- Workflow: `.github/workflows/release-ghcr.yml`
+- Imagem: `ghcr.io/acdgbrasil/svc-social-care`
 - Tags: `sha-<commit>`, `vX.Y.Z`, `latest` (somente `main`)
 - Producao deve consumir por digest: `@sha256:...`
+
+## CI
+- Workflow: `.github/workflows/ci.yml`
+- Executa:
+  - `swift package resolve`
+  - `swift build -c release`
+  - `swift test`
+- Nao faz sync/pull de contracts neste momento.
 
 ## Versoes suportadas
 - `main`: suporte ativo

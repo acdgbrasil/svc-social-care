@@ -1,9 +1,12 @@
 .git
 .github
-node_modules
-coverage
+.vscode
+.build
+.swiftpm
+.cache
 *.log
 .env
 .env.*
 !.env.example
+Tests
 handbook

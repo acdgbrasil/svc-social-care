@@ -1,10 +1,18 @@
-node_modules/
+# SwiftPM
+.build/
+.swiftpm/
+Package.pins
+
+# Local environment
 .env
 .env.*
 !.env.example
-coverage/
+
+# Logs and OS
+*.log
 .DS_Store
-.contracts/
-.contracts-tmp/
+.vscode/
+
+# Temp
+.cache/
 .tmp/
-src/domain

@@ -1,16 +1,22 @@
 # syntax=docker/dockerfile:1.7
-FROM oven/bun:1.1-alpine
+FROM swift:6.2-jammy AS build
 
-WORKDIR /app
+WORKDIR /build
 
 LABEL org.opencontainers.image.source="https://github.com/acdgbrasil/svc-social-care"
 LABEL org.opencontainers.image.description="ACDG svc-social-care service"
 LABEL org.opencontainers.image.licenses="Proprietary"
 
-COPY package.json .
-RUN bun install
+COPY Package.swift Package.resolved ./
+RUN swift package resolve
 
-COPY . .
+COPY Sources ./Sources
+RUN swift build -c release --product social-care-s
+
+FROM swift:6.2-jammy-slim
+
+WORKDIR /app
+COPY --from=build /build/.build/release/social-care-s /app/social-care-s
 
 EXPOSE 3000
-CMD ["bun", "src/index.ts"]
+CMD ["/app/social-care-s"]

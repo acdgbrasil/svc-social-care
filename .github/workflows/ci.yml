@@ -14,37 +14,25 @@ permissions:
 
 jobs:
   validate:
-    name: Typecheck and tests
-    runs-on: ubuntu-latest
+    name: Build and tests
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
         with:
-          bun-version: latest
+          swift-version: "6.2"
 
-      - name: Install dependencies
-        run: bun install
+      - name: Show Swift version
+        run: swift --version
 
-      - name: Setup ORAS
-        uses: oras-project/setup-oras@v1
+      - name: Resolve dependencies
+        run: swift package resolve
 
-      - name: Login to GHCR
-        env:
-          GHCR_USERNAME: ${{ github.actor }}
-          GHCR_TOKEN: ${{ github.token }}
-        run: |
-          echo "${GHCR_TOKEN}" | oras login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
-
-      - name: Sync contracts
-        env:
-          CONTRACTS_REF: ${{ vars.CONTRACTS_REF != '' && vars.CONTRACTS_REF || 'ghcr.io/acdgbrasil/contracts:v1.0.0' }}
-        run: bun run contracts:sync
-
-      - name: Typecheck
-        run: bun run typecheck
+      - name: Build (release)
+        run: swift build -c release
 
       - name: Run tests
-        run: bun test
+        run: swift test

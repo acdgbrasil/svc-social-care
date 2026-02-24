@@ -1,4 +1,4 @@
-name: Build and Publish Service Image
+name: Build and Publish Swift Service Image
 
 on:
   pull_request:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   container-image:
-    name: Build image and publish when applicable
+    name: Build Swift image and publish when applicable
     uses: acdgbrasil/.github/.github/workflows/reusable-ghcr-build-push.yml@main
     with:
       service: ${{ github.event.repository.name }}

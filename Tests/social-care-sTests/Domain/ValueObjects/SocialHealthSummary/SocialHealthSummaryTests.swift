@@ -10,7 +10,7 @@ struct SocialHealthSummaryTests {
 
         @Test("create deduplica dependências")
         func deduplicateDependencies() throws {
-            let summary = try SocialHealthSummary.create(
+            let summary = try SocialHealthSummary(
                 requiresConstantCare: false,
                 hasMobilityImpairment: false,
                 functionalDependencies: ["Eating", "Eating", "  Walking  "],
@@ -25,13 +25,21 @@ struct SocialHealthSummaryTests {
         @Test("create falha com string vazia")
         func failsWithEmptyString() {
             #expect(throws: SocialHealthSummaryError.functionalDependenciesEmpty) {
-                try SocialHealthSummary.create(
+                try SocialHealthSummary(
                     requiresConstantCare: false,
                     hasMobilityImpairment: false,
                     functionalDependencies: ["Eating", "   "],
                     hasRelevantDrugTherapy: false
                 )
             }
+        }
+    }
+
+    @Suite("2. Erros e Conversão")
+    struct ErrorHandling {
+        @Test("Valida conversão de SocialHealthSummaryError para AppError")
+        func errorConversion() {
+            #expect(SocialHealthSummaryError.functionalDependenciesEmpty.asAppError.code == "SHS-001")
         }
     }
 }

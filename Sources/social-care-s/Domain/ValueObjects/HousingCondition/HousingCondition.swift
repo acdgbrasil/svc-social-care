@@ -71,38 +71,10 @@ public struct HousingCondition: Codable, Equatable, Hashable, Sendable {
 
     // MARK: - Initializer
 
-    private init(
-        type: ConditionType,
-        wallMaterial: WallMaterial,
-        numberOfRooms: Int,
-        numberOfBathrooms: Int,
-        waterSupply: WaterSupply,
-        electricityAccess: ElectricityAccess,
-        sewageDisposal: SewageDisposal,
-        wasteCollection: WasteCollection,
-        accessibilityLevel: AccessibilityLevel,
-        isInGeographicRiskArea: Bool,
-        isInSocialConflictArea: Bool
-    ) {
-        self.type = type
-        self.wallMaterial = wallMaterial
-        self.numberOfRooms = numberOfRooms
-        self.numberOfBathrooms = numberOfBathrooms
-        self.waterSupply = waterSupply
-        self.electricityAccess = electricityAccess
-        self.sewageDisposal = sewageDisposal
-        self.wasteCollection = wasteCollection
-        self.accessibilityLevel = accessibilityLevel
-        self.isInGeographicRiskArea = isInGeographicRiskArea
-        self.isInSocialConflictArea = isInSocialConflictArea
-    }
-
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `HousingCondition`.
+    /// Inicializa uma instância validada de `HousingCondition`.
     ///
     /// - Throws: `HousingConditionError` em caso de erro de validação.
-    public static func create(
+    public init(
         type: ConditionType,
         wallMaterial: WallMaterial,
         numberOfRooms: Int,
@@ -114,7 +86,7 @@ public struct HousingCondition: Codable, Equatable, Hashable, Sendable {
         accessibilityLevel: AccessibilityLevel,
         isInGeographicRiskArea: Bool,
         isInSocialConflictArea: Bool
-    ) throws -> HousingCondition {
+    ) throws {
 
         // Validação: Números negativos
         guard numberOfRooms >= 0 else {
@@ -130,18 +102,16 @@ public struct HousingCondition: Codable, Equatable, Hashable, Sendable {
             throw HousingConditionError.bathroomsExceedRooms
         }
 
-        return HousingCondition(
-            type: type,
-            wallMaterial: wallMaterial,
-            numberOfRooms: numberOfRooms,
-            numberOfBathrooms: numberOfBathrooms,
-            waterSupply: waterSupply,
-            electricityAccess: electricityAccess,
-            sewageDisposal: sewageDisposal,
-            wasteCollection: wasteCollection,
-            accessibilityLevel: accessibilityLevel,
-            isInGeographicRiskArea: isInGeographicRiskArea,
-            isInSocialConflictArea: isInSocialConflictArea
-        )
+        self.type = type
+        self.wallMaterial = wallMaterial
+        self.numberOfRooms = numberOfRooms
+        self.numberOfBathrooms = numberOfBathrooms
+        self.waterSupply = waterSupply
+        self.electricityAccess = electricityAccess
+        self.sewageDisposal = sewageDisposal
+        self.wasteCollection = wasteCollection
+        self.accessibilityLevel = accessibilityLevel
+        self.isInGeographicRiskArea = isInGeographicRiskArea
+        self.isInSocialConflictArea = isInSocialConflictArea
     }
 }

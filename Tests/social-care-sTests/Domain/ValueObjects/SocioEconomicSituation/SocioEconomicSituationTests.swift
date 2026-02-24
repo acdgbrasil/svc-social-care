@@ -2,118 +2,109 @@ import Testing
 @testable import social_care_s
 import Foundation
 
-@Suite("SocioEconomicSituation ValueObject (FP Style - Specification)")
+@Suite("SocioEconomicSituation ValueObject")
 struct SocioEconomicSituationTests {
 
-    private let beneficiaryId = FamilyMemberId()
-
-    @Suite("1. Criação (Factory) e Validação")
-    struct CreationAndValidation {
-        private let beneficiaryId = FamilyMemberId()
-
-        @Test("create valida consistência de benefícios (receives=true, collection=empty deve falhar)")
-        func validateMissingBenefits() throws {
-            let emptyCol = try SocialBenefitsCollection.create([])
-            #expect(throws: SocioEconomicSituationError.missingSocialBenefits) {
-                try SocioEconomicSituation.create(
-                    totalFamilyIncome: 1000,
-                    incomePerCapita: 500,
-                    receivesSocialBenefit: true,
-                    socialBenefits: emptyCol,
-                    mainSourceOfIncome: "Work",
-                    hasUnemployed: false
-                )
-            }
-        }
-
-        @Test("create valida inconsistência (receives=false, collection=notEmpty deve falhar)")
-        func validateInconsistentBenefits() throws {
-            let benefit = try SocialBenefit.create(benefitName: "A", amount: 100, beneficiaryId: beneficiaryId)
-            let notEmptyCol = try SocialBenefitsCollection.create([benefit])
-            
-            #expect(throws: SocioEconomicSituationError.inconsistentSocialBenefit) {
-                try SocioEconomicSituation.create(
-                    totalFamilyIncome: 1000,
-                    incomePerCapita: 500,
-                    receivesSocialBenefit: false,
-                    socialBenefits: notEmptyCol,
-                    mainSourceOfIncome: "Work",
-                    hasUnemployed: false
-                )
-            }
-        }
-
-        @Test("create valida renda negativa")
-        func validateNegativeIncome() throws {
-            let emptyCol = try SocialBenefitsCollection.create([])
-            #expect(throws: SocioEconomicSituationError.negativeFamilyIncome(amount: -1)) {
-                try SocioEconomicSituation.create(
-                    totalFamilyIncome: -1,
-                    incomePerCapita: 0,
-                    receivesSocialBenefit: false,
-                    socialBenefits: emptyCol,
-                    mainSourceOfIncome: "Work",
-                    hasUnemployed: false
-                )
-            }
-        }
-
-        @Test("create valida incomePerCapita maior que renda total")
-        func validateIncomeInconsistency() throws {
-            let emptyCol = try SocialBenefitsCollection.create([])
-            #expect(throws: SocioEconomicSituationError.inconsistentIncomePerCapita(perCapita: 1500, total: 1000)) {
-                try SocioEconomicSituation.create(
-                    totalFamilyIncome: 1000,
-                    incomePerCapita: 1500,
-                    receivesSocialBenefit: false,
-                    socialBenefits: emptyCol,
-                    mainSourceOfIncome: "Work",
-                    hasUnemployed: false
-                )
-            }
-        }
-
-        @Test("create valida incomePerCapita negativa")
-        func validateNegativePerCapita() throws {
-            let emptyCol = try SocialBenefitsCollection.create([])
-            #expect(throws: SocioEconomicSituationError.negativeIncomePerCapita(amount: -1)) {
-                try SocioEconomicSituation.create(
-                    totalFamilyIncome: 1000,
-                    incomePerCapita: -1,
-                    receivesSocialBenefit: false,
-                    socialBenefits: emptyCol,
-                    mainSourceOfIncome: "Work",
-                    hasUnemployed: false
-                )
-            }
-        }
-
-        @Test("create valida fonte de renda vazia")
-        func validateEmptySource() throws {
-            let emptyCol = try SocialBenefitsCollection.create([])
-            #expect(throws: SocioEconomicSituationError.emptyMainSourceOfIncome) {
-                try SocioEconomicSituation.create(
-                    totalFamilyIncome: 1000,
-                    incomePerCapita: 500,
-                    receivesSocialBenefit: false,
-                    socialBenefits: emptyCol,
-                    mainSourceOfIncome: "   ",
-                    hasUnemployed: false
-                )
-            }
-        }
-
-        @Test("aceita renda per capita igual à total (limite)")
-        func validateBoundaryIncome() throws {
-            let emptyCol = try SocialBenefitsCollection.create([])
-            let _ = try SocioEconomicSituation.create(
+    @Test("Valida consistência de benefícios")
+    func validateMissingBenefits() throws {
+        let emptyCol = try SocialBenefitsCollection([])
+        #expect(throws: SocioEconomicSituationError.missingSocialBenefits) {
+            try SocioEconomicSituation(
                 totalFamilyIncome: 1000,
-                incomePerCapita: 1000,
+                incomePerCapita: 500,
+                receivesSocialBenefit: true,
+                socialBenefits: emptyCol,
+                mainSourceOfIncome: "Work",
+                hasUnemployed: false
+            )
+        }
+    }
+
+    @Test("Valida inconsistência de benefícios (receives=false)")
+    func validateInconsistentBenefits() throws {
+        let beneficiaryId = PersonId()
+        let benefit = try SocialBenefit(benefitName: "A", amount: 100, beneficiaryId: beneficiaryId)
+        let notEmptyCol = try SocialBenefitsCollection([benefit])
+        
+        #expect(throws: SocioEconomicSituationError.inconsistentSocialBenefit) {
+            try SocioEconomicSituation(
+                totalFamilyIncome: 1000,
+                incomePerCapita: 500,
+                receivesSocialBenefit: false,
+                socialBenefits: notEmptyCol,
+                mainSourceOfIncome: "Work",
+                hasUnemployed: false
+            )
+        }
+    }
+
+    @Test("Valida rendas negativas e inconsistências")
+    func validateNegativeIncome() throws {
+        let emptyCol = try SocialBenefitsCollection([])
+        #expect(throws: SocioEconomicSituationError.negativeFamilyIncome(amount: -1)) {
+            try SocioEconomicSituation(totalFamilyIncome: -1, incomePerCapita: 0, receivesSocialBenefit: false, socialBenefits: emptyCol, mainSourceOfIncome: "Work", hasUnemployed: false)
+        }
+        
+        #expect(throws: SocioEconomicSituationError.inconsistentIncomePerCapita(perCapita: 1500, total: 1000)) {
+            try SocioEconomicSituation(totalFamilyIncome: 1000, incomePerCapita: 1500, receivesSocialBenefit: false, socialBenefits: emptyCol, mainSourceOfIncome: "Work", hasUnemployed: false)
+        }
+    }
+
+    @Test("Valida renda per capita negativa e fonte de renda vazia")
+    func validateNegativePerCapitaAndEmptySource() throws {
+        let emptyCol = try SocialBenefitsCollection([])
+
+        #expect(throws: SocioEconomicSituationError.negativeIncomePerCapita(amount: -1)) {
+            try SocioEconomicSituation(
+                totalFamilyIncome: 1000,
+                incomePerCapita: -1,
                 receivesSocialBenefit: false,
                 socialBenefits: emptyCol,
                 mainSourceOfIncome: "Work",
                 hasUnemployed: false
             )
         }
+
+        #expect(throws: SocioEconomicSituationError.emptyMainSourceOfIncome) {
+            try SocioEconomicSituation(
+                totalFamilyIncome: 1000,
+                incomePerCapita: 500,
+                receivesSocialBenefit: false,
+                socialBenefits: emptyCol,
+                mainSourceOfIncome: "   ",
+                hasUnemployed: false
+            )
+        }
+    }
+
+    @Test("Cria situação válida e normaliza fonte de renda")
+    func createValidSituationAndNormalizeSource() throws {
+        let beneficiaryId = PersonId()
+        let benefit = try SocialBenefit(benefitName: "Auxílio", amount: 100, beneficiaryId: beneficiaryId)
+        let benefits = try SocialBenefitsCollection([benefit])
+
+        let sut = try SocioEconomicSituation(
+            totalFamilyIncome: 2000,
+            incomePerCapita: 500,
+            receivesSocialBenefit: true,
+            socialBenefits: benefits,
+            mainSourceOfIncome: "  Trabalho informal  ",
+            hasUnemployed: true
+        )
+
+        #expect(sut.mainSourceOfIncome == "Trabalho informal")
+        #expect(sut.receivesSocialBenefit)
+        #expect(!sut.socialBenefits.isEmpty)
+        #expect(sut.hasUnemployed)
+    }
+
+    @Test("Valida conversão de SocioEconomicSituationError para AppError")
+    func errorConversion() {
+        #expect(SocioEconomicSituationError.inconsistentSocialBenefit.asAppError.code == "SES-001")
+        #expect(SocioEconomicSituationError.missingSocialBenefits.asAppError.code == "SES-002")
+        #expect(SocioEconomicSituationError.negativeFamilyIncome(amount: 1).asAppError.code == "SES-003")
+        #expect(SocioEconomicSituationError.negativeIncomePerCapita(amount: 1).asAppError.code == "SES-004")
+        #expect(SocioEconomicSituationError.emptyMainSourceOfIncome.asAppError.code == "SES-005")
+        #expect(SocioEconomicSituationError.inconsistentIncomePerCapita(perCapita: 1, total: 1).asAppError.code == "SES-006")
     }
 }

@@ -35,31 +35,11 @@ public struct CommunitySupportNetwork: Codable, Equatable, Hashable, Sendable {
     public let facesDiscrimination: Bool
 
     // MARK: - Initializer
-    
-    private init(
-        hasRelativeSupport: Bool,
-        hasNeighborSupport: Bool,
-        familyConflicts: String,
-        patientParticipatesInGroups: Bool,
-        familyParticipatesInGroups: Bool,
-        patientHasAccessToLeisure: Bool,
-        facesDiscrimination: Bool
-    ) {
-        self.hasRelativeSupport = hasRelativeSupport
-        self.hasNeighborSupport = hasNeighborSupport
-        self.familyConflicts = familyConflicts
-        self.patientParticipatesInGroups = patientParticipatesInGroups
-        self.familyParticipatesInGroups = familyParticipatesInGroups
-        self.patientHasAccessToLeisure = patientHasAccessToLeisure
-        self.facesDiscrimination = facesDiscrimination
-    }
 
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `CommunitySupportNetwork`.
+    /// Inicializa uma instância validada de `CommunitySupportNetwork`.
     ///
     /// - Throws: `CommunitySupportNetworkError` em caso de erro de validação.
-    public static func create(
+    public init(
         hasRelativeSupport: Bool,
         hasNeighborSupport: Bool,
         familyConflicts: String,
@@ -67,7 +47,7 @@ public struct CommunitySupportNetwork: Codable, Equatable, Hashable, Sendable {
         familyParticipatesInGroups: Bool,
         patientHasAccessToLeisure: Bool,
         facesDiscrimination: Bool
-    ) throws -> CommunitySupportNetwork {
+    ) throws {
         
         let trimmedConflicts = familyConflicts.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -77,20 +57,18 @@ public struct CommunitySupportNetwork: Codable, Equatable, Hashable, Sendable {
         }
 
         // Validação: Tamanho máximo (Regra de Negócio)
-        guard trimmedConflicts.count <= maxFamilyConflictsLength else {
-            throw CommunitySupportNetworkError.familyConflictsTooLong(limit: maxFamilyConflictsLength)
+        guard trimmedConflicts.count <= Self.maxFamilyConflictsLength else {
+            throw CommunitySupportNetworkError.familyConflictsTooLong(limit: Self.maxFamilyConflictsLength)
         }
 
         let normalizedConflicts = familyConflicts.isEmpty ? "" : trimmedConflicts
 
-        return CommunitySupportNetwork(
-            hasRelativeSupport: hasRelativeSupport,
-            hasNeighborSupport: hasNeighborSupport,
-            familyConflicts: normalizedConflicts,
-            patientParticipatesInGroups: patientParticipatesInGroups,
-            familyParticipatesInGroups: familyParticipatesInGroups,
-            patientHasAccessToLeisure: patientHasAccessToLeisure,
-            facesDiscrimination: facesDiscrimination
-        )
+        self.hasRelativeSupport = hasRelativeSupport
+        self.hasNeighborSupport = hasNeighborSupport
+        self.familyConflicts = normalizedConflicts
+        self.patientParticipatesInGroups = patientParticipatesInGroups
+        self.familyParticipatesInGroups = familyParticipatesInGroups
+        self.patientHasAccessToLeisure = patientHasAccessToLeisure
+        self.facesDiscrimination = facesDiscrimination
     }
 }

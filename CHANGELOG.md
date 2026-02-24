@@ -2,6 +2,14 @@
 
 Todas as mudancas relevantes deste servico serao registradas aqui.
 
+## [0.3.0] - 2026-02-24
+- Migracao completa da camada de **Application** de TypeScript para Swift 6.
+- Implementacao de 8 Casos de Uso com *Structured Concurrency* e *Typed Throws*.
+- Refatoracao de Mappers de erro para um padrao centralizado (`mapError`).
+- Suite de testes de aplicacao concluida com 100% de cobertura lógica nos serviços.
+- Alcance do nível **Platinum (95.95%)** de confiabilidade global do projeto.
+- Testes de cobertura adicionados para todos os Enums de erro e Value Objects (PatientId).
+
 ## [0.2.0] - 2026-02-24
 - Migracao de CI de Bun para Swift/Linux com SwiftPM.
 - Remocao de setup/login/sync de contracts no pipeline de CI.

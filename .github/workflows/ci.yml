@@ -34,5 +34,5 @@ jobs:
       - name: Build (release)
         run: swift build -c release
 
-      - name: Run tests
-        run: swift test
+      - name: Run tests with coverage gate (>=95%)
+        run: ./scripts/check_coverage.sh 95

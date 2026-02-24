@@ -7,20 +7,16 @@ public struct ICDCode: Codable, Equatable, Hashable, Sendable {
     /// O código CID normalizado (ex: "B20.1").
     public let value: String
 
-    private init(value: String) {
-        self.value = value
-    }
+    // MARK: - Initializer
 
-    // MARK: - Factory Method
-
-    /// Cria um `ICDCode` aplicando regras de normalização.
+    /// Inicializa um `ICDCode` aplicando regras de normalização.
     ///
     /// - Parameters:
     ///   - rawValue: A string bruta (ex: "b201").
     ///   - requiresDot: Se `true`, exige a presença de um ponto.
     ///   - autoDot: Se `true`, insere o ponto automaticamente.
     /// - Throws: `ICDCodeError` em caso de erro de validação.
-    public static func create(_ rawValue: String, requiresDot: Bool = false, autoDot: Bool = true) throws -> ICDCode {
+    public init(_ rawValue: String, requiresDot: Bool = false, autoDot: Bool = true) throws {
         guard !rawValue.isEmpty else { throw ICDCodeError.emptyCidCode }
         
         let sanitized = rawValue.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
@@ -33,10 +29,11 @@ public struct ICDCode: Codable, Equatable, Hashable, Sendable {
             var codeWithDot = sanitized
             let dotIndex = codeWithDot.index(codeWithDot.endIndex, offsetBy: -1)
             codeWithDot.insert(".", at: dotIndex)
-            return ICDCode(value: codeWithDot)
+            self.value = codeWithDot
+            return
         }
 
-        return ICDCode(value: sanitized)
+        self.value = sanitized
     }
 
     // MARK: - Formatting Helpers

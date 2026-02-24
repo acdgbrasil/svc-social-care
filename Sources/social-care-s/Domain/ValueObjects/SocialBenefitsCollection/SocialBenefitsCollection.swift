@@ -11,20 +11,15 @@ public struct SocialBenefitsCollection: Codable, Equatable, Hashable, Sendable {
     public let items: [SocialBenefit]
 
     // MARK: - Initializer
-    
-    private init(items: [SocialBenefit]) {
-        self.items = items
-    }
 
-    // MARK: - Factory Method
-
-    /// Cria uma coleção validada de benefícios.
+    /// Inicializa uma coleção validada de benefícios.
     ///
     /// - Parameter benefits: Array de benefícios (não pode conter nomes duplicados).
     /// - Throws: `SocialBenefitsCollectionError` em caso de erro.
-    public static func create(_ benefits: [SocialBenefit]) throws -> SocialBenefitsCollection {
-        guard !benefits.isEmpty else {
-            return SocialBenefitsCollection(items: [])
+    public init(_ benefits: [SocialBenefit]) throws {
+        if benefits.isEmpty {
+            self.items = []
+            return
         }
 
         var seenNames = Set<String>()
@@ -35,7 +30,7 @@ public struct SocialBenefitsCollection: Codable, Equatable, Hashable, Sendable {
             seenNames.insert(benefit.benefitName)
         }
 
-        return SocialBenefitsCollection(items: benefits)
+        self.items = benefits
     }
 
     // MARK: - Instance Computed Properties

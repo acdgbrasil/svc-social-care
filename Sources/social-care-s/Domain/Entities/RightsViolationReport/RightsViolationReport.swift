@@ -44,31 +44,11 @@ public struct RightsViolationReport: Codable, Equatable, Sendable {
     }
 
     // MARK: - Initializer
-    
-    private init(
-        id: ViolationReportId,
-        reportDate: TimeStamp,
-        incidentDate: TimeStamp?,
-        victimId: PersonId,
-        violationType: ViolationType,
-        descriptionOfFact: String,
-        actionsTaken: String
-    ) {
-        self.id = id
-        self.reportDate = reportDate
-        self.incidentDate = incidentDate
-        self.victimId = victimId
-        self.violationType = violationType
-        self.descriptionOfFact = descriptionOfFact
-        self.actionsTaken = actionsTaken
-    }
 
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `RightsViolationReport`.
+    /// Inicializa uma instância validada de `RightsViolationReport`.
     ///
     /// - Throws: `RightsViolationReportError` em caso de erro de validação.
-    public static func create(
+    public init(
         id: ViolationReportId,
         reportDate: TimeStamp,
         incidentDate: TimeStamp?,
@@ -77,8 +57,7 @@ public struct RightsViolationReport: Codable, Equatable, Sendable {
         descriptionOfFact: String,
         actionsTaken: String,
         now: TimeStamp
-    ) throws -> RightsViolationReport {
-        
+    ) throws {
         // Validação: Data do relatório não pode ser futura
         guard reportDate <= now else {
             throw RightsViolationReportError.reportDateInFuture
@@ -98,7 +77,7 @@ public struct RightsViolationReport: Codable, Equatable, Sendable {
             throw RightsViolationReportError.emptyDescription
         }
 
-        return RightsViolationReport(
+        self.init(
             id: id,
             reportDate: reportDate,
             incidentDate: incidentDate,
@@ -107,6 +86,24 @@ public struct RightsViolationReport: Codable, Equatable, Sendable {
             descriptionOfFact: trimmedDescription,
             actionsTaken: actionsTaken.trimmingCharacters(in: .whitespacesAndNewlines)
         )
+    }
+
+    private init(
+        id: ViolationReportId,
+        reportDate: TimeStamp,
+        incidentDate: TimeStamp?,
+        victimId: PersonId,
+        violationType: ViolationType,
+        descriptionOfFact: String,
+        actionsTaken: String
+    ) {
+        self.id = id
+        self.reportDate = reportDate
+        self.incidentDate = incidentDate
+        self.victimId = victimId
+        self.violationType = violationType
+        self.descriptionOfFact = descriptionOfFact
+        self.actionsTaken = actionsTaken
     }
 
     // MARK: - Mutators (Functional Style)

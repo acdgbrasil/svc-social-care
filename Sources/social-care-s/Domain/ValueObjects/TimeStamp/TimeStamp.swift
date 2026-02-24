@@ -8,33 +8,32 @@ public struct TimeStamp: Codable, Equatable, Hashable, Sendable {
     /// O objeto `Date` subjacente.
     public let date: Date
 
-    private init(from date: Date) {
-        self.date = date
+    /// Retorna o timestamp do instante atual.
+    public static var now: TimeStamp {
+        return try! TimeStamp(Date())
     }
 
-    // MARK: - Factory Methods
-    
-    /// Cria um `TimeStamp` a partir de um objeto `Date`.
+    /// Inicializa um `TimeStamp` a partir de um objeto `Date`.
     ///
     /// - Parameter date: A data bruta.
     /// - Throws: `TimeStampError.invalidDate` se a data for nula.
-    public static func create(_ date: Date?) throws -> TimeStamp {
+    public init(_ date: Date?) throws {
         guard let date = date else {
             throw TimeStampError.invalidDate("nil")
         }
-        return TimeStamp(from: date)
+        self.date = date
     }
 
-    /// Cria um `TimeStamp` a partir de uma string ISO8601.
+    /// Inicializa um `TimeStamp` a partir de uma string ISO8601.
     ///
     /// - Parameter iso: A string no formato ISO (ex: "2024-01-01T12:00:00Z").
     /// - Throws: `TimeStampError.invalidDate` se a string for inválida.
-    public static func create(iso: String) throws -> TimeStamp {
+    public init(iso: String) throws {
         let date = try? Date(iso, strategy: .iso8601)
         
         guard let validDate = date else {
             throw TimeStampError.invalidDate(iso)
         }
-        return TimeStamp(from: validDate)
+        self.date = validDate
     }
 }

@@ -40,29 +40,11 @@ public struct SocialCareAppointment: Codable, Equatable, Sendable {
     }
 
     // MARK: - Initializer
-    
-    private init(
-        id: AppointmentId,
-        date: TimeStamp,
-        professionalInChargeId: ProfessionalId,
-        type: AppointmentType,
-        summary: String,
-        actionPlan: String
-    ) {
-        self.id = id
-        self.date = date
-        self.professionalInChargeId = professionalInChargeId
-        self.type = type
-        self.summary = summary
-        self.actionPlan = actionPlan
-    }
 
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `SocialCareAppointment`.
+    /// Inicializa uma instância validada de `SocialCareAppointment`.
     ///
     /// - Throws: `SocialCareAppointmentError` em caso de erro de validação.
-    public static func create(
+    public init(
         id: AppointmentId,
         date: TimeStamp,
         professionalInChargeId: ProfessionalId,
@@ -70,8 +52,7 @@ public struct SocialCareAppointment: Codable, Equatable, Sendable {
         summary: String,
         actionPlan: String,
         now: TimeStamp
-    ) throws -> SocialCareAppointment {
-        
+    ) throws {
         // Validação: Data não pode ser futura
         guard date <= now else {
             throw SocialCareAppointmentError.dateInFuture
@@ -86,22 +67,20 @@ public struct SocialCareAppointment: Codable, Equatable, Sendable {
         }
 
         // Validação: Limites de caracteres
-        guard trimmedSummary.count <= summaryLimit else {
-            throw SocialCareAppointmentError.summaryTooLong(limit: summaryLimit)
+        guard trimmedSummary.count <= Self.summaryLimit else {
+            throw SocialCareAppointmentError.summaryTooLong(limit: Self.summaryLimit)
         }
 
-        guard trimmedActionPlan.count <= actionPlanLimit else {
-            throw SocialCareAppointmentError.actionPlanTooLong(limit: actionPlanLimit)
+        guard trimmedActionPlan.count <= Self.actionPlanLimit else {
+            throw SocialCareAppointmentError.actionPlanTooLong(limit: Self.actionPlanLimit)
         }
 
-        return SocialCareAppointment(
-            id: id,
-            date: date,
-            professionalInChargeId: professionalInChargeId,
-            type: type,
-            summary: trimmedSummary,
-            actionPlan: trimmedActionPlan
-        )
+        self.id = id
+        self.date = date
+        self.professionalInChargeId = professionalInChargeId
+        self.type = type
+        self.summary = trimmedSummary
+        self.actionPlan = trimmedActionPlan
     }
 
     // MARK: - Equatable

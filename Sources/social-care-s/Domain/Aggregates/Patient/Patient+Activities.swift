@@ -4,10 +4,10 @@ extension Patient {
     
     // MARK: - Activity Management
 
-    /// Registra um novo encaminhamento para o paciente ou membro da família.
+    /// Adiciona um novo encaminhamento para o paciente ou membro da família.
     ///
     /// - Throws: `PatientError.referralTargetOutsideBoundary` se a pessoa não pertencer ao agregado.
-    public mutating func createReferral(
+    public mutating func addReferral(
         id: ReferralId,
         date: TimeStamp,
         requestingProfessionalId: ProfessionalId,
@@ -15,14 +15,14 @@ extension Patient {
         destinationService: Referral.DestinationService,
         reason: String,
         status: Referral.Status = .pending,
-        now: TimeStamp
+        now: TimeStamp = .now
     ) throws {
         
         guard belongsToBoundary(referredPersonId) else {
             throw PatientError.referralTargetOutsideBoundary(targetId: referredPersonId.description)
         }
 
-        let referral = try Referral.create(
+        let referral = try Referral(
             id: id,
             date: date,
             requestingProfessionalId: requestingProfessionalId,
@@ -45,8 +45,8 @@ extension Patient {
         ))
     }
 
-    /// Registra uma denúncia de violação de direitos ocorrida dentro da fronteira do agregado.
-    public mutating func reportRightsViolation(
+    /// Adiciona uma denúncia de violação de direitos ocorrida dentro da fronteira do agregado.
+    public mutating func addRightsViolationReport(
         id: ViolationReportId,
         reportDate: TimeStamp,
         incidentDate: TimeStamp?,
@@ -54,14 +54,14 @@ extension Patient {
         violationType: RightsViolationReport.ViolationType,
         descriptionOfFact: String,
         actionsTaken: String,
-        now: TimeStamp
+        now: TimeStamp = .now
     ) throws {
         
         guard belongsToBoundary(victimId) else {
             throw PatientError.violationTargetOutsideBoundary(targetId: victimId.description)
         }
 
-        let violation = try RightsViolationReport.create(
+        let violation = try RightsViolationReport(
             id: id,
             reportDate: reportDate,
             incidentDate: incidentDate,
@@ -83,18 +83,18 @@ extension Patient {
         ))
     }
 
-    /// Registra um atendimento clínico para o paciente.
-    public mutating func registerAppointment(
+    /// Adiciona um atendimento clínico para o paciente.
+    public mutating func addAppointment(
         id: AppointmentId,
         date: TimeStamp,
         professionalInChargeId: ProfessionalId,
         type: SocialCareAppointment.AppointmentType,
         summary: String,
         actionPlan: String,
-        now: TimeStamp
+        now: TimeStamp = .now
     ) throws {
         
-        let appointment = try SocialCareAppointment.create(
+        let appointment = try SocialCareAppointment(
             id: id,
             date: date,
             professionalInChargeId: professionalInChargeId,

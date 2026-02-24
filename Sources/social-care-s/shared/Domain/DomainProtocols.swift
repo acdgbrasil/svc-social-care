@@ -6,6 +6,10 @@ public protocol DomainEvent: Sendable {
     var occurredAt: Date { get }
 }
 
+public protocol EventBus: Sendable {
+    func publish(_ events: [DomainEvent]) async throws
+}
+
 /// Define as capacidades de um Agregado que utiliza Event Sourcing/Outbox Pattern.
 public protocol EventSourcedAggregate: Sendable {
     associatedtype ID: Sendable & Equatable

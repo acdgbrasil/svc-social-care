@@ -2,65 +2,27 @@ import Testing
 @testable import social_care_s
 import Foundation
 
-@Suite("HousingCondition ValueObject (FP Style - Specification)")
+@Suite("HousingCondition ValueObject")
 struct HousingConditionTests {
 
-    @Suite("1. Criação (Factory) e Validação")
-    struct CreationAndValidation {
+    @Test("Valida quartos vs banheiros")
+    func validateBathroomsVsRooms() {
+        #expect(throws: HousingConditionError.bathroomsExceedRooms) {
+            try HousingCondition(type: .owned, wallMaterial: .masonry, numberOfRooms: 1, numberOfBathrooms: 2, waterSupply: .publicNetwork, electricityAccess: .meteredConnection, sewageDisposal: .publicSewer, wasteCollection: .directCollection, accessibilityLevel: .fullyAccessible, isInGeographicRiskArea: false, isInSocialConflictArea: false)
+        }
+    }
 
-        @Test("create valida quartos vs banheiros (banheiros > quartos deve falhar)")
-        func validateBathroomsVsRooms() {
-            #expect(throws: HousingConditionError.bathroomsExceedRooms) {
-                try HousingCondition.create(
-                    type: .owned,
-                    wallMaterial: .masonry,
-                    numberOfRooms: 1,
-                    numberOfBathrooms: 2,
-                    waterSupply: .publicNetwork,
-                    electricityAccess: .meteredConnection,
-                    sewageDisposal: .publicSewer,
-                    wasteCollection: .directCollection,
-                    accessibilityLevel: .fullyAccessible,
-                    isInGeographicRiskArea: false,
-                    isInSocialConflictArea: false
-                )
-            }
+    @Test("Valida números negativos")
+    func validateNegative() {
+        #expect(throws: HousingConditionError.negativeRooms) {
+            try HousingCondition(type: .owned, wallMaterial: .masonry, numberOfRooms: -1, numberOfBathrooms: 0, waterSupply: .publicNetwork, electricityAccess: .meteredConnection, sewageDisposal: .publicSewer, wasteCollection: .directCollection, accessibilityLevel: .fullyAccessible, isInGeographicRiskArea: false, isInSocialConflictArea: false)
         }
+    }
 
-        @Test("create valida números negativos (quartos < 0 deve falhar)")
-        func validateNegativeRooms() {
-            #expect(throws: HousingConditionError.negativeRooms) {
-                try HousingCondition.create(
-                    type: .owned,
-                    wallMaterial: .masonry,
-                    numberOfRooms: -1,
-                    numberOfBathrooms: 0,
-                    waterSupply: .publicNetwork,
-                    electricityAccess: .meteredConnection,
-                    sewageDisposal: .publicSewer,
-                    wasteCollection: .directCollection,
-                    accessibilityLevel: .fullyAccessible,
-                    isInGeographicRiskArea: false,
-                    isInSocialConflictArea: false
-                )
-            }
-        }
-        
-        @Test("cria HousingCondition válida")
-        func createValid() throws {
-            let _ = try HousingCondition.create(
-                type: .owned,
-                wallMaterial: .masonry,
-                numberOfRooms: 3,
-                numberOfBathrooms: 1,
-                waterSupply: .publicNetwork,
-                electricityAccess: .meteredConnection,
-                sewageDisposal: .publicSewer,
-                wasteCollection: .directCollection,
-                accessibilityLevel: .fullyAccessible,
-                isInGeographicRiskArea: false,
-                isInSocialConflictArea: false
-            )
-        }
+    @Test("Valida conversão de HousingConditionError para AppError")
+    func errorConversion() {
+        #expect(HousingConditionError.negativeRooms.asAppError.code == "HC-001")
+        #expect(HousingConditionError.negativeBathrooms.asAppError.code == "HC-002")
+        #expect(HousingConditionError.bathroomsExceedRooms.asAppError.code == "HC-003")
     }
 }

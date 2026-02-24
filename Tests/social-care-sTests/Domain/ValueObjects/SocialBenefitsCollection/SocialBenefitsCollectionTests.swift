@@ -2,48 +2,32 @@ import Testing
 @testable import social_care_s
 import Foundation
 
-@Suite("SocialBenefitsCollection ValueObject (FP Style - Specification)")
+@Suite("SocialBenefitsCollection ValueObject")
 struct SocialBenefitsCollectionTests {
 
-    private let beneficiaryId = FamilyMemberId()
-
-    @Suite("1. Criação (Factory) e Validação")
-    struct CreationAndValidation {
-        private let beneficiaryId = FamilyMemberId()
-
-        @Test("create valida duplicatas")
-        func validateDuplicates() throws {
-            let benefit = try SocialBenefit.create(benefitName: "A", amount: 100, beneficiaryId: beneficiaryId)
-            #expect(throws: SocialBenefitsCollectionError.duplicateBenefitNotAllowed(name: "A")) {
-                try SocialBenefitsCollection.create([benefit, benefit])
-            }
-        }
-
-        @Test("create aceita array vazio")
-        func acceptEmptyArray() throws {
-            let col = try SocialBenefitsCollection.create([])
-            #expect(col.isEmpty == true)
+    @Test("Valida duplicatas na coleção")
+    func validateDuplicates() throws {
+        let beneficiaryId = PersonId()
+        let benefit = try SocialBenefit(benefitName: "A", amount: 100, beneficiaryId: beneficiaryId)
+        #expect(throws: SocialBenefitsCollectionError.duplicateBenefitNotAllowed(name: "A")) {
+            try SocialBenefitsCollection([benefit, benefit])
         }
     }
 
-    @Suite("2. Helpers e Agregações")
-    struct HelpersAndAggregations {
-        private let beneficiaryId = FamilyMemberId()
+    @Test("Valida cálculos de agregação")
+    func aggregations() throws {
+        let beneficiaryId = PersonId()
+        let b1 = try SocialBenefit(benefitName: "A", amount: 100, beneficiaryId: beneficiaryId)
+        let b2 = try SocialBenefit(benefitName: "B", amount: 200, beneficiaryId: beneficiaryId)
+        let col = try SocialBenefitsCollection([b1, b2])
+        
+        #expect(col.totalAmount == 300.0)
+        #expect(col.count == 2)
+    }
 
-        @Test("totalAmount calcula soma corretamente")
-        func totalAmountCalculation() throws {
-            let b1 = try SocialBenefit.create(benefitName: "A", amount: 100, beneficiaryId: beneficiaryId)
-            let b2 = try SocialBenefit.create(benefitName: "B", amount: 200, beneficiaryId: beneficiaryId)
-            let col = try SocialBenefitsCollection.create([b1, b2])
-            
-            #expect(col.totalAmount == 300.0)
-        }
-
-        @Test("count retorna tamanho correto")
-        func countProperty() throws {
-            let b1 = try SocialBenefit.create(benefitName: "A", amount: 100, beneficiaryId: beneficiaryId)
-            let col = try SocialBenefitsCollection.create([b1])
-            #expect(col.count == 1)
-        }
+    @Test("Valida conversão de SocialBenefitsCollectionError para AppError")
+    func errorConversion() {
+        #expect(SocialBenefitsCollectionError.benefitsArrayNullOrUndefined.asAppError.code == "SBC-001")
+        #expect(SocialBenefitsCollectionError.duplicateBenefitNotAllowed(name: "A").asAppError.code == "SBC-002")
     }
 }

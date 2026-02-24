@@ -31,10 +31,20 @@ swift build
 swift run social-care-s
 ```
 
+## Make (atalhos)
+```bash
+make help
+make run dev
+make run test
+make run coverage
+make ci
+```
+
 ## Qualidade
 ```bash
 swift build -c release --product social-care-s
 swift test
+./scripts/check_coverage.sh 95
 ```
 
 ## Docker
@@ -61,7 +71,7 @@ docker run --rm -p 3000:3000 svc-social-care:local
 - Executa:
   - `swift package resolve`
   - `swift build -c release`
-  - `swift test`
+  - `swift test --enable-code-coverage` com gate de `>=95%` em `Sources/social-care-s/**`
 - Nao faz sync/pull de contracts neste momento.
 
 ## Versoes suportadas

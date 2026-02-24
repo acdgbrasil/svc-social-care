@@ -5,15 +5,12 @@ import Foundation
 @Suite("SocialBenefit ValueObject (FP Style - Specification)")
 struct SocialBenefitTests {
 
-    private let beneficiaryId = FamilyMemberId()
-
     @Suite("1. Criação (Factory) e Validação")
     struct CreationAndValidation {
-        private let beneficiaryId = FamilyMemberId()
-
         @Test("cria benefício válido")
         func createValid() throws {
-            let _ = try SocialBenefit.create(
+            let beneficiaryId = PersonId()
+            let _ = try SocialBenefit(
                 benefitName: "Bolsa Família",
                 amount: 600.0,
                 beneficiaryId: beneficiaryId
@@ -22,8 +19,9 @@ struct SocialBenefitTests {
 
         @Test("falha com valor negativo ou zero")
         func failsWithNegativeAmount() {
+            let beneficiaryId = PersonId()
             #expect(throws: SocialBenefitError.amountInvalid(amount: -10.0)) {
-                try SocialBenefit.create(
+                try SocialBenefit(
                     benefitName: "Bolsa Família",
                     amount: -10.0,
                     beneficiaryId: beneficiaryId
@@ -33,12 +31,22 @@ struct SocialBenefitTests {
         
         @Test("normaliza nome (trim e espaços extras)")
         func normalizeName() throws {
-            let benefit = try SocialBenefit.create(
+            let beneficiaryId = PersonId()
+            let benefit = try SocialBenefit(
                 benefitName: "  Bolsa    Família  ",
                 amount: 600.0,
                 beneficiaryId: beneficiaryId
             )
             #expect(benefit.benefitName == "Bolsa Família")
+        }
+    }
+
+    @Suite("2. Erros e Conversão")
+    struct ErrorHandling {
+        @Test("Valida conversão de SocialBenefitError para AppError")
+        func errorConversion() {
+            #expect(SocialBenefitError.benefitNameEmpty.asAppError.code == "SB-001")
+            #expect(SocialBenefitError.amountInvalid(amount: 1).asAppError.code == "SB-002")
         }
     }
 }

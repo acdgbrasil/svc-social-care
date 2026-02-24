@@ -21,43 +21,27 @@ public struct SocialHealthSummary: Codable, Equatable, Hashable, Sendable {
     public let hasRelevantDrugTherapy: Bool
 
     // MARK: - Initializer
-    
-    private init(
-        requiresConstantCare: Bool,
-        hasMobilityImpairment: Bool,
-        functionalDependencies: [String],
-        hasRelevantDrugTherapy: Bool
-    ) {
-        self.requiresConstantCare = requiresConstantCare
-        self.hasMobilityImpairment = hasMobilityImpairment
-        self.functionalDependencies = functionalDependencies
-        self.hasRelevantDrugTherapy = hasRelevantDrugTherapy
-    }
 
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `SocialHealthSummary`.
+    /// Inicializa uma instância validada de `SocialHealthSummary`.
     ///
     /// - Throws: `SocialHealthSummaryError` em caso de erro de validação.
-    public static func create(
+    public init(
         requiresConstantCare: Bool,
         hasMobilityImpairment: Bool,
         functionalDependencies: [String],
         hasRelevantDrugTherapy: Bool
-    ) throws -> SocialHealthSummary {
+    ) throws {
         
-        let normalized = normalize(functionalDependencies)
+        let normalized = Self.normalize(functionalDependencies)
         
         guard !normalized.hasEmpty else {
             throw SocialHealthSummaryError.functionalDependenciesEmpty
         }
 
-        return SocialHealthSummary(
-            requiresConstantCare: requiresConstantCare,
-            hasMobilityImpairment: hasMobilityImpairment,
-            functionalDependencies: normalized.unique,
-            hasRelevantDrugTherapy: hasRelevantDrugTherapy
-        )
+        self.requiresConstantCare = requiresConstantCare
+        self.hasMobilityImpairment = hasMobilityImpairment
+        self.functionalDependencies = normalized.unique
+        self.hasRelevantDrugTherapy = hasRelevantDrugTherapy
     }
 
     // MARK: - Private Helpers

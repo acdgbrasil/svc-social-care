@@ -17,24 +17,16 @@ public struct Diagnosis: Codable, Equatable, Hashable, Sendable {
     public let description: String
 
     // MARK: - Initializer
-    
-    private init(id: ICDCode, date: TimeStamp, description: String) {
-        self.id = id
-        self.date = date
-        self.description = description
-    }
 
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `Diagnosis`.
+    /// Inicializa uma instância validada de `Diagnosis`.
     ///
     /// - Throws: `DiagnosisError` em caso de erro de validação.
-    public static func create(
+    public init(
         id: ICDCode,
         date: TimeStamp,
         description: String,
         now: TimeStamp
-    ) throws -> Diagnosis {
+    ) throws {
         
         // Validação: Data não pode ser futura
         guard date <= now else {
@@ -56,10 +48,8 @@ public struct Diagnosis: Codable, Equatable, Hashable, Sendable {
             throw DiagnosisError.descriptionEmpty
         }
 
-        return Diagnosis(
-            id: id,
-            date: date,
-            description: trimmedDescription
-        )
+        self.id = id
+        self.date = date
+        self.description = trimmedDescription
     }
 }

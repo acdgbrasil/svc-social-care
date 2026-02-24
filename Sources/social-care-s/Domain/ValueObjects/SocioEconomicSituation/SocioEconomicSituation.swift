@@ -27,36 +27,18 @@ public struct SocioEconomicSituation: Codable, Equatable, Hashable, Sendable {
     public let hasUnemployed: Bool
 
     // MARK: - Initializer
-    
-    private init(
-        totalFamilyIncome: Double,
-        incomePerCapita: Double,
-        receivesSocialBenefit: Bool,
-        socialBenefits: SocialBenefitsCollection,
-        mainSourceOfIncome: String,
-        hasUnemployed: Bool
-    ) {
-        self.totalFamilyIncome = totalFamilyIncome
-        self.incomePerCapita = incomePerCapita
-        self.receivesSocialBenefit = receivesSocialBenefit
-        self.socialBenefits = socialBenefits
-        self.mainSourceOfIncome = mainSourceOfIncome
-        self.hasUnemployed = hasUnemployed
-    }
 
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `SocioEconomicSituation`.
+    /// Inicializa uma instância validada de `SocioEconomicSituation`.
     ///
     /// - Throws: `SocioEconomicSituationError` em caso de erro de validação.
-    public static func create(
+    public init(
         totalFamilyIncome: Double,
         incomePerCapita: Double,
         receivesSocialBenefit: Bool,
         socialBenefits: SocialBenefitsCollection,
         mainSourceOfIncome: String,
         hasUnemployed: Bool
-    ) throws -> SocioEconomicSituation {
+    ) throws {
         
         // Validação: Coerência entre a flag e a coleção de benefícios
         guard !(receivesSocialBenefit == false && !socialBenefits.isEmpty) else {
@@ -88,13 +70,11 @@ public struct SocioEconomicSituation: Codable, Equatable, Hashable, Sendable {
             throw SocioEconomicSituationError.emptyMainSourceOfIncome
         }
 
-        return SocioEconomicSituation(
-            totalFamilyIncome: totalFamilyIncome,
-            incomePerCapita: incomePerCapita,
-            receivesSocialBenefit: receivesSocialBenefit,
-            socialBenefits: socialBenefits,
-            mainSourceOfIncome: trimmedSource,
-            hasUnemployed: hasUnemployed
-        )
+        self.totalFamilyIncome = totalFamilyIncome
+        self.incomePerCapita = incomePerCapita
+        self.receivesSocialBenefit = receivesSocialBenefit
+        self.socialBenefits = socialBenefits
+        self.mainSourceOfIncome = trimmedSource
+        self.hasUnemployed = hasUnemployed
     }
 }

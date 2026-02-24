@@ -2,47 +2,39 @@ import Testing
 @testable import social_care_s
 import Foundation
 
-@Suite("Diagnosis ValueObject (FP Style - Specification)")
+@Suite("Diagnosis ValueObject")
 struct DiagnosisTests {
 
-    @Suite("1. Criação (Factory) e Validação")
-    struct CreationAndValidation {
-        private let now = try! TimeStamp.create(iso: "2024-01-10T12:00:00Z")
-        private let icd = try! ICDCode.create("B20.1")
+    @Test("Cria diagnóstico válido")
+    func createValid() throws {
+        let now = TimeStamp.now
+        let icd = try ICDCode("B20.1")
+        let _ = try Diagnosis(id: icd, date: now, description: "Valid", now: now)
+    }
 
-        @Test("cria diagnóstico válido")
-        func createValid() throws {
-            let _ = try Diagnosis.create(
-                id: icd,
-                date: now,
-                description: "Valid Description",
-                now: now
-            )
+    @Test("Falha com data futura")
+    func failsWithFutureDate() throws {
+        let now = TimeStamp.now
+        let icd = try ICDCode("B20.1")
+        let futureDate = try TimeStamp(iso: "2099-01-11T12:00:00Z")
+        #expect(throws: DiagnosisError.self) {
+            try Diagnosis(id: icd, date: futureDate, description: "Test", now: now)
         }
+    }
 
-        @Test("falha com data futura")
-        func failsWithFutureDate() throws {
-            let futureDate = try TimeStamp.create(iso: "2024-01-11T12:00:00Z")
-            #expect(throws: DiagnosisError.self) {
-                try Diagnosis.create(
-                    id: icd,
-                    date: futureDate,
-                    description: "Test",
-                    now: now
-                )
-            }
+    @Test("Falha com descrição vazia")
+    func failsWithEmptyDescription() throws {
+        let now = TimeStamp.now
+        let icd = try ICDCode("B20.1")
+        #expect(throws: DiagnosisError.descriptionEmpty) {
+            try Diagnosis(id: icd, date: now, description: "   ", now: now)
         }
+    }
 
-        @Test("falha com descrição vazia")
-        func failsWithEmptyDescription() {
-            #expect(throws: DiagnosisError.descriptionEmpty) {
-                try Diagnosis.create(
-                    id: icd,
-                    date: now,
-                    description: "   ",
-                    now: now
-                )
-            }
-        }
+    @Test("Valida conversão de DiagnosisError para AppError")
+    func errorConversion() {
+        #expect(DiagnosisError.dateInFuture(date: "A", now: "B").asAppError.code == "DIA-001")
+        #expect(DiagnosisError.dateBeforeYearZero(year: -1).asAppError.code == "DIA-002")
+        #expect(DiagnosisError.descriptionEmpty.asAppError.code == "DIA-003")
     }
 }

@@ -14,26 +14,18 @@ public struct SocialBenefit: Codable, Equatable, Hashable, Sendable {
     public let amount: Double
     
     /// O identificador do membro da família que recebe o benefício.
-    public let beneficiaryId: FamilyMemberId
+    public let beneficiaryId: PersonId
 
     // MARK: - Initializer
-    
-    private init(benefitName: String, amount: Double, beneficiaryId: FamilyMemberId) {
-        self.benefitName = benefitName
-        self.amount = amount
-        self.beneficiaryId = beneficiaryId
-    }
 
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `SocialBenefit`.
+    /// Inicializa uma instância validada de `SocialBenefit`.
     ///
     /// - Throws: `SocialBenefitError` em caso de erro de validação.
-    public static func create(
+    public init(
         benefitName: String,
         amount: Double,
-        beneficiaryId: FamilyMemberId
-    ) throws -> SocialBenefit {
+        beneficiaryId: PersonId
+    ) throws {
         
         // Normalização do nome: trim + substituição de múltiplos espaços por um único
         let normalizedName = benefitName
@@ -50,10 +42,8 @@ public struct SocialBenefit: Codable, Equatable, Hashable, Sendable {
             throw SocialBenefitError.amountInvalid(amount: amount)
         }
 
-        return SocialBenefit(
-            benefitName: normalizedName,
-            amount: amount,
-            beneficiaryId: beneficiaryId
-        )
+        self.benefitName = normalizedName
+        self.amount = amount
+        self.beneficiaryId = beneficiaryId
     }
 }

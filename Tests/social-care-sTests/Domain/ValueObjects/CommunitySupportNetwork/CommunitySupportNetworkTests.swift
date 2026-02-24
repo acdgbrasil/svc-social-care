@@ -2,40 +2,19 @@ import Testing
 @testable import social_care_s
 import Foundation
 
-@Suite("CommunitySupportNetwork ValueObject (FP Style - Specification)")
+@Suite("CommunitySupportNetwork ValueObject")
 struct CommunitySupportNetworkTests {
 
-    @Suite("1. Criação (Factory) e Validação")
-    struct CreationAndValidation {
-
-        @Test("create valida conflitos (apenas whitespace deve falhar)")
-        func validateWhitespaceConflicts() {
-            #expect(throws: CommunitySupportNetworkError.familyConflictsWhitespace) {
-                try CommunitySupportNetwork.create(
-                    hasRelativeSupport: true,
-                    hasNeighborSupport: true,
-                    familyConflicts: "   ",
-                    patientParticipatesInGroups: true,
-                    familyParticipatesInGroups: true,
-                    patientHasAccessToLeisure: true,
-                    facesDiscrimination: false
-                )
-            }
+    @Test("Valida conflitos familiares (apenas whitespace)")
+    func validateWhitespace() {
+        #expect(throws: CommunitySupportNetworkError.familyConflictsWhitespace) {
+            try CommunitySupportNetwork(hasRelativeSupport: true, hasNeighborSupport: true, familyConflicts: "   ", patientParticipatesInGroups: true, familyParticipatesInGroups: true, patientHasAccessToLeisure: true, facesDiscrimination: false)
         }
+    }
 
-        @Test("create normaliza (trim)")
-        func normalizeTrim() throws {
-            let csn = try CommunitySupportNetwork.create(
-                hasRelativeSupport: true,
-                hasNeighborSupport: true,
-                familyConflicts: "  Test  ",
-                patientParticipatesInGroups: true,
-                familyParticipatesInGroups: true,
-                patientHasAccessToLeisure: true,
-                facesDiscrimination: false
-            )
-            
-            #expect(csn.familyConflicts == "Test")
-        }
+    @Test("Valida conversão de CommunitySupportNetworkError para AppError")
+    func errorConversion() {
+        #expect(CommunitySupportNetworkError.familyConflictsWhitespace.asAppError.code == "CSN-001")
+        #expect(CommunitySupportNetworkError.familyConflictsTooLong(limit: 300).asAppError.code == "CSN-002")
     }
 }

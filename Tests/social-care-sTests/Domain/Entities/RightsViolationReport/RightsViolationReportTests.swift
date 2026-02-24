@@ -5,19 +5,19 @@ import Foundation
 @Suite("RightsViolationReport Entity (Specification)")
 struct RightsViolationReportTests {
 
-    private let now = try! TimeStamp.create(iso: "2024-01-10T12:00:00Z")
+    private let now = try! TimeStamp(iso: "2024-01-10T12:00:00Z")
     private let reportId = ViolationReportId()
     private let victimId = PersonId()
 
     @Suite("1. Criação e Validação")
     struct CreationAndValidation {
-        private let now = try! TimeStamp.create(iso: "2024-01-10T12:00:00Z")
+        private let now = try! TimeStamp(iso: "2024-01-10T12:00:00Z")
         private let reportId = ViolationReportId()
         private let victimId = PersonId()
 
         @Test("Cria relatório válido")
         func createValid() throws {
-            let _ = try RightsViolationReport.create(
+            let _ = try RightsViolationReport(
                 id: reportId,
                 reportDate: now,
                 incidentDate: now,
@@ -31,9 +31,9 @@ struct RightsViolationReportTests {
 
         @Test("Falha com data do relatório no futuro")
         func failsWithFutureReportDate() throws {
-            let futureDate = try TimeStamp.create(iso: "2024-01-11T12:00:00Z")
+            let futureDate = try TimeStamp(iso: "2024-01-11T12:00:00Z")
             #expect(throws: RightsViolationReportError.reportDateInFuture) {
-                try RightsViolationReport.create(
+                try RightsViolationReport(
                     id: reportId,
                     reportDate: futureDate,
                     incidentDate: now,
@@ -48,11 +48,11 @@ struct RightsViolationReportTests {
 
         @Test("Falha quando incidente é posterior ao relatório")
         func failsWithIncidentAfterReport() throws {
-            let incidentDate = try TimeStamp.create(iso: "2024-01-02T12:00:00Z")
-            let reportDate = try TimeStamp.create(iso: "2024-01-01T12:00:00Z")
+            let incidentDate = try TimeStamp(iso: "2024-01-02T12:00:00Z")
+            let reportDate = try TimeStamp(iso: "2024-01-01T12:00:00Z")
             
             #expect(throws: RightsViolationReportError.incidentAfterReport) {
-                try RightsViolationReport.create(
+                try RightsViolationReport(
                     id: reportId,
                     reportDate: reportDate,
                     incidentDate: incidentDate,
@@ -68,7 +68,7 @@ struct RightsViolationReportTests {
         @Test("Falha com descrição vazia")
         func failsWithEmptyDescription() {
             #expect(throws: RightsViolationReportError.emptyDescription) {
-                try RightsViolationReport.create(
+                try RightsViolationReport(
                     id: reportId,
                     reportDate: now,
                     incidentDate: nil,
@@ -82,15 +82,25 @@ struct RightsViolationReportTests {
         }
     }
 
-    @Suite("2. Mutação Funcional")
+    @Suite("2. Erros e Conversão")
+    struct ErrorHandling {
+        @Test("Valida conversão de RightsViolationReportError para AppError")
+        func errorConversion() {
+            #expect(RightsViolationReportError.reportDateInFuture.asAppError.code == "RVR-001")
+            #expect(RightsViolationReportError.incidentAfterReport.asAppError.code == "RVR-002")
+            #expect(RightsViolationReportError.emptyDescription.asAppError.code == "RVR-003")
+        }
+    }
+
+    @Suite("3. Mutação Funcional")
     struct Mutation {
         @Test("Atualiza ações gerando nova instância")
         func updateActions() throws {
             let reportId = ViolationReportId()
             let victimId = PersonId()
-            let date = try TimeStamp.create(iso: "2024-01-01T10:00:00Z")
+            let date = try TimeStamp(iso: "2024-01-01T10:00:00Z")
             
-            let original = try RightsViolationReport.create(
+            let original = try RightsViolationReport(
                 id: reportId, reportDate: date, incidentDate: nil,
                 victimId: victimId, violationType: .neglect,
                 descriptionOfFact: "Desc", actionsTaken: "None", now: date

@@ -11,17 +11,15 @@ struct EntitySpecificationTests {
         @Test("1. create falha quando relationship é vazio")
         func emptyRelationship() {
             let pid = PersonId()
-            let fid = FamilyMemberId()
             #expect(throws: FamilyMemberError.invalidRelationship) {
-                try FamilyMember.create(id: fid, personId: pid, relationship: "  ", isPrimaryCaregiver: false, residesWithPatient: true)
+                try FamilyMember(personId: pid, relationship: "  ", isPrimaryCaregiver: false, residesWithPatient: true)
             }
         }
 
         @Test("4. assignAsPrimaryCaregiver retorna nova instância")
         func mutator() throws {
             let pid = PersonId()
-            let fid = FamilyMemberId()
-            var member = try FamilyMember.create(id: fid, personId: pid, relationship: "Pai", isPrimaryCaregiver: false, residesWithPatient: true)
+            var member = try FamilyMember(personId: pid, relationship: "Pai", isPrimaryCaregiver: false, residesWithPatient: true)
             
             member.assignAsPrimaryCaregiver()
             #expect(member.isPrimaryCaregiver == true)
@@ -31,20 +29,20 @@ struct EntitySpecificationTests {
     // MARK: - 5. Referral
     @Suite("Referral Spec")
     struct ReferralSpec {
-        private let now = try! TimeStamp.create(Date())
+        private let now = try! TimeStamp(Date())
         private let rid = ReferralId()
         private let prof = ProfessionalId()
         private let pid = PersonId()
 
         @Test("16. create inicia como PENDING")
         func initialStatus() throws {
-            let ref = try Referral.create(id: rid, date: now, requestingProfessionalId: prof, referredPersonId: pid, destinationService: .cras, reason: "Test", now: now)
+            let ref = try Referral(id: rid, date: now, requestingProfessionalId: prof, referredPersonId: pid, destinationService: .cras, reason: "Test", now: now)
             #expect(ref.status == .pending)
         }
 
         @Test("20. complete transita para COMPLETED")
         func transition() throws {
-            let ref = try Referral.create(id: rid, date: now, requestingProfessionalId: prof, referredPersonId: pid, destinationService: .cras, reason: "Test", now: now)
+            let ref = try Referral(id: rid, date: now, requestingProfessionalId: prof, referredPersonId: pid, destinationService: .cras, reason: "Test", now: now)
             let completed = try ref.complete()
             #expect(completed.status == .completed)
         }
@@ -57,9 +55,9 @@ struct EntitySpecificationTests {
         func initialPatient() throws {
             let pId = PersonId()
             let appId = PatientId()
-            let diag = try Diagnosis.create(id: try ICDCode.create("B20"), date: try TimeStamp.create(Date()), description: "Test", now: try TimeStamp.create(Date()))
+            let diag = try Diagnosis(id: try ICDCode("B20"), date: .now, description: "Test", now: .now)
             
-            let patient = try Patient.create(id: appId, personId: pId, diagnoses: [diag])
+            let patient = try Patient(id: appId, personId: pId, diagnoses: [diag], now: .now)
             
             #expect(patient.version == 1)
             #expect(patient.uncommittedEvents.count == 1)
@@ -70,16 +68,16 @@ struct EntitySpecificationTests {
         func boundaryCheck() throws {
             let pId = PersonId()
             let appId = PatientId()
-            let diag = try Diagnosis.create(id: try ICDCode.create("B20"), date: try TimeStamp.create(Date()), description: "Test", now: try TimeStamp.create(Date()))
+            let diag = try Diagnosis(id: try ICDCode("B20"), date: .now, description: "Test", now: .now)
             
-            let patient = try Patient.create(id: appId, personId: pId, diagnoses: [diag])
+            let patient = try Patient(id: appId, personId: pId, diagnoses: [diag], now: .now)
             
             let strangerId = PersonId()
-            let nowTs = try TimeStamp.create(Date())
+            let nowTs = TimeStamp.now
             
             #expect(throws: PatientError.referralTargetOutsideBoundary(targetId: strangerId.description)) {
                 var mutPatient = patient
-                try mutPatient.createReferral(id: ReferralId(), date: nowTs, requestingProfessionalId: ProfessionalId(), referredPersonId: strangerId, destinationService: .creas, reason: "Fail", now: nowTs)
+                try mutPatient.addReferral(id: ReferralId(), date: nowTs, requestingProfessionalId: ProfessionalId(), referredPersonId: strangerId, destinationService: .creas, reason: "Fail", now: nowTs)
             }
         }
     }

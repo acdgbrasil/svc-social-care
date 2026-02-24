@@ -2,42 +2,38 @@ import Foundation
 
 extension Patient {
     
-    // MARK: - Core Factory Methods
+    // MARK: - Core Initializer
 
-    /// Cria um novo agregado Patient.
+    /// Inicializa um novo agregado Patient garantindo a validade dos diagnósticos e registrando o evento de criação.
     ///
     /// - Parameters:
     ///   - id: Identificador único do paciente.
     ///   - personId: Identificador da pessoa.
     ///   - diagnoses: Lista inicial de diagnósticos (obrigatória).
-    ///   - now: Data de criação para o evento.
-    /// - Returns: Uma nova instância de `Patient`.
-    /// - Throws: `PatientErrors.initialDiagnosesCantBeEmpty` se a lista de diagnósticos estiver vazia.
-    public static func create(
+    ///   - now: O instante da criação para fins de auditoria e geração de eventos.
+    /// - Throws: `PatientError.initialDiagnosesCantBeEmpty` se a lista de diagnósticos estiver vazia.
+    public init(
         id: PatientId,
         personId: PersonId,
         diagnoses: [Diagnosis],
-        now: Date = Date()
-    ) throws -> Patient {
+        now: TimeStamp = .now
+    ) throws {
         
         guard !diagnoses.isEmpty else {
             throw PatientError.initialDiagnosesCantBeEmpty
         }
 
-        var patient = Patient(
-            id: id,
-            version: 0,
-            personId: personId,
-            diagnoses: diagnoses
-        )
+        self.id = id
+        self.version = 0
+        self.personId = personId
+        self.diagnoses = diagnoses
+        self.uncommittedEvents = []
 
-        patient.recordEvent(PatientCreatedEvent(
+        self.recordEvent(PatientCreatedEvent(
             patientId: id.description,
             personId: personId.description,
-            occurredAt: now
+            occurredAt: now.date
         ))
-
-        return patient
     }
 
     /// Reconstitui um agregado a partir de um estado persistido.

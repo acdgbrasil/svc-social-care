@@ -47,7 +47,43 @@ public struct Referral: Codable, Equatable, Sendable {
     }
 
     // MARK: - Initializer
-    
+
+    /// Inicializa uma instância validada de `Referral`.
+    ///
+    /// - Throws: `ReferralError` em caso de erro de validação.
+    public init(
+        id: ReferralId,
+        date: TimeStamp,
+        requestingProfessionalId: ProfessionalId,
+        referredPersonId: PersonId,
+        destinationService: DestinationService,
+        reason: String,
+        status: Status = .pending,
+        now: TimeStamp
+    ) throws {
+        // Validação: Data não pode ser futura
+        guard date <= now else {
+            throw ReferralError.dateInFuture
+        }
+
+        let trimmedReason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Validação: Motivo obrigatório
+        guard !trimmedReason.isEmpty else {
+            throw ReferralError.reasonMissing
+        }
+
+        self.init(
+            id: id,
+            date: date,
+            requestingProfessionalId: requestingProfessionalId,
+            referredPersonId: referredPersonId,
+            destinationService: destinationService,
+            reason: trimmedReason,
+            status: status
+        )
+    }
+
     private init(
         id: ReferralId,
         date: TimeStamp,
@@ -64,45 +100,6 @@ public struct Referral: Codable, Equatable, Sendable {
         self.destinationService = destinationService
         self.reason = reason
         self.status = status
-    }
-
-    // MARK: - Factory Method
-
-    /// Cria uma instância validada de `Referral`.
-    ///
-    /// - Throws: `ReferralError` em caso de erro de validação.
-    public static func create(
-        id: ReferralId,
-        date: TimeStamp,
-        requestingProfessionalId: ProfessionalId,
-        referredPersonId: PersonId,
-        destinationService: DestinationService,
-        reason: String,
-        status: Status = .pending,
-        now: TimeStamp
-    ) throws -> Referral {
-        
-        // Validação: Data não pode ser futura
-        guard date <= now else {
-            throw ReferralError.dateInFuture
-        }
-
-        let trimmedReason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Validação: Motivo obrigatório
-        guard !trimmedReason.isEmpty else {
-            throw ReferralError.reasonMissing
-        }
-
-        return Referral(
-            id: id,
-            date: date,
-            requestingProfessionalId: requestingProfessionalId,
-            referredPersonId: referredPersonId,
-            destinationService: destinationService,
-            reason: trimmedReason,
-            status: status
-        )
     }
 
     // MARK: - Status Transitions (Functional Style)

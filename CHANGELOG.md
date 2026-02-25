@@ -2,6 +2,14 @@
 
 Todas as mudancas relevantes deste servico serao registradas aqui.
 
+## [0.4.0] - 2026-02-24
+- Implementacao da camada de **Infrastructure** com **SQLKit** e **PostgresKit**.
+- Implementacao do **Pattern Transactional Outbox** para garantia de entrega de eventos.
+- Criacao do **SQLKitOutboxRelay** (Actor) para polling assíncrono e distribuicao via **AsyncStream**.
+- Implementacao de **DomainEventRegistry** para decodificacao segura de eventos heterogêneos.
+- Sistema de **Migrations** programático e idempotente para PostgreSQL.
+- Refatoracao de eventos de domínio para suporte a `Codable`.
+
 ## [0.3.0] - 2026-02-24
 - Migracao completa da camada de **Application** de TypeScript para Swift 6.
 - Implementacao de 8 Casos de Uso com *Structured Concurrency* e *Typed Throws*.

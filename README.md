@@ -3,8 +3,9 @@
 Servico base da organizacao ACDG para dominio de social care.
 
 ## Stack
-- Linguagem: Swift 6.2
+- Linguagem: Swift 6.2 (Strict Concurrency)
 - Build/Test: Swift Package Manager (SwiftPM)
+- Database: PostgreSQL (via SQLKit & PostgresKit)
 - Plataforma alvo: Linux (containers Docker)
 - Container registry: GHCR
 
@@ -12,13 +13,18 @@ Servico base da organizacao ACDG para dominio de social care.
 - GitHub: `https://github.com/acdgbrasil/svc-social-care`
 
 ## Status atual
-- Dominio concluido (Aggregates, Entities, Value Objects e testes).
+- Dominio e Aplicacao concluídos (95.95% de cobertura).
+- Infraestrutura de persistência implementada com SQLKit.
+- Transactional Outbox e Event Relay configurados para escala assíncrona.
 - Proximas etapas:
-  - Camada de `Application`
-  - Integracoes com database e servidores
+  - Camada de HTTP/Web (Servidor)
+  - Integracao final de startup (Composition Root)
 
 ## Estrutura
 - `Sources/social-care-s/`: codigo fonte em Swift
+  - `Domain/`: Agregados e Regras de Ouro
+  - `Application/`: Casos de Uso e Orquestracao
+  - `Infrastructure/`: Persistencia (SQLKit) e Outbox
 - `Tests/social-care-sTests/`: testes automatizados
 - `handbook/`: documentacao operacional
 - `.github/workflows/`: CI e release/publish de imagem

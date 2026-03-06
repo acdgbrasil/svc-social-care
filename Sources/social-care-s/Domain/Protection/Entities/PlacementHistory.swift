@@ -1,0 +1,57 @@
+import Foundation
+
+/// Entity that records the history of family separation and institutional placements.
+public struct PlacementHistory: Codable, Equatable, Sendable {
+    
+    public let familyId: PatientId
+    public let individualPlacements: [PlacementRegistry]
+    public let collectiveSituations: CollectiveSituations
+    public let separationChecklist: SeparationChecklist
+    
+    public init(
+        familyId: PatientId,
+        individualPlacements: [PlacementRegistry],
+        collectiveSituations: CollectiveSituations,
+        separationChecklist: SeparationChecklist
+    ) {
+        self.familyId = familyId
+        self.individualPlacements = individualPlacements
+        self.collectiveSituations = collectiveSituations
+        self.separationChecklist = separationChecklist
+    }
+}
+
+public struct PlacementRegistry: Codable, Equatable, Sendable {
+    public let id: UUID
+    public let memberId: PersonId
+    public let startDate: TimeStamp
+    public let endDate: TimeStamp?
+    public let reason: String
+    
+    public init(id: UUID = UUID(), memberId: PersonId, startDate: TimeStamp, endDate: TimeStamp?, reason: String) throws {
+        if let end = endDate {
+            guard end >= startDate else {
+                throw PlacementError.invalidDateRange
+            }
+        }
+        self.id = id
+        self.memberId = memberId
+        self.startDate = startDate
+        self.endDate = endDate
+        self.reason = reason
+    }
+}
+
+public struct CollectiveSituations: Codable, Equatable, Sendable {
+    public let homeLossReport: String?
+    public let thirdPartyGuardReport: String?
+}
+
+public struct SeparationChecklist: Codable, Equatable, Sendable {
+    public let adultInPrison: Bool
+    public let adolescentInInternment: Bool
+}
+
+public enum PlacementError: Error {
+    case invalidDateRange
+}

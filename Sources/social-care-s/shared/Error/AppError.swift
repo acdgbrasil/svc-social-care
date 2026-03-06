@@ -122,11 +122,35 @@ public struct AppError: Error, Sendable, Equatable {
 }
 
 /// Helper para permitir que dicionários de contexto sejam Sendable e armazenem valores diversos.
-public struct AnySendable: @unchecked Sendable {
+public struct AnySendable: @unchecked Sendable, Codable {
     public let value: Any
     
     public init(_ value: Any) {
         self.value = value
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        if let encodable = value as? any Encodable {
+            try encodable.encode(to: encoder)
+        } else {
+            try container.encode("\(value)")
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let stringValue = try? container.decode(String.self) {
+            self.value = stringValue
+        } else if let intValue = try? container.decode(Int.self) {
+            self.value = intValue
+        } else if let boolValue = try? container.decode(Bool.self) {
+            self.value = boolValue
+        } else if let dictValue = try? container.decode([String: AnySendable].self) {
+            self.value = dictValue
+        } else {
+            self.value = "unknown"
+        }
     }
 }
 

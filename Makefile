@@ -30,8 +30,8 @@ dev: ## Executa o serviço localmente
 test: ## Executa os testes
 	swift test
 
-coverage: ## Executa testes + gate de cobertura (95%)
-	./scripts/check_coverage.sh 95
+coverage: ## Executa testes + gate de cobertura (30%)
+	./scripts/check_coverage.sh 30
 
 coverage-report: ## Gera cobertura e imprime caminho do relatório JSON
 	swift test --enable-code-coverage

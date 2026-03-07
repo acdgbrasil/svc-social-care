@@ -37,6 +37,11 @@ func configure(_ app: Application) async throws {
 
     app.services = ServiceContainer(db: sqlDb)
 
+    // MARK: - Server
+
+    app.http.server.configuration.hostname = Environment.get("SERVER_HOST") ?? "0.0.0.0"
+    app.http.server.configuration.port = Environment.get("SERVER_PORT").flatMap(Int.init) ?? 8080
+
     // MARK: - Middleware
 
     app.middleware.use(AppErrorMiddleware())

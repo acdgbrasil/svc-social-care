@@ -10,14 +10,16 @@ public struct RegisterAppointmentCommand: ResultCommand {
     public let actionPlan: String?
     public let type: String?
     public let date: Date?
-    
+    public let actorId: String
+
     public init(
         patientId: String,
         professionalId: String,
         summary: String? = nil,
         actionPlan: String? = nil,
         type: String? = nil,
-        date: Date? = nil
+        date: Date? = nil,
+        actorId: String
     ) {
         self.patientId = patientId
         self.professionalId = professionalId
@@ -25,5 +27,6 @@ public struct RegisterAppointmentCommand: ResultCommand {
         self.actionPlan = actionPlan
         self.type = type
         self.date = date
+        self.actorId = actorId
     }
 }

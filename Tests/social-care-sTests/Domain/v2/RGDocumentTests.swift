@@ -9,12 +9,12 @@ struct RGDocumentTests {
     func validInitialization() throws {
         let now = TimeStamp.now
         let rg = try RGDocument(
-            number: "12.345.678-9",
+            number: "12.345.678-2",
             issuingState: "SP",
             issuingAgency: "SSP",
             issueDate: now
         )
-        #expect(rg.number == "123456789")
+        #expect(rg.number == "123456782")
         #expect(rg.issuingState == "SP")
     }
 

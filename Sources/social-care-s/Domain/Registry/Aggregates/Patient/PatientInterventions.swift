@@ -12,6 +12,7 @@ extension Patient {
         type: SocialCareAppointment.AppointmentType,
         summary: String,
         actionPlan: String,
+        actorId: String,
         now: TimeStamp = .now
     ) throws {
         let appointment = try SocialCareAppointment(
@@ -24,12 +25,13 @@ extension Patient {
             now: now
         )
         self.appointments.append(appointment)
-        
+
         self.recordEvent(SocialCareAppointmentRegisteredEvent(
             patientId: self.id.description,
             appointmentId: id.description,
             professionalInChargeId: professionalInChargeId.description,
             type: type.rawValue,
+            actorId: actorId,
             occurredAt: date.date
         ))
     }
@@ -44,6 +46,7 @@ extension Patient {
         referredPersonId: PersonId,
         destinationService: Referral.DestinationService,
         reason: String,
+        actorId: String,
         now: TimeStamp = .now
     ) throws {
         // Regra de Integridade: O alvo do encaminhamento deve ser o titular ou um membro da família.
@@ -61,13 +64,14 @@ extension Patient {
             now: now
         )
         self.referrals.append(referral)
-        
+
         self.recordEvent(ReferralCreatedEvent(
             patientId: self.id.description,
             referralId: id.description,
             referredPersonId: referredPersonId.description,
             destinationService: destinationService.rawValue,
             status: referral.status.rawValue,
+            actorId: actorId,
             occurredAt: date.date
         ))
     }
@@ -83,6 +87,7 @@ extension Patient {
         violationType: RightsViolationReport.ViolationType,
         descriptionOfFact: String,
         actionsTaken: String,
+        actorId: String,
         now: TimeStamp = .now
     ) throws {
         // Regra de Integridade: A vítima deve pertencer à família atendida.
@@ -101,12 +106,13 @@ extension Patient {
             now: now
         )
         self.violationReports.append(report)
-        
+
         self.recordEvent(RightsViolationReportedEvent(
             patientId: self.id.description,
             reportId: id.description,
             victimId: victimId.description,
             violationType: violationType.rawValue,
+            actorId: actorId,
             occurredAt: reportDate.date
         ))
     }
@@ -115,29 +121,22 @@ extension Patient {
 
     /// Valida se uma situação de separação/acolhimento é compatível com o ciclo de vida da família.
     ///
-    /// - Note: Implementado como extensão para permitir regras de validação cruzada entre agregados e módulos.
+    /// - Parameter history: O histórico de acolhimento a ser validado.
+    /// - Parameter now: Data de referência para cálculo de idade.
+    /// - Throws: `PatientError.incompatiblePlacementSituation` ou `.incompatibleGuardianshipSituation`.
     public func validatePlacementCompatibility(_ history: PlacementHistory, now: TimeStamp = .now) throws {
-        // Regra: Internação socioeducativa exige presença de adolescente (12-17 anos)
         if history.separationChecklist.adolescentInInternment {
             let hasAdolescent = self.hasAnyMember(inAgeRange: 12...17, at: now)
             if !hasAdolescent {
-                // Embora o PlacementHistory já possa ter validado isso, o agregado Patient
-                // garante a verdade final sobre a composição familiar atual.
-                // Esta é uma "Deep Validation" de negócio.
+                throw PatientError.incompatiblePlacementSituation
             }
         }
 
-        // Regra: Guarda por terceiros exige presença de menor de idade (0-17 anos)
         if history.collectiveSituations.thirdPartyGuardReport != nil {
             let hasMinor = self.hasAnyMember(inAgeRange: 0...17, at: now)
             if !hasMinor {
-                // Emitir erro ou aviso de inconsistência de domínio
+                throw PatientError.incompatibleGuardianshipSituation
             }
         }
     }
-
-    // MARK: - Private Helpers
-
-    /// Verifica se um PersonId pertence à fronteira do agregado.
-    // containsPerson movido para Patient.swift principal para reuso.
 }

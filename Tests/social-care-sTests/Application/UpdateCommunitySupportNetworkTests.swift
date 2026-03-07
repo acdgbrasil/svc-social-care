@@ -1,0 +1,123 @@
+import Testing
+import Foundation
+@testable import social_care_s
+
+@Suite("UpdateCommunitySupportNetwork Command Handler")
+struct UpdateCommunitySupportNetworkTests {
+
+    @Test("Deve atualizar rede de apoio comunitario com sucesso")
+    func successfulUpdate() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let patient = try PatientFixture.createMinimal()
+        await repo.seed(patient)
+
+        let handler = UpdateCommunitySupportNetworkCommandHandler(repository: repo, eventBus: bus)
+
+        try await handler.handle(UpdateCommunitySupportNetworkCommand(
+            patientId: PatientFixture.defaultPersonId,
+            hasRelativeSupport: true,
+            hasNeighborSupport: false,
+            familyConflicts: "Nenhum",
+            patientParticipatesInGroups: true,
+            familyParticipatesInGroups: false,
+            patientHasAccessToLeisure: true,
+            facesDiscrimination: false,
+            actorId: "actor-1"
+        ))
+
+        let saved = try await repo.find(byPersonId: PersonId(PatientFixture.defaultPersonId))
+        #expect(saved?.communitySupportNetwork?.hasRelativeSupport == true)
+        #expect(saved?.communitySupportNetwork?.patientParticipatesInGroups == true)
+        #expect(saved?.communitySupportNetwork?.facesDiscrimination == false)
+
+        let eventCount = await bus.eventCount()
+        #expect(eventCount >= 1)
+        let saveCount = await repo.saveCallCount
+        #expect(saveCount == 1)
+    }
+
+    @Test("Deve falhar quando paciente nao encontrado")
+    func patientNotFound() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let handler = UpdateCommunitySupportNetworkCommandHandler(repository: repo, eventBus: bus)
+
+        await #expect(throws: UpdateCommunitySupportNetworkError.self) {
+            try await handler.handle(UpdateCommunitySupportNetworkCommand(
+                patientId: UUID().uuidString,
+                hasRelativeSupport: true,
+                hasNeighborSupport: false,
+                familyConflicts: "",
+                patientParticipatesInGroups: false,
+                familyParticipatesInGroups: false,
+                patientHasAccessToLeisure: false,
+                facesDiscrimination: false,
+                actorId: "actor-1"
+            ))
+        }
+
+        let eventCount = await bus.eventCount()
+        #expect(eventCount == 0)
+    }
+
+    @Test("Deve falhar com patientId invalido")
+    func invalidPatientId() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let handler = UpdateCommunitySupportNetworkCommandHandler(repository: repo, eventBus: bus)
+
+        await #expect(throws: UpdateCommunitySupportNetworkError.self) {
+            try await handler.handle(UpdateCommunitySupportNetworkCommand(
+                patientId: "not-a-uuid",
+                hasRelativeSupport: true,
+                hasNeighborSupport: false,
+                familyConflicts: "",
+                patientParticipatesInGroups: false,
+                familyParticipatesInGroups: false,
+                patientHasAccessToLeisure: false,
+                facesDiscrimination: false,
+                actorId: "actor-1"
+            ))
+        }
+    }
+
+    @Test("Actor isolation: chamadas concorrentes no mesmo handler")
+    func concurrentCalls() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+
+        let patient1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let patient2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        await repo.seed(patient1)
+        await repo.seed(patient2)
+
+        let handler = UpdateCommunitySupportNetworkCommandHandler(repository: repo, eventBus: bus)
+
+        async let r1: Void = handler.handle(UpdateCommunitySupportNetworkCommand(
+            patientId: patient1.personId.description,
+            hasRelativeSupport: true, hasNeighborSupport: true,
+            familyConflicts: "", patientParticipatesInGroups: false,
+            familyParticipatesInGroups: false, patientHasAccessToLeisure: false,
+            facesDiscrimination: false, actorId: "actor-1"
+        ))
+        async let r2: Void = handler.handle(UpdateCommunitySupportNetworkCommand(
+            patientId: patient2.personId.description,
+            hasRelativeSupport: false, hasNeighborSupport: false,
+            familyConflicts: "Conflito", patientParticipatesInGroups: true,
+            familyParticipatesInGroups: true, patientHasAccessToLeisure: true,
+            facesDiscrimination: true, actorId: "actor-2"
+        ))
+
+        try await r1
+        try await r2
+
+        let saved1 = try await repo.find(byPersonId: patient1.personId)
+        let saved2 = try await repo.find(byPersonId: patient2.personId)
+        #expect(saved1?.communitySupportNetwork?.hasRelativeSupport == true)
+        #expect(saved2?.communitySupportNetwork?.facesDiscrimination == true)
+
+        let saveCount = await repo.saveCallCount
+        #expect(saveCount == 2)
+    }
+}

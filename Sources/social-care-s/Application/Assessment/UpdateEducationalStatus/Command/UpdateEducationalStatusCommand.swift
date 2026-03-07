@@ -32,10 +32,12 @@ public struct UpdateEducationalStatusCommand: Command {
     public let patientId: String
     public let memberProfiles: [ProfileDraft]
     public let programOccurrences: [OccurrenceDraft]
+    public let actorId: String
 
-    public init(patientId: String, memberProfiles: [ProfileDraft], programOccurrences: [OccurrenceDraft]) {
+    public init(patientId: String, memberProfiles: [ProfileDraft], programOccurrences: [OccurrenceDraft], actorId: String) {
         self.patientId = patientId
         self.memberProfiles = memberProfiles
         self.programOccurrences = programOccurrences
+        self.actorId = actorId
     }
 }

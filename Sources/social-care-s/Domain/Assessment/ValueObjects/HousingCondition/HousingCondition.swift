@@ -107,8 +107,7 @@ public struct HousingCondition: Codable, Equatable, Hashable, Sendable {
         }
 
         guard numberOfBedrooms >= 0 else {
-            // Reaproveitando erro ou criando novo se necessário
-            throw HousingConditionError.negativeRooms 
+            throw HousingConditionError.negativeBedrooms
         }
 
         guard numberOfBathrooms >= 0 else {
@@ -116,7 +115,7 @@ public struct HousingCondition: Codable, Equatable, Hashable, Sendable {
         }
 
         guard numberOfBedrooms <= numberOfRooms else {
-            throw HousingConditionError.bathroomsExceedRooms // TODO: Criar erro específico para bedrooms
+            throw HousingConditionError.bedroomsExceedRooms
         }
 
         self.type = type

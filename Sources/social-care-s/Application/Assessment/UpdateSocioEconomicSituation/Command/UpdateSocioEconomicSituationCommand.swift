@@ -34,9 +34,11 @@ public struct UpdateSocioEconomicSituationCommand: Command {
     
     public let patientId: String
     public let situation: SituationDraft
-    
-    public init(patientId: String, situation: SituationDraft) {
+    public let actorId: String
+
+    public init(patientId: String, situation: SituationDraft, actorId: String) {
         self.patientId = patientId
         self.situation = situation
+        self.actorId = actorId
     }
 }

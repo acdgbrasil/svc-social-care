@@ -10,35 +10,36 @@ struct PatientMutationsTests {
         var patient = try createMinimalPatient()
         let initialVersion = patient.version
         
-        patient.updateHousingCondition(nil)
+        patient.updateHousingCondition(nil, actorId: "test-actor")
         #expect(patient.version == initialVersion + 1)
         
-        patient.updateWorkAndIncome(nil)
+        patient.updateWorkAndIncome(nil, actorId: "test-actor")
         #expect(patient.version == initialVersion + 2)
         
-        patient.updateEducationalStatus(nil)
+        patient.updateEducationalStatus(nil, actorId: "test-actor")
         #expect(patient.version == initialVersion + 3)
     }
 
-    @Test("Deve identificar membros na fronteira (belongsToBoundary)")
+    @Test("Deve identificar membros na fronteira (containsPerson)")
     func boundaryCheck() throws {
         let pId = PersonId()
         let familyId = PersonId()
         let prId = try LookupId(UUID().uuidString)
-        
-        let prMember = try FamilyMember(personId: familyId, relationshipId: prId, isPrimaryCaregiver: true, residesWithPatient: true, birthDate: .now)
-        
+
+        let prMember = FamilyMember(personId: familyId, relationshipId: prId, isPrimaryCaregiver: true, residesWithPatient: true, birthDate: .now)
+
         let patient = try Patient(
-            id: PatientId(), 
-            personId: pId, 
-            diagnoses: [try createDiagnosis()], 
-            familyMembers: [prMember], 
-            prRelationshipId: prId
+            id: PatientId(),
+            personId: pId,
+            diagnoses: [try createDiagnosis()],
+            familyMembers: [prMember],
+            prRelationshipId: prId,
+            actorId: "test-actor"
         )
-        
-        #expect(patient.belongsToBoundary(pId) == true)
-        #expect(patient.belongsToBoundary(familyId) == true)
-        #expect(patient.belongsToBoundary(PersonId()) == false)
+
+        #expect(patient.containsPerson(pId) == true)
+        #expect(patient.containsPerson(familyId) == true)
+        #expect(patient.containsPerson(PersonId()) == false)
     }
 
     @Test("Deve contar membros por faixa etária corretamente")
@@ -50,15 +51,16 @@ struct PatientMutationsTests {
         let m2 = try createMember(birth: "2010-01-01T00:00:00Z", rid: try LookupId(UUID().uuidString)) // 14 anos
         
         let patient = try Patient(
-            id: PatientId(), 
-            personId: PersonId(), 
-            diagnoses: [try createDiagnosis()], 
-            familyMembers: [m1, m2], 
-            prRelationshipId: prId
+            id: PatientId(),
+            personId: PersonId(),
+            diagnoses: [try createDiagnosis()],
+            familyMembers: [m1, m2],
+            prRelationshipId: prId,
+            actorId: "test-actor"
         )
         
-        #expect(patient.countInAgeRange(min: 0, max: 10, now: now) == 1)
-        #expect(patient.countInAgeRange(min: 11, max: 20, now: now) == 1)
+        #expect(patient.countMembers(inAgeRange: 0...10, at: now) == 1)
+        #expect(patient.countMembers(inAgeRange: 11...20, at: now) == 1)
     }
 }
 
@@ -67,8 +69,8 @@ struct PatientMutationsTests {
 private func createMinimalPatient() throws -> Patient {
     let pId = PersonId()
     let prId = try LookupId(UUID().uuidString)
-    let prMember = try FamilyMember(personId: pId, relationshipId: prId, isPrimaryCaregiver: true, residesWithPatient: true, birthDate: .now)
-    return try Patient(id: PatientId(), personId: pId, diagnoses: [try createDiagnosis()], familyMembers: [prMember], prRelationshipId: prId)
+    let prMember = FamilyMember(personId: pId, relationshipId: prId, isPrimaryCaregiver: true, residesWithPatient: true, birthDate: .now)
+    return try Patient(id: PatientId(), personId: pId, diagnoses: [try createDiagnosis()], familyMembers: [prMember], prRelationshipId: prId, actorId: "test-actor")
 }
 
 private func createDiagnosis() throws -> Diagnosis {
@@ -76,11 +78,11 @@ private func createDiagnosis() throws -> Diagnosis {
 }
 
 private func createMember(birth: String, rid: LookupId) throws -> FamilyMember {
-    return try FamilyMember(
-        personId: PersonId(), 
-        relationshipId: rid, 
-        isPrimaryCaregiver: false, 
-        residesWithPatient: true, 
+    return FamilyMember(
+        personId: PersonId(),
+        relationshipId: rid,
+        isPrimaryCaregiver: false,
+        residesWithPatient: true,
         birthDate: try TimeStamp(iso: birth)
     )
 }

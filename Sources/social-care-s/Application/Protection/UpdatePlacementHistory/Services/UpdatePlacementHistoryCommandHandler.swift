@@ -33,13 +33,6 @@ public actor UpdatePlacementHistoryCommandHandler: UpdatePlacementHistoryUseCase
                 )
             }
 
-            if command.separationChecklist.adolescentInInternment {
-                let hasAdolescent = patient.hasAnyMember(inAgeRange: 12...17)
-                guard hasAdolescent else {
-                    throw UpdatePlacementHistoryError.incompatibleSeparationSituation
-                }
-            }
-
             let history = PlacementHistory(
                 familyId: patient.id,
                 individualPlacements: registries,
@@ -53,7 +46,8 @@ public actor UpdatePlacementHistoryCommandHandler: UpdatePlacementHistoryUseCase
                 )
             )
 
-            patient.updatePlacementHistory(history)
+            try patient.validatePlacementCompatibility(history)
+            patient.updatePlacementHistory(history, actorId: command.actorId)
 
             try await repository.save(patient)
             try await eventBus.publish(patient.uncommittedEvents)

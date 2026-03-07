@@ -1,7 +1,7 @@
 import Foundation
 
 /// Erros do Query Orchestrator de cadastro. Propaga erros dos use cases internos sem expor detalhes de implementação.
-public enum PatientRegistrationError: Error, Sendable {
+public enum PatientRegistrationError: Error, Sendable, Equatable {
     /// Erro ao registrar o paciente (Parte 1 do formulário).
     case registrationFailed(RegisterPatientError)
     /// Erro ao adicionar um membro familiar.
@@ -17,8 +17,16 @@ extension PatientRegistrationError: AppErrorConvertible {
         case .registrationFailed(let e):
             return e.asAppError
         case .familyMemberFailed(let memberId, let e):
-            let base = e.asAppError
-            _ = memberId // contexto disponível para enriquecimento futuro
+            var base = e.asAppError
+            base = AppError(
+                code: base.code,
+                message: base.message,
+                bc: base.bc, module: base.module, kind: base.kind,
+                context: base.context.merging(["failedMemberId": AnySendable(memberId)]) { _, new in new },
+                safeContext: base.safeContext,
+                observability: base.observability,
+                http: base.http
+            )
             return base
         }
     }

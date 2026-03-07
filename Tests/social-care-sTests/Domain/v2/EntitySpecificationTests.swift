@@ -80,11 +80,12 @@ struct EntitySpecificationTests {
             let prMember = try FamilyMember(personId: pId, relationshipId: prId, isPrimaryCaregiver: true, residesWithPatient: true, birthDate: .now)
             
             let patient = try Patient(
-                id: appId, 
-                personId: pId, 
-                diagnoses: [diag], 
+                id: appId,
+                personId: pId,
+                diagnoses: [diag],
                 familyMembers: [prMember],
                 prRelationshipId: prId,
+                actorId: "test-actor",
                 now: .now
             )
             
@@ -104,11 +105,12 @@ struct EntitySpecificationTests {
             
             #expect(throws: PatientError.mustHaveExactlyOnePrimaryReference) {
                 try Patient(
-                    id: PatientId(), 
-                    personId: pId, 
-                    diagnoses: [diag], 
+                    id: PatientId(),
+                    personId: pId,
+                    diagnoses: [diag],
                     familyMembers: [member],
-                    prRelationshipId: prId
+                    prRelationshipId: prId,
+                    actorId: "test-actor"
                 )
             }
         }

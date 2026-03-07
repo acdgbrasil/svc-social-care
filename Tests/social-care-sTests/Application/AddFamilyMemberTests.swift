@@ -1,0 +1,123 @@
+import Testing
+import Foundation
+@testable import social_care_s
+
+@Suite("AddFamilyMember Command Handler")
+struct AddFamilyMemberTests {
+
+    private static let newMemberId = "880e8400-e29b-41d4-a716-446655440002"
+
+    @Test("Deve adicionar membro familiar com sucesso")
+    func successfulAddition() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let patient = try PatientFixture.createMinimal()
+        await repo.seed(patient)
+
+        let handler = AddFamilyMemberCommandHandler(
+            patientRepository: repo, eventBus: bus, lookupValidator: AllowAllLookupValidator()
+        )
+
+        let prRelId = patient.familyMembers.first!.relationshipId.description
+
+        try await handler.handle(AddFamilyMemberCommand(
+            patientPersonId: PatientFixture.defaultPersonId,
+            memberPersonId: Self.newMemberId,
+            relationship: UUID().uuidString,
+            isResiding: true,
+            isCaregiver: false,
+            hasDisability: false,
+            requiredDocuments: [],
+            birthDate: Date(timeIntervalSince1970: 1_000_000_000),
+            prRelationshipId: prRelId,
+            actorId: "actor-1"
+        ))
+
+        let saved = try await repo.find(byPersonId: PersonId(PatientFixture.defaultPersonId))
+        #expect(saved?.familyMembers.count == 2)
+
+        let eventCount = await bus.eventCount()
+        #expect(eventCount >= 1)
+    }
+
+    @Test("Deve falhar quando membro ja existe na familia")
+    func duplicateMember() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let patient = try PatientFixture.createMinimal()
+        await repo.seed(patient)
+
+        let handler = AddFamilyMemberCommandHandler(
+            patientRepository: repo, eventBus: bus, lookupValidator: AllowAllLookupValidator()
+        )
+
+        let prRelId = patient.familyMembers.first!.relationshipId.description
+
+        await #expect(throws: AddFamilyMemberError.self) {
+            try await handler.handle(AddFamilyMemberCommand(
+                patientPersonId: PatientFixture.defaultPersonId,
+                memberPersonId: PatientFixture.defaultPersonId,
+                relationship: UUID().uuidString,
+                isResiding: true,
+                isCaregiver: false,
+                hasDisability: false,
+                requiredDocuments: [],
+                birthDate: Date(),
+                prRelationshipId: prRelId,
+                actorId: "actor-1"
+            ))
+        }
+    }
+
+    @Test("Deve falhar quando paciente nao encontrado")
+    func patientNotFound() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let handler = AddFamilyMemberCommandHandler(
+            patientRepository: repo, eventBus: bus, lookupValidator: AllowAllLookupValidator()
+        )
+
+        await #expect(throws: AddFamilyMemberError.self) {
+            try await handler.handle(AddFamilyMemberCommand(
+                patientPersonId: UUID().uuidString,
+                memberPersonId: UUID().uuidString,
+                relationship: UUID().uuidString,
+                isResiding: true,
+                isCaregiver: false,
+                hasDisability: false,
+                requiredDocuments: [],
+                birthDate: Date(),
+                prRelationshipId: UUID().uuidString,
+                actorId: "actor-1"
+            ))
+        }
+    }
+
+    @Test("Deve falhar com lookup de parentesco invalido")
+    func invalidRelationshipLookup() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let lookup = InMemoryLookupValidator()
+        let patient = try PatientFixture.createMinimal()
+        await repo.seed(patient)
+
+        let handler = AddFamilyMemberCommandHandler(
+            patientRepository: repo, eventBus: bus, lookupValidator: lookup
+        )
+
+        await #expect(throws: AddFamilyMemberError.self) {
+            try await handler.handle(AddFamilyMemberCommand(
+                patientPersonId: PatientFixture.defaultPersonId,
+                memberPersonId: Self.newMemberId,
+                relationship: UUID().uuidString,
+                isResiding: true,
+                isCaregiver: false,
+                hasDisability: false,
+                requiredDocuments: [],
+                birthDate: Date(),
+                prRelationshipId: UUID().uuidString,
+                actorId: "actor-1"
+            ))
+        }
+    }
+}

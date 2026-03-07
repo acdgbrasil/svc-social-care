@@ -89,11 +89,6 @@ public struct Patient: EventSourcedAggregate, EventSourcedAggregateInternal {
 
     // MARK: - Computed Analytics (Domain Projections)
 
-    /// Retorna todos os membros da família cadastrados.
-    public var allFamilyMembers: [FamilyMember] {
-        return familyMembers
-    }
-
     /// Conta quantos membros estão em uma determinada faixa etária.
     public func countMembers(inAgeRange range: ClosedRange<Int>, at date: TimeStamp = .now) -> Int {
         return familyMembers.filter { member in
@@ -120,7 +115,7 @@ public struct Patient: EventSourcedAggregate, EventSourcedAggregateInternal {
     
     /// Adiciona um evento de domínio à lista de não persistidos.
     ///
-    /// - Parameter event: O evento que representa uma mudança de estado significativa.
+    /// - Note: Detalhe de implementacao de `EventSourcedAggregateInternal`. Prefira usar `recordEvent(_:)`.
     public mutating func addEvent(_ event: any DomainEvent) {
         self.uncommittedEvents.append(event)
         self.version += 1

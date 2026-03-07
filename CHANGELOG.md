@@ -4,51 +4,60 @@ Todas as mudancas relevantes deste servico serao registradas aqui.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-03-07
+
 ### Adicionado
-- Implementação da Fase 0.3: Remoção do caractere `+` de todos os nomes de arquivos, adotando o padrão CamelCase (ex: `PatientFamily.swift`).
-- Refatoração do Read Model: Queries de leitura (`GetPatientById`, `GetPatientByPersonId`) convertidas para o protocolo `QueryHandling`.
-- Conclusão da Fase 0.2: Todos os serviços de comando de `Application` migrados para `actor CommandHandler`, garantindo isolamento de estado e conformidade com CQRS.
-- Protocolos de Use Case padronizados para herdar de `CommandHandling` ou `ResultCommandHandling` com `associatedtype`.
-- Renomeação sistemática de `execute(command:)` para `handle(_:)` em toda a camada de aplicação para melhor fluência Swift.
-- Infraestrutura CQRS estabelecida com novos protocolos base (`Command`, `Query`, `CommandHandling`) em `shared`.
-- Implementação da Fase 0.1: Refatoração completa dos Value Objects do Kernel (`CPF`, `NIS`, `CEP`, `RGDocument`) para padrões de acrônimos uppercase e Inglês.
-- Atualização de referências cruzadas em `Address`, `CivilDocuments`, `SocialIdentity`, `Patient` e todos os serviços de `Application`.
-- Correção de tipagem em `PatientRepository` e `SQLKitPatientRepository` para usar `PatientId` em vez de `UUID`.
-- Suítes de Teste (TDD) para refatoração do Kernel: `CPFTests`, `NISTests`, `CEPTests` e `RGDocumentTests`.
-- Auditoria de Refinamento de Domínio e Application em `handbook/reports/DOMAIN_APPLICATION_REFINEMENT_AUDIT.md`.
-- Extensão `SQLDatabase+Transaction` para suporte a transações atômicas nativas e via SQL bruto.
-- Use Case `GetPatientByIdService` para leitura do prontuário completo.
-- Use Case `GetPatientByPersonIdService` para integração via PersonId público.
-- Use Case `RemoveFamilyMemberService` para remoção de membros da família.
-- Rota `DELETE /patients/{id}/family-members/{memberId}` implementada (G3).
-- Migration `2026_03_06_AddV2AssessmentFields` para suporte a campos v2.0 (Trabalho, Saúde, Educação).
-- `GlobalErrorMiddleware` para padronização de respostas de erro em toda a API.
-- Endpoints de Health Check (`/health` e `/ready`) para orquestração em Kubernetes.
-- `StandardResponse<T>` wrapper para padronização de todas as respostas de sucesso (G8).
+- Camada HTTP completa com Vapor 4: 6 controllers, 23 rotas
+- `HealthController` com endpoints `/health` (liveness) e `/ready` (readiness com check de DB)
+- `PatientController` com 8 rotas (CRUD de paciente, familia, caregiver, social identity, audit trail)
+- `AssessmentController` com 7 rotas PUT para modulos de avaliacao
+- `ProtectionController` com 3 rotas (placement history, violation reports, referrals)
+- `CareController` com 2 rotas (appointments, intake info)
+- `LookupController` com GET generico para 13 tabelas de dominio
+- `StandardResponse<T>` wrapper com `meta.timestamp` em todos os endpoints de sucesso
+- `AppErrorMiddleware` para padronizacao global de respostas de erro
+- `MetadataValidator` para validacao dinamica contra flags em lookup tables (`dominio_tipo_beneficio`, `dominio_tipo_violacao`)
+- `CrossValidator` para validacoes cruzadas (saude/sexo-gestante, acolhimento/idade)
+- `GracefulShutdownHandler` compativel com SIGTERM do Kubernetes
+- Calculos automaticos no GET: densidade habitacional, 4 indicadores financeiros, perfil etario (8 faixas), vulnerabilidades educacionais (6 indicadores)
+- Audit trail com before/after diff nos eventos de assessment e filtro por `?eventType=`
+- Obrigatoriedade de `X-Actor-Id` header em todas as mutations
+- Migration `NormalizeSchema`: JSONB blobs normalizados para colunas diretas + 8 tabelas filhas + 5 novas lookup tables com metadata
+- Migration `CreateAuditTrail`: tabela audit_trail com actor_id
+- Migration `AddPerformanceIndexes`: indices de performance
+- `docker-compose.yml` para desenvolvimento local (PostgreSQL + app)
+- `.env.example` completo com todas as variaveis de ambiente
+- 17 request DTOs com `toCommand(actorId:)`
+- Response DTOs com `computedAnalytics` (housing, financial, ageProfile, educationalVulnerabilities)
+- Suite de testes completa: **135 testes em 38 suites** cobrindo Domain, Application e IO
+- Testes de Application: 17 suites para todos os command handlers (RegisterPatient, AddFamilyMember, RemoveFamilyMember, AssignPrimaryCaregiver, UpdateSocialIdentity, UpdateHousingCondition, UpdateSocioEconomicSituation, UpdateWorkAndIncome, UpdateEducationalStatus, UpdateHealthStatus, UpdateCommunitySupportNetwork, UpdateSocialHealthSummary, UpdatePlacementHistory, ReportRightsViolation, CreateReferral, RegisterAppointment, RegisterIntakeInfo)
+- Testes de IO: `AuditTrailTests` (DomainEventRegistry, outbox mapper, AuditTrailEntryResponse, round-trip encode/decode)
+- Test doubles: `InMemoryPatientRepository`, `InMemoryEventBus`, `InMemoryLookupValidator`, `AllowAllLookupValidator`, `PatientFixture`
+- Testes de Domain: `LookupIdTests`, `LookupValidatingTests`, `TimeStampAgeTests`, `DomainAnalyticsSpecificationTests`, `AnalyticsConsistencyTests`
 
 ### Alterado
-- Rotas HTTP migradas para o padrão Flat (`/patients/{id}/...`) em conformidade com as necessidades do front-end.
-- DTOs e caminhos de API agora utilizam Inglês como idioma padrão.
-- `SQLKitPatientRepository` agora utiliza transações SQL no método `save()` garantindo consistência Agregado-Outbox.
-- `SQLKitMigrationRunner` agora é resiliente e utiliza transações por unidade de migração.
-- `PatientDatabaseMapper` e `PatientModel` atualizados para persistência total do domínio v2.0.
-- `PatientQueryDTO` e testes unitários corrigidos para refletir nomes de propriedades do domínio.
-- `SQLKitOutboxRelay` otimizado com processamento em lote e marcação de processamento (G16).
+- Schema normalizado: 13 JSONB blobs convertidos para ~50 colunas escalares + 8 tabelas filhas relacionais
+- `PatientDatabaseMapper` reescrito para schema normalizado (colunas diretas + tabelas filhas)
+- `PatientDatabaseModels` reescrito com modelos para 8 tabelas filhas
+- `SQLKitPatientRepository.save()` atualizado para persistir tabelas filhas (delete-and-insert)
+- `SQLKitOutboxRelay` otimizado com processamento em lote, audit trail automatico e `processed_at`
+- `README.md` atualizado para refletir estado completo do servico (135 testes, 38 suites)
+- `DomainEventRegistryBootstrap` expandido para 17 eventos
 
 ## [0.4.0] - 2026-02-24
 - Implementacao da camada de **Infrastructure** com **SQLKit** e **PostgresKit**.
 - Implementacao do **Pattern Transactional Outbox** para garantia de entrega de eventos.
-- Criacao do **SQLKitOutboxRelay** (Actor) para polling assíncrono e distribuicao via **AsyncStream**.
-- Implementacao de **DomainEventRegistry** para decodificacao segura de eventos heterogêneos.
-- Sistema de **Migrations** programático e idempotente para PostgreSQL.
-- Refatoracao de eventos de domínio para suporte a `Codable`.
+- Criacao do **SQLKitOutboxRelay** (Actor) para polling assincrono e distribuicao via **AsyncStream**.
+- Implementacao de **DomainEventRegistry** para decodificacao segura de eventos heterogeneos.
+- Sistema de **Migrations** programatico e idempotente para PostgreSQL.
+- Refatoracao de eventos de dominio para suporte a `Codable`.
 
 ## [0.3.0] - 2026-02-24
 - Migracao completa da camada de **Application** de TypeScript para Swift 6.
 - Implementacao de 8 Casos de Uso com *Structured Concurrency* e *Typed Throws*.
 - Refatoracao de Mappers de erro para um padrao centralizado (`mapError`).
-- Suite de testes de aplicacao concluida com 100% de cobertura lógica nos serviços.
-- Alcance do nível **Platinum (95.95%)** de confiabilidade global do projeto.
+- Suite de testes de aplicacao concluida com 100% de cobertura logica nos servicos.
+- Alcance do nivel **Platinum (95.95%)** de confiabilidade global do projeto.
 - Testes de cobertura adicionados para todos os Enums de erro e Value Objects (PatientId).
 
 ## [0.2.0] - 2026-02-24
@@ -58,7 +67,6 @@ Todas as mudancas relevantes deste servico serao registradas aqui.
 - Migracao do Dockerfile para build e runtime baseados em Swift.
 - Atualizacao de `.dockerignore` e `.gitignore` para artefatos Swift.
 - Dominio da aplicacao concluido (Aggregates, Entities, Value Objects e testes).
-- Proximos passos: camada de Application e integracoes com database/servidores.
 
 ## [0.1.0] - 2026-02-22
 - Baseline inicial de repositorio ACDG.

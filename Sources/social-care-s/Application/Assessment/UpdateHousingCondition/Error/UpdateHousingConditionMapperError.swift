@@ -10,7 +10,9 @@ extension UpdateHousingConditionCommandHandler {
         if let e = error as? HousingConditionError {
             switch e {
             case .negativeRooms: return .negativeRooms
+            case .negativeBedrooms: return .negativeBedrooms
             case .negativeBathrooms: return .negativeBathrooms
+            case .bedroomsExceedRooms: return .bedroomsExceedRooms
             case .bathroomsExceedRooms: return .bathroomsExceedRooms
             }
         }

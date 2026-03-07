@@ -37,7 +37,7 @@ public actor RegisterIntakeInfoCommandHandler: RegisterIntakeInfoUseCase {
                 )
             }
 
-            let intakeInfo = IngressInfo(
+            let intakeInfo = try IngressInfo(
                 ingressTypeId: ingressTypeId,
                 originName: command.originName,
                 originContact: command.originContact,
@@ -51,7 +51,7 @@ public actor RegisterIntakeInfoCommandHandler: RegisterIntakeInfoUseCase {
             }
 
             // 5. Domain Logic
-            patient.updateIntakeInfo(intakeInfo)
+            patient.updateIntakeInfo(intakeInfo, actorId: command.actorId)
 
             // 6. Persistence & Events
             try await repository.save(patient)

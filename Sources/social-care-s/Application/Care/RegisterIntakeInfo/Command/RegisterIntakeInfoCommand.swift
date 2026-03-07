@@ -17,13 +17,15 @@ public struct RegisterIntakeInfoCommand: Command {
     public let originContact: String?
     public let serviceReason: String
     public let linkedSocialPrograms: [ProgramLinkDraft]
+    public let actorId: String
 
-    public init(patientId: String, ingressTypeId: String, originName: String?, originContact: String?, serviceReason: String, linkedSocialPrograms: [ProgramLinkDraft]) {
+    public init(patientId: String, ingressTypeId: String, originName: String?, originContact: String?, serviceReason: String, linkedSocialPrograms: [ProgramLinkDraft], actorId: String) {
         self.patientId = patientId
         self.ingressTypeId = ingressTypeId
         self.originName = originName
         self.originContact = originContact
         self.serviceReason = serviceReason
         self.linkedSocialPrograms = linkedSocialPrograms
+        self.actorId = actorId
     }
 }

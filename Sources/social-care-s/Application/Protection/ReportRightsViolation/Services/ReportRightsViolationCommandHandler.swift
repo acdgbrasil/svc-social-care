@@ -37,6 +37,7 @@ public actor ReportRightsViolationCommandHandler: ReportRightsViolationUseCase {
                 violationType: violationType,
                 descriptionOfFact: command.descriptionOfFact,
                 actionsTaken: command.actionsTaken ?? "",
+                actorId: command.actorId,
                 now: .now
             )
             

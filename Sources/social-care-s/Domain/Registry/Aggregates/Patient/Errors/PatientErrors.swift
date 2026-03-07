@@ -12,8 +12,8 @@ public enum PatientError: Error, Sendable, Equatable {
     // Versão 2.0 - Regras de PR e Ciclo de Vida
     case mustHaveExactlyOnePrimaryReference
     case multiplePrimaryReferencesNotAllowed
-    case incompatibleAfastamentoSituaton
-    case incompatibleGuardaSituation
+    case incompatiblePlacementSituation
+    case incompatibleGuardianshipSituation
 }
 
 extension PatientError: AppErrorConvertible {
@@ -41,10 +41,10 @@ extension PatientError: AppErrorConvertible {
             return appFailure("008", "A família deve possuir exatamente uma Pessoa de Referência (código 01).")
         case .multiplePrimaryReferencesNotAllowed:
             return appFailure("009", "Não é permitido ter mais de uma Pessoa de Referência na mesma família.")
-        case .incompatibleAfastamentoSituaton:
-            return appFailure("010", "A situação de afastamento informada é incompatível com a composição etária da família.")
-        case .incompatibleGuardaSituation:
-            return appFailure("011", "O relato de guarda de terceiros é incompatível com a composição etária da família.")
+        case .incompatiblePlacementSituation:
+            return appFailure("010", "A situacao de afastamento informada e incompativel com a composicao etaria da familia.")
+        case .incompatibleGuardianshipSituation:
+            return appFailure("011", "O relato de guarda de terceiros e incompativel com a composicao etaria da familia.")
         }
     }
 

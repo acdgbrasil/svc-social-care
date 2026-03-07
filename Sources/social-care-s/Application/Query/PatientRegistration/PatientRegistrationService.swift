@@ -30,7 +30,8 @@ public struct PatientRegistrationService: PatientRegistering {
                         birthDate: $0.birthDate, phone: $0.phone
                     )
                 },
-                prRelationshipId: request.prRelationshipId
+                prRelationshipId: request.prRelationshipId,
+                actorId: request.actorId
             )
             patientId = try await registerPatient.handle(command)
         } catch let error as RegisterPatientError {

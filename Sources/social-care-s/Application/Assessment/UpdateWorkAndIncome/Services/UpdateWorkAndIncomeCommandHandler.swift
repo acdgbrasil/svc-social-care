@@ -26,7 +26,7 @@ public actor UpdateWorkAndIncomeCommandHandler: UpdateWorkAndIncomeUseCase {
 
             // 3. Build VOs
             let incomes = try command.individualIncomes.map { draft in
-                WorkIncomeVO(
+                try WorkIncomeVO(
                     memberId: try PersonId(draft.memberId),
                     occupationId: try LookupId(draft.occupationId),
                     hasWorkCard: draft.hasWorkCard,
@@ -55,7 +55,7 @@ public actor UpdateWorkAndIncomeCommandHandler: UpdateWorkAndIncomeUseCase {
             )
 
             // 5. Domain Logic
-            patient.updateWorkAndIncome(workAndIncome)
+            patient.updateWorkAndIncome(workAndIncome, actorId: command.actorId)
 
             // 6. Persistence & Events
             try await repository.save(patient)

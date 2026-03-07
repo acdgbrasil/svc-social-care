@@ -51,7 +51,7 @@ O `social-care` evoluiu de um simples cadastro para um **núcleo de inteligênci
 
 ### I/O (Infrastructure)
 - **SQLKit Adapters:** Persistência relacional e consulta às tabelas de Lookup.
-- **Hummingbird Controllers:** Exposição de endpoints REST seguindo os contratos unificados.
+- **Vapor Controllers:** Exposição de endpoints REST seguindo os contratos unificados.
 
 ---
 

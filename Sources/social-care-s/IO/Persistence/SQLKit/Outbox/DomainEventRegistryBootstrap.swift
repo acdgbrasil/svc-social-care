@@ -10,5 +10,15 @@ extension DomainEventRegistry {
         self.register(ReferralCreatedEvent.self)
         self.register(RightsViolationReportedEvent.self)
         self.register(SocialCareAppointmentRegisteredEvent.self)
+        self.register(HousingConditionUpdatedEvent.self)
+        self.register(SocioEconomicSituationUpdatedEvent.self)
+        self.register(WorkAndIncomeUpdatedEvent.self)
+        self.register(EducationalStatusUpdatedEvent.self)
+        self.register(HealthStatusUpdatedEvent.self)
+        self.register(CommunitySupportNetworkUpdatedEvent.self)
+        self.register(SocialHealthSummaryUpdatedEvent.self)
+        self.register(SocialIdentityUpdatedEvent.self)
+        self.register(PlacementHistoryUpdatedEvent.self)
+        self.register(IntakeInfoUpdatedEvent.self)
     }
 }

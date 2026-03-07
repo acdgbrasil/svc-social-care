@@ -41,6 +41,7 @@ public actor RegisterAppointmentCommandHandler: RegisterAppointmentUseCase {
                 type: type,
                 summary: command.summary ?? "",
                 actionPlan: command.actionPlan ?? "",
+                actorId: command.actorId,
                 now: .now
             )
             

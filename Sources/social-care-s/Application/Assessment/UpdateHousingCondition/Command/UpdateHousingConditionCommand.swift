@@ -56,9 +56,11 @@ public struct UpdateHousingConditionCommand: Command {
     
     public let patientId: String
     public let condition: ConditionDraft
-    
-    public init(patientId: String, condition: ConditionDraft) {
+    public let actorId: String
+
+    public init(patientId: String, condition: ConditionDraft, actorId: String) {
         self.patientId = patientId
         self.condition = condition
+        self.actorId = actorId
     }
 }

@@ -9,9 +9,38 @@ public struct GetPatientByPersonIdQuery: Query {
     }
 }
 
-public enum GetPatientByPersonIdError: Error, Equatable {
+public enum GetPatientByPersonIdError: Error, Sendable, Equatable {
     case patientNotFound
     case invalidPersonIdFormat
+}
+
+extension GetPatientByPersonIdError: AppErrorConvertible {
+    private static let bc = "SOCIAL"
+    private static let module = "social-care/query"
+    private static let codePrefix = "QPP"
+
+    public var asAppError: AppError {
+        switch self {
+        case .patientNotFound:
+            return AppError(
+                code: "\(Self.codePrefix)-001",
+                message: "Patient not found for the given person ID.",
+                bc: Self.bc, module: Self.module, kind: "PatientNotFound",
+                context: [:], safeContext: [:],
+                observability: .init(category: .dataConsistencyIncident, severity: .error, fingerprint: ["\(Self.codePrefix)-001"], tags: ["layer": "query"]),
+                http: 404
+            )
+        case .invalidPersonIdFormat:
+            return AppError(
+                code: "\(Self.codePrefix)-002",
+                message: "The person ID format is invalid.",
+                bc: Self.bc, module: Self.module, kind: "InvalidPersonIdFormat",
+                context: [:], safeContext: [:],
+                observability: .init(category: .dataConsistencyIncident, severity: .error, fingerprint: ["\(Self.codePrefix)-002"], tags: ["layer": "query"]),
+                http: 400
+            )
+        }
+    }
 }
 
 public struct GetPatientByPersonIdQueryHandler: QueryHandling {

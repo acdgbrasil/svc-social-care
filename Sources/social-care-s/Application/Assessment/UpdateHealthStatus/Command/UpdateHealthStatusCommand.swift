@@ -32,12 +32,14 @@ public struct UpdateHealthStatusCommand: Command {
     public let gestatingMembers: [PregnantDraft]
     public let constantCareNeeds: [String]
     public let foodInsecurity: Bool
+    public let actorId: String
 
-    public init(patientId: String, deficiencies: [DeficiencyDraft], gestatingMembers: [PregnantDraft], constantCareNeeds: [String], foodInsecurity: Bool) {
+    public init(patientId: String, deficiencies: [DeficiencyDraft], gestatingMembers: [PregnantDraft], constantCareNeeds: [String], foodInsecurity: Bool, actorId: String) {
         self.patientId = patientId
         self.deficiencies = deficiencies
         self.gestatingMembers = gestatingMembers
         self.constantCareNeeds = constantCareNeeds
         self.foodInsecurity = foodInsecurity
+        self.actorId = actorId
     }
 }

@@ -12,7 +12,9 @@ public enum UpdateHousingConditionError: Error, Sendable, Equatable {
     case invalidWasteCollection(String)
     case invalidAccessibilityLevel(String)
     case negativeRooms
+    case negativeBedrooms
     case negativeBathrooms
+    case bedroomsExceedRooms
     case bathroomsExceedRooms
     case persistenceMappingFailure(issues: [String])
 }
@@ -43,13 +45,17 @@ extension UpdateHousingConditionError: AppErrorConvertible {
         case .invalidAccessibilityLevel(let value):
             return appFailure("009", kind: "InvalidAccessibilityLevel", "Nível de acessibilidade inválido: \(value)", category: .domainRuleViolation, severity: .error, http: 400)
         case .negativeRooms:
-            return appFailure("010", kind: "NegativeRooms", "O número de cômodos não pode ser negativo.", category: .domainRuleViolation, severity: .warning, http: 422)
+            return appFailure("010", kind: "NegativeRooms", "O numero de comodos nao pode ser negativo.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .negativeBedrooms:
+            return appFailure("011", kind: "NegativeBedrooms", "O numero de dormitorios nao pode ser negativo.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .negativeBathrooms:
-            return appFailure("011", kind: "NegativeBathrooms", "O número de banheiros não pode ser negativo.", category: .domainRuleViolation, severity: .warning, http: 422)
+            return appFailure("012", kind: "NegativeBathrooms", "O numero de banheiros nao pode ser negativo.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .bedroomsExceedRooms:
+            return appFailure("013", kind: "BedroomsExceedRooms", "O numero de dormitorios nao pode exceder o total de comodos.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .bathroomsExceedRooms:
-            return appFailure("012", kind: "BathroomsExceedRooms", "O número de banheiros não pode exceder o total de cômodos.", category: .domainRuleViolation, severity: .warning, http: 422)
+            return appFailure("014", kind: "BathroomsExceedRooms", "O numero de banheiros nao pode exceder o total de comodos.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .persistenceMappingFailure(let issues):
-            return appFailure("013", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar as condições de moradia.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
+            return appFailure("015", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar as condicoes de moradia.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }
     }
 

@@ -22,7 +22,7 @@ public actor RemoveFamilyMemberCommandHandler: RemoveFamilyMemberUseCase {
             }
             
             // 3. Domain Logic
-            try patient.removeMember(identifiedBy: memberPersonId, at: TimeStamp.now)
+            try patient.removeMember(identifiedBy: memberPersonId, actorId: command.actorId, at: TimeStamp.now)
             
             // 4. Persistence & Events
             try await repository.save(patient)

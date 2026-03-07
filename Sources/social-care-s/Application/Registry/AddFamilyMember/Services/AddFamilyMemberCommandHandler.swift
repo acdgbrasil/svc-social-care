@@ -30,14 +30,14 @@ public actor AddFamilyMemberCommandHandler: AddFamilyMemberUseCase {
                 throw AddFamilyMemberError.patientNotFound
             }
 
-            // 3. Verificação de unicidade dentro da família
+            // 4. Verificação de unicidade dentro da família
             if patient.familyMembers.contains(where: { $0.personId == memberPersonId }) {
                 throw AddFamilyMemberError.memberAlreadyExists(memberPersonId.description)
             }
 
-            // 4. Criação da Entidade de Domínio (Member)
+            // 5. Criação da Entidade de Domínio (Member)
             let docs = command.requiredDocuments.compactMap { RequiredDocument(rawValue: $0) }
-            let member = try FamilyMember(
+            let member = FamilyMember(
                 personId: memberPersonId,
                 relationshipId: relationshipId,
                 isPrimaryCaregiver: command.isCaregiver,
@@ -47,11 +47,11 @@ public actor AddFamilyMemberCommandHandler: AddFamilyMemberUseCase {
                 birthDate: try TimeStamp(command.birthDate)
             )
 
-            // 5. Mutação do Agregado
-            let prId = try LookupId("00000000-0000-0000-0000-000000000001") // Mock ID para PR
-            try patient.addMember(member, at: now, primaryReferenceId: prId)
+            // 6. Mutação do Agregado
+            let prId = try LookupId(command.prRelationshipId)
+            try patient.addMember(member, actorId: command.actorId, at: now, primaryReferenceId: prId)
 
-            // 6. Persistência e Publicação de Eventos
+            // 7. Persistência e Publicação de Eventos
             try await patientRepository.save(patient)
             try await eventBus.publish(patient.uncommittedEvents)
 

@@ -22,7 +22,7 @@ public actor AssignPrimaryCaregiverCommandHandler: AssignPrimaryCaregiverUseCase
             }
             
             // 3. Domain Logic
-            try patient.assignPrimaryCaregiver(identifiedBy: memberPersonId, at: TimeStamp.now)
+            try patient.assignPrimaryCaregiver(identifiedBy: memberPersonId, actorId: command.actorId, at: TimeStamp.now)
             
             // 4. Persistence & Events
             try await repository.save(patient)

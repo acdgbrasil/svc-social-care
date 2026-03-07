@@ -31,11 +31,13 @@ public struct UpdateWorkAndIncomeCommand: Command {
     public let individualIncomes: [IncomeDraft]
     public let socialBenefits: [BenefitDraft]
     public let hasRetiredMembers: Bool
+    public let actorId: String
 
-    public init(patientId: String, individualIncomes: [IncomeDraft], socialBenefits: [BenefitDraft], hasRetiredMembers: Bool) {
+    public init(patientId: String, individualIncomes: [IncomeDraft], socialBenefits: [BenefitDraft], hasRetiredMembers: Bool, actorId: String) {
         self.patientId = patientId
         self.individualIncomes = individualIncomes
         self.socialBenefits = socialBenefits
         self.hasRetiredMembers = hasRetiredMembers
+        self.actorId = actorId
     }
 }

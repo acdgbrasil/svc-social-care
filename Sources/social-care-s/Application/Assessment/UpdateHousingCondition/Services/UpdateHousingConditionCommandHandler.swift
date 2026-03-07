@@ -61,7 +61,7 @@ public actor UpdateHousingConditionCommandHandler: UpdateHousingConditionUseCase
             }
             
             // 3. Domain Logic
-            patient.updateHousingCondition(condition)
+            patient.updateHousingCondition(condition, actorId: command.actorId)
             
             // 4. Persistence & Events
             try await repository.save(patient)

@@ -1,50 +1,107 @@
 import Foundation
 import SQLKit
 
-/// Modelo de banco de dados para a tabela 'patients'.
+// MARK: - Aggregate Root
+
 struct PatientModel: Codable {
     let id: UUID
     let person_id: UUID
     let version: Int
-    
-    // Campos complexos persistidos como JSON para manter a coesão do Agregado no SQLKit
-    let personal_data: Data?
-    let civil_documents: Data?
-    let address: Data?
-    let housing_condition: Data?
-    let socioeconomic_situation: Data?
-    let community_support_network: Data?
-    let social_health_summary: Data?
-    let social_identity: Data?
-    
-    // Campos v2.0
-    let work_and_income: Data?
-    let educational_status: Data?
-    let health_status: Data?
-    let placement_history: Data?
-    let intake_info: Data?
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case person_id = "person_id"
-        case version
-        case personal_data = "personal_data"
-        case civil_documents = "civil_documents"
-        case address
-        case housing_condition = "housing_condition"
-        case socioeconomic_situation = "socioeconomic_situation"
-        case community_support_network = "community_support_network"
-        case social_health_summary = "social_health_summary"
-        case social_identity = "social_identity"
-        case work_and_income = "work_and_income"
-        case educational_status = "educational_status"
-        case health_status = "health_status"
-        case placement_history = "acolhimento_history"
-        case intake_info = "ingress_info"
-    }
+    // personal_data
+    let first_name: String?
+    let last_name: String?
+    let mother_name: String?
+    let nationality: String?
+    let sex: String?
+    let social_name: String?
+    let birth_date: Date?
+    let phone: String?
+
+    // civil_documents
+    let cpf: String?
+    let nis: String?
+    let rg_number: String?
+    let rg_issuing_state: String?
+    let rg_issuing_agency: String?
+    let rg_issue_date: Date?
+
+    // address
+    let address_cep: String?
+    let address_is_shelter: Bool?
+    let address_location: String?
+    let address_street: String?
+    let address_neighborhood: String?
+    let address_number: String?
+    let address_complement: String?
+    let address_state: String?
+    let address_city: String?
+
+    // housing_condition
+    let hc_type: String?
+    let hc_wall_material: String?
+    let hc_number_of_rooms: Int?
+    let hc_number_of_bedrooms: Int?
+    let hc_number_of_bathrooms: Int?
+    let hc_water_supply: String?
+    let hc_has_piped_water: Bool?
+    let hc_electricity_access: String?
+    let hc_sewage_disposal: String?
+    let hc_waste_collection: String?
+    let hc_accessibility_level: String?
+    let hc_is_in_geographic_risk_area: Bool?
+    let hc_has_difficult_access: Bool?
+    let hc_is_in_social_conflict_area: Bool?
+    let hc_has_diagnostic_observations: Bool?
+
+    // social_identity
+    let social_identity_type_id: UUID?
+    let social_identity_other_desc: String?
+
+    // community_support_network
+    let csn_has_relative_support: Bool?
+    let csn_has_neighbor_support: Bool?
+    let csn_family_conflicts: String?
+    let csn_patient_participates_in_groups: Bool?
+    let csn_family_participates_in_groups: Bool?
+    let csn_patient_has_access_to_leisure: Bool?
+    let csn_faces_discrimination: Bool?
+
+    // social_health_summary
+    let shs_requires_constant_care: Bool?
+    let shs_has_mobility_impairment: Bool?
+    let shs_functional_dependencies: Data?
+    let shs_has_relevant_drug_therapy: Bool?
+
+    // socioeconomic_situation
+    let ses_total_family_income: Double?
+    let ses_income_per_capita: Double?
+    let ses_receives_social_benefit: Bool?
+    let ses_main_source_of_income: String?
+    let ses_has_unemployed: Bool?
+
+    // work_and_income
+    let wi_has_retired_members: Bool?
+
+    // health_status
+    let hs_food_insecurity: Bool?
+    let hs_constant_care_member_ids: Data?
+
+    // placement_history
+    let ph_home_loss_report: String?
+    let ph_third_party_guard_report: String?
+    let ph_adult_in_prison: Bool?
+    let ph_adolescent_in_internment: Bool?
+
+    // ingress_info
+    let ii_ingress_type_id: UUID?
+    let ii_origin_name: String?
+    let ii_origin_contact: String?
+    let ii_service_reason: String?
 }
 
-/// Modelo para a tabela 'family_members'.
+// MARK: - Existing Child Tables
+
 struct FamilyMemberModel: Codable {
     let patient_id: UUID
     let person_id: UUID
@@ -52,12 +109,10 @@ struct FamilyMemberModel: Codable {
     let is_primary_caregiver: Bool
     let resides_with_patient: Bool
     let has_disability: Bool
-    /// Documentos requeridos persistidos como JSON array de strings (rawValues de RequiredDocument).
     let required_documents: Data
     let birth_date: Date
 }
 
-/// Modelo para a tabela 'patient_diagnoses'.
 struct DiagnosisModel: Codable {
     let patient_id: UUID
     let icd_code: String
@@ -65,7 +120,6 @@ struct DiagnosisModel: Codable {
     let description: String
 }
 
-/// Modelo para a tabela 'social_care_appointments'.
 struct AppointmentModel: Codable {
     let id: UUID
     let patient_id: UUID
@@ -76,7 +130,6 @@ struct AppointmentModel: Codable {
     let action_plan: String
 }
 
-/// Modelo para a tabela 'referrals'.
 struct ReferralModel: Codable {
     let id: UUID
     let patient_id: UUID
@@ -88,7 +141,6 @@ struct ReferralModel: Codable {
     let status: String
 }
 
-/// Modelo para a tabela 'rights_violation_reports'.
 struct ViolationReportModel: Codable {
     let id: UUID
     let patient_id: UUID
@@ -100,11 +152,96 @@ struct ViolationReportModel: Codable {
     let actions_taken: String
 }
 
-/// Modelo para a tabela 'outbox_messages' (Pattern Outbox).
+// MARK: - Normalized Child Tables (arrays extraidos de JSONB)
+
+struct MemberIncomeModel: Codable {
+    let id: UUID
+    let patient_id: UUID
+    let member_id: UUID
+    let occupation_id: UUID?
+    let has_work_card: Bool
+    let monthly_amount: Double
+}
+
+struct SocialBenefitModel: Codable {
+    let id: UUID
+    let patient_id: UUID
+    let source: String
+    let benefit_name: String
+    let amount: Double
+    let beneficiary_id: UUID
+}
+
+struct MemberEducationalProfileModel: Codable {
+    let id: UUID
+    let patient_id: UUID
+    let member_id: UUID
+    let can_read_write: Bool
+    let attends_school: Bool
+    let education_level_id: UUID?
+}
+
+struct ProgramOccurrenceModel: Codable {
+    let id: UUID
+    let patient_id: UUID
+    let member_id: UUID
+    let date: Date
+    let effect_id: UUID?
+    let is_suspension_requested: Bool
+}
+
+struct MemberDeficiencyModel: Codable {
+    let id: UUID
+    let patient_id: UUID
+    let member_id: UUID
+    let deficiency_type_id: UUID?
+    let needs_constant_care: Bool
+    let responsible_caregiver_name: String?
+}
+
+struct GestatingMemberModel: Codable {
+    let id: UUID
+    let patient_id: UUID
+    let member_id: UUID
+    let months_gestation: Int
+    let started_prenatal_care: Bool
+}
+
+struct PlacementRegistryModel: Codable {
+    let id: UUID
+    let patient_id: UUID
+    let member_id: UUID
+    let start_date: Date
+    let end_date: Date?
+    let reason: String
+}
+
+struct IngressLinkedProgramModel: Codable {
+    let id: UUID
+    let patient_id: UUID
+    let program_id: UUID?
+    let observation: String?
+}
+
+// MARK: - Outbox
+
 struct OutboxMessageModel: Codable {
     let id: UUID
     let event_type: String
     let payload: Data
     let occurred_at: Date
     let processed_at: Date?
+}
+
+// MARK: - Audit Trail
+
+struct AuditTrailModel: Codable {
+    let id: UUID
+    let aggregate_type: String
+    let aggregate_id: UUID
+    let event_type: String
+    let actor_id: String?
+    let payload: Data
+    let occurred_at: Date
+    let recorded_at: Date
 }

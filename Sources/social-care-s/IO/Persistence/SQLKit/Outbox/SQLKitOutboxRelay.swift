@@ -69,14 +69,15 @@ public actor SQLKitOutboxRelay: Sendable {
             .from("outbox_messages")
             .where("processed_at", .is, SQLLiteral.null)
             .orderBy("occurred_at", .ascending)
-            .limit(50) // Lote reduzido para evitar timeout em redes edge
+            .limit(50)
             .all(decoding: OutboxMessageModel.self)
-        
+
         guard !messages.isEmpty else { return }
-        
+
         var processedIds: [UUID] = []
+        var auditEntries: [AuditTrailModel] = []
         let now = Date()
-        
+
         for message in messages {
             // 2. Tenta decodificar o evento
             do {
@@ -84,27 +85,55 @@ public actor SQLKitOutboxRelay: Sendable {
                     typeName: message.event_type,
                     data: message.payload
                 )
-                
+
                 // 3. Distribui para todos os streams ativos
                 for continuation in continuations.values {
                     continuation.yield(event)
                 }
-                
+
+                // 4. Prepara entrada no audit trail
+                let parsed = Self.extractFields(from: message.payload)
+                let aggregateId = parsed.aggregateId ?? message.id
+                auditEntries.append(AuditTrailModel(
+                    id: message.id,
+                    aggregate_type: "Patient",
+                    aggregate_id: aggregateId,
+                    event_type: message.event_type,
+                    actor_id: parsed.actorId,
+                    payload: message.payload,
+                    occurred_at: message.occurred_at,
+                    recorded_at: now
+                ))
+
                 processedIds.append(message.id)
             } catch {
-                // Se falhar a decodificação, logamos e marcamos como processado (ou erro)
-                // para não travar o relay. No MVP, marcamos como processado para evitar loop.
                 print("⚠️ Failed to decode outbox event \(message.id): \(error)")
                 processedIds.append(message.id)
             }
         }
-        
-        // 4. Marca o lote como processado de uma vez (Bulk Update)
+
+        // 5. Persiste audit trail e marca outbox como processado
         if !processedIds.isEmpty {
-            try await db.update("outbox_messages")
-                .set("processed_at", to: now)
-                .where("id", .in, processedIds)
-                .run()
+            let finalAudit = auditEntries
+            let finalIds = processedIds
+            try await db.transaction { tx in
+                for entry in finalAudit {
+                    try await tx.insert(into: "audit_trail").model(entry).run()
+                }
+                try await tx.update("outbox_messages")
+                    .set("processed_at", to: now)
+                    .where("id", .in, finalIds)
+                    .run()
+            }
         }
+    }
+
+    private static func extractFields(from payload: Data) -> (aggregateId: UUID?, actorId: String?) {
+        guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any] else {
+            return (nil, nil)
+        }
+        let aggregateId = (json["patientId"] as? String).flatMap { UUID(uuidString: $0) }
+        let actorId = json["actorId"] as? String
+        return (aggregateId, actorId)
     }
 }

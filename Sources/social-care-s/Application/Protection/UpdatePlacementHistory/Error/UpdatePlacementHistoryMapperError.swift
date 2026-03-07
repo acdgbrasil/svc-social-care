@@ -4,6 +4,15 @@ extension UpdatePlacementHistoryCommandHandler {
     public func mapError(_ error: Error) -> UpdatePlacementHistoryError {
         if let e = error as? UpdatePlacementHistoryError { return e }
         
+        if let e = error as? PatientError {
+            switch e {
+            case .incompatiblePlacementSituation, .incompatibleGuardianshipSituation:
+                return .incompatibleSeparationSituation
+            default:
+                return .persistenceMappingFailure(issues: [String(describing: e)])
+            }
+        }
+
         if let e = error as? PlacementError {
             switch e {
             case .invalidDateRange:

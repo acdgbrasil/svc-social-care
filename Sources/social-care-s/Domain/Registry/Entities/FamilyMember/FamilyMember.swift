@@ -26,7 +26,7 @@ public struct FamilyMember: Codable, Equatable, Sendable {
     /// Data de nascimento para cálculos analíticos de idade.
     public let birthDate: TimeStamp
 
-    /// Inicializa um novo membro familiar validando as regras de negócio.
+    /// Inicializa um novo membro familiar.
     public init(
         personId: PersonId,
         relationshipId: LookupId,
@@ -35,7 +35,7 @@ public struct FamilyMember: Codable, Equatable, Sendable {
         hasDisability: Bool = false,
         requiredDocuments: [RequiredDocument] = [],
         birthDate: TimeStamp
-    ) throws {
+    ) {
         self.personId = personId
         self.relationshipId = relationshipId
         self.isPrimaryCaregiver = isPrimaryCaregiver

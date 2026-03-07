@@ -105,6 +105,7 @@ public struct RegisterPatientCommand: ResultCommand {
     public let address: AddressDraft?
     public let socialIdentity: SocialIdentityDraft?
     public let prRelationshipId: String
+    public let actorId: String
 
     public init(
         personId: String,
@@ -113,7 +114,8 @@ public struct RegisterPatientCommand: ResultCommand {
         civilDocuments: CivilDocumentsDraft? = nil,
         address: AddressDraft? = nil,
         socialIdentity: SocialIdentityDraft? = nil,
-        prRelationshipId: String
+        prRelationshipId: String,
+        actorId: String
     ) {
         self.personId = personId
         self.initialDiagnoses = initialDiagnoses
@@ -122,5 +124,6 @@ public struct RegisterPatientCommand: ResultCommand {
         self.address = address
         self.socialIdentity = socialIdentity
         self.prRelationshipId = prRelationshipId
+        self.actorId = actorId
     }
 }

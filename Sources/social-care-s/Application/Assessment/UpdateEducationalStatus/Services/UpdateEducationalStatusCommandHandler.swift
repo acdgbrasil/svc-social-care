@@ -61,7 +61,7 @@ public actor UpdateEducationalStatusCommandHandler: UpdateEducationalStatusUseCa
             )
 
             // 5. Domain Logic
-            patient.updateEducationalStatus(status)
+            patient.updateEducationalStatus(status, actorId: command.actorId)
 
             // 6. Persistence & Events
             try await repository.save(patient)

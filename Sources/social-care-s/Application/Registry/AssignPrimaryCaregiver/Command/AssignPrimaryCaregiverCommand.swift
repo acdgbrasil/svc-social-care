@@ -4,9 +4,11 @@ import Foundation
 public struct AssignPrimaryCaregiverCommand: Command {
     public let patientId: String
     public let memberPersonId: String
-    
-    public init(patientId: String, memberPersonId: String) {
+    public let actorId: String
+
+    public init(patientId: String, memberPersonId: String, actorId: String) {
         self.patientId = patientId
         self.memberPersonId = memberPersonId
+        self.actorId = actorId
     }
 }

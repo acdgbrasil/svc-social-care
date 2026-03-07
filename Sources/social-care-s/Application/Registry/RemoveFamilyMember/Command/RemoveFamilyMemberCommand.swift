@@ -4,9 +4,11 @@ import Foundation
 public struct RemoveFamilyMemberCommand: Command {
     public let patientId: String
     public let memberId: String
-    
-    public init(patientId: String, memberId: String) {
+    public let actorId: String
+
+    public init(patientId: String, memberId: String, actorId: String) {
         self.patientId = patientId
         self.memberId = memberId
+        self.actorId = actorId
     }
 }

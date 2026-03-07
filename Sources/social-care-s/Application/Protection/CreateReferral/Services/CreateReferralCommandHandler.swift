@@ -37,6 +37,7 @@ public actor CreateReferralCommandHandler: CreateReferralUseCase {
                 referredPersonId: referredPersonId,
                 destinationService: destinationService,
                 reason: command.reason,
+                actorId: command.actorId,
                 now: .now
             )
             

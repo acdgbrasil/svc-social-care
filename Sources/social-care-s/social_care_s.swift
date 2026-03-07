@@ -1,11 +1,16 @@
-import Foundation
-import ServiceLifecycle
-import Logging
+import Vapor
 
 @main
-struct social_care_s {
+enum social_care_s {
     static func main() async throws {
-        // 1. Inicializa o Contexto da Aplicação (Composição de Dependências)
-        
+        var env = try Environment.detect()
+        try LoggingSystem.bootstrap(from: &env)
+
+        let app = try await Application.make(env)
+        defer { Task { try await app.asyncShutdown() } }
+
+        try await configure(app)
+
+        try await app.execute()
     }
 }

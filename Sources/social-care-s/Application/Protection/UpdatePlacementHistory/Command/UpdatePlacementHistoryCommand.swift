@@ -39,11 +39,13 @@ public struct UpdatePlacementHistoryCommand: Command {
     public let registries: [RegistryDraft]
     public let collectiveSituations: CollectiveDraft
     public let separationChecklist: SeparationDraft
+    public let actorId: String
 
-    public init(patientId: String, registries: [RegistryDraft], collectiveSituations: CollectiveDraft, separationChecklist: SeparationDraft) {
+    public init(patientId: String, registries: [RegistryDraft], collectiveSituations: CollectiveDraft, separationChecklist: SeparationDraft, actorId: String) {
         self.patientId = patientId
         self.registries = registries
         self.collectiveSituations = collectiveSituations
         self.separationChecklist = separationChecklist
+        self.actorId = actorId
     }
 }

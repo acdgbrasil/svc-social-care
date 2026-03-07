@@ -28,7 +28,7 @@ public actor UpdateSocialIdentityCommandHandler: UpdateSocialIdentityUseCase {
                 throw UpdateSocialIdentityError.patientNotFound
             }
 
-            patient.updateSocialIdentity(newIdentity)
+            patient.updateSocialIdentity(newIdentity, actorId: command.actorId)
 
             try await repository.save(patient)
             try await eventBus.publish(patient.uncommittedEvents)

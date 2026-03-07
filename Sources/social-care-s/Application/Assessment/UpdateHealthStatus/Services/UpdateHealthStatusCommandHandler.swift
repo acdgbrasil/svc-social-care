@@ -58,7 +58,7 @@ public actor UpdateHealthStatusCommandHandler: UpdateHealthStatusUseCase {
             )
 
             // 5. Domain Logic
-            patient.updateHealthStatus(healthStatus)
+            patient.updateHealthStatus(healthStatus, actorId: command.actorId)
 
             // 6. Persistence & Events
             try await repository.save(patient)

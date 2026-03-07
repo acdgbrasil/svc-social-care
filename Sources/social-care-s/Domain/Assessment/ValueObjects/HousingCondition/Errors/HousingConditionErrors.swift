@@ -3,7 +3,9 @@ import Foundation
 /// Erros específicos para o Value Object HousingCondition.
 public enum HousingConditionError: Error, Sendable, Equatable {
     case negativeRooms
+    case negativeBedrooms
     case negativeBathrooms
+    case bedroomsExceedRooms
     case bathroomsExceedRooms
 }
 
@@ -15,32 +17,26 @@ extension HousingConditionError: AppErrorConvertible {
     public var asAppError: AppError {
         switch self {
         case .negativeRooms:
-            return AppError(
-                code: "\(Self.codePrefix)-001",
-                message: "O número de cômodos não pode ser negativo.",
-                bc: Self.bc, module: Self.module, kind: "NegativeRooms",
-                context: [:], safeContext: [:],
-                observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-001"], tags: ["vo": "housing_condition"]),
-                http: 422
-            )
+            return appFailure("001", "O numero de comodos nao pode ser negativo.", kind: "NegativeRooms")
+        case .negativeBedrooms:
+            return appFailure("002", "O numero de dormitorios nao pode ser negativo.", kind: "NegativeBedrooms")
         case .negativeBathrooms:
-            return AppError(
-                code: "\(Self.codePrefix)-002",
-                message: "O número de banheiros não pode ser negativo.",
-                bc: Self.bc, module: Self.module, kind: "NegativeBathrooms",
-                context: [:], safeContext: [:],
-                observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-002"], tags: ["vo": "housing_condition"]),
-                http: 422
-            )
+            return appFailure("003", "O numero de banheiros nao pode ser negativo.", kind: "NegativeBathrooms")
+        case .bedroomsExceedRooms:
+            return appFailure("004", "O numero de dormitorios nao pode exceder o numero total de comodos.", kind: "BedroomsExceedRooms")
         case .bathroomsExceedRooms:
-            return AppError(
-                code: "\(Self.codePrefix)-003",
-                message: "O número de banheiros não pode exceder o número total de cômodos.",
-                bc: Self.bc, module: Self.module, kind: "BathroomsExceedRooms",
-                context: [:], safeContext: [:],
-                observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-003"], tags: ["vo": "housing_condition"]),
-                http: 422
-            )
+            return appFailure("005", "O numero de banheiros nao pode exceder o numero total de comodos.", kind: "BathroomsExceedRooms")
         }
+    }
+
+    private func appFailure(_ subCode: String, _ message: String, kind: String) -> AppError {
+        return AppError(
+            code: "\(Self.codePrefix)-\(subCode)",
+            message: message,
+            bc: Self.bc, module: Self.module, kind: kind,
+            context: [:], safeContext: [:],
+            observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-\(subCode)"], tags: ["vo": "housing_condition"]),
+            http: 422
+        )
     }
 }

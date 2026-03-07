@@ -12,7 +12,8 @@ public struct ReportRightsViolationCommand: ResultCommand {
     public let descriptionOfFact: String
     public let actionsTaken: String?
     public let id: String?
-    
+    public let actorId: String
+
     public init(
         patientId: String,
         victimId: String,
@@ -21,7 +22,8 @@ public struct ReportRightsViolationCommand: ResultCommand {
         incidentDate: Date? = nil,
         descriptionOfFact: String,
         actionsTaken: String? = nil,
-        id: String? = nil
+        id: String? = nil,
+        actorId: String
     ) {
         self.patientId = patientId
         self.victimId = victimId
@@ -31,5 +33,6 @@ public struct ReportRightsViolationCommand: ResultCommand {
         self.descriptionOfFact = descriptionOfFact
         self.actionsTaken = actionsTaken
         self.id = id
+        self.actorId = actorId
     }
 }

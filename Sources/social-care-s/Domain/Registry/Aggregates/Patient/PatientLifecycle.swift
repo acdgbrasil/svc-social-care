@@ -26,6 +26,7 @@ extension Patient {
         diagnoses: [Diagnosis],
         familyMembers: [FamilyMember] = [],
         prRelationshipId: LookupId,
+        actorId: String,
         now: TimeStamp = .now
     ) throws {
 
@@ -54,6 +55,7 @@ extension Patient {
         self.recordEvent(PatientCreatedEvent(
             patientId: id.description,
             personId: personId.description,
+            actorId: actorId,
             occurredAt: now.date
         ))
     }

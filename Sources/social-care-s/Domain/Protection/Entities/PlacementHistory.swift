@@ -45,13 +45,43 @@ public struct PlacementRegistry: Codable, Equatable, Sendable {
 public struct CollectiveSituations: Codable, Equatable, Sendable {
     public let homeLossReport: String?
     public let thirdPartyGuardReport: String?
+
+    public init(homeLossReport: String?, thirdPartyGuardReport: String?) {
+        self.homeLossReport = homeLossReport
+        self.thirdPartyGuardReport = thirdPartyGuardReport
+    }
 }
 
 public struct SeparationChecklist: Codable, Equatable, Sendable {
     public let adultInPrison: Bool
     public let adolescentInInternment: Bool
+
+    public init(adultInPrison: Bool, adolescentInInternment: Bool) {
+        self.adultInPrison = adultInPrison
+        self.adolescentInInternment = adolescentInInternment
+    }
 }
 
-public enum PlacementError: Error {
+public enum PlacementError: Error, Sendable, Equatable {
     case invalidDateRange
+}
+
+extension PlacementError: AppErrorConvertible {
+    private static let bc = "SOCIAL"
+    private static let module = "social-care/placement"
+    private static let codePrefix = "PLC"
+
+    public var asAppError: AppError {
+        switch self {
+        case .invalidDateRange:
+            return AppError(
+                code: "\(Self.codePrefix)-001",
+                message: "A data de fim do acolhimento nao pode ser anterior a data de inicio.",
+                bc: Self.bc, module: Self.module, kind: "InvalidDateRange",
+                context: [:], safeContext: [:],
+                observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-001"], tags: ["entity": "placement"]),
+                http: 422
+            )
+        }
+    }
 }

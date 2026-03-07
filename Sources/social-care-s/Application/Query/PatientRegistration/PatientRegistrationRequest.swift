@@ -31,6 +31,7 @@ public struct PatientRegistrationRequest: Sendable {
     public let familyMembers: [FamilyMemberDraft]
     public let socialIdentity: RegisterPatientCommand.SocialIdentityDraft?
     public let prRelationshipId: String
+    public let actorId: String
 
     public init(
         personId: String,
@@ -40,7 +41,8 @@ public struct PatientRegistrationRequest: Sendable {
         address: RegisterPatientCommand.AddressDraft? = nil,
         familyMembers: [FamilyMemberDraft] = [],
         socialIdentity: RegisterPatientCommand.SocialIdentityDraft? = nil,
-        prRelationshipId: String
+        prRelationshipId: String,
+        actorId: String
     ) {
         self.personId = personId
         self.initialDiagnoses = initialDiagnoses
@@ -50,5 +52,6 @@ public struct PatientRegistrationRequest: Sendable {
         self.familyMembers = familyMembers
         self.socialIdentity = socialIdentity
         self.prRelationshipId = prRelationshipId
+        self.actorId = actorId
     }
 }

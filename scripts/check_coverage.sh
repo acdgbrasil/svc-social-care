@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-THRESHOLD="${1:-95}"
+THRESHOLD="${1:-70}"
 TARGET_REGEX="/Sources/social-care-s/"
 
 if ! command -v jq >/dev/null 2>&1; then

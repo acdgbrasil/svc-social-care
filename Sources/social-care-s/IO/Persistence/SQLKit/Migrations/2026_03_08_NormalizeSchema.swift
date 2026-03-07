@@ -16,7 +16,7 @@ struct NormalizeSchema: Migration {
         // ──────────────────────────────────────────────
 
         try await db.create(table: "dominio_tipo_beneficio")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("codigo", type: .text, .notNull, .unique)
             .column("descricao", type: .text, .notNull)
             .column("ativo", type: .custom(booleanType), .notNull, .default(SQLLiteral.boolean(true)))
@@ -25,7 +25,7 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "dominio_tipo_violacao")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("codigo", type: .text, .notNull, .unique)
             .column("descricao", type: .text, .notNull)
             .column("ativo", type: .custom(booleanType), .notNull, .default(SQLLiteral.boolean(true)))
@@ -33,21 +33,21 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "dominio_servico_vinculo")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("codigo", type: .text, .notNull, .unique)
             .column("descricao", type: .text, .notNull)
             .column("ativo", type: .custom(booleanType), .notNull, .default(SQLLiteral.boolean(true)))
             .run()
 
         try await db.create(table: "dominio_tipo_medida")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("codigo", type: .text, .notNull, .unique)
             .column("descricao", type: .text, .notNull)
             .column("ativo", type: .custom(booleanType), .notNull, .default(SQLLiteral.boolean(true)))
             .run()
 
         try await db.create(table: "dominio_unidade_realizacao")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("codigo", type: .text, .notNull, .unique)
             .column("descricao", type: .text, .notNull)
             .column("ativo", type: .custom(booleanType), .notNull, .default(SQLLiteral.boolean(true)))
@@ -160,7 +160,7 @@ struct NormalizeSchema: Migration {
         // ──────────────────────────────────────────────
 
         try await db.create(table: "member_incomes")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("member_id", type: .custom(uuidType), .notNull)
             .column("occupation_id", type: .custom(uuidType))
@@ -169,7 +169,7 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "social_benefits")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("source", type: .text, .notNull)
             .column("benefit_name", type: .text, .notNull)
@@ -178,7 +178,7 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "member_educational_profiles")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("member_id", type: .custom(uuidType), .notNull)
             .column("can_read_write", type: .custom(booleanType), .notNull)
@@ -187,7 +187,7 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "program_occurrences")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("member_id", type: .custom(uuidType), .notNull)
             .column("date", type: .custom(timestampType), .notNull)
@@ -196,7 +196,7 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "member_deficiencies")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("member_id", type: .custom(uuidType), .notNull)
             .column("deficiency_type_id", type: .custom(uuidType))
@@ -205,7 +205,7 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "gestating_members")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("member_id", type: .custom(uuidType), .notNull)
             .column("months_gestation", type: .int, .notNull)
@@ -213,7 +213,7 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "placement_registries")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("member_id", type: .custom(uuidType), .notNull)
             .column("start_date", type: .custom(timestampType), .notNull)
@@ -222,7 +222,7 @@ struct NormalizeSchema: Migration {
             .run()
 
         try await db.create(table: "ingress_linked_programs")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("program_id", type: .custom(uuidType))
             .column("observation", type: .text)

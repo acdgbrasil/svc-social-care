@@ -10,7 +10,7 @@ struct CreateAuditTrail: Migration {
         let jsonbType = SQLRaw("JSONB")
 
         try await db.create(table: "audit_trail")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("aggregate_type", type: .text, .notNull)
             .column("aggregate_id", type: .custom(uuidType), .notNull)
             .column("event_type", type: .text, .notNull)

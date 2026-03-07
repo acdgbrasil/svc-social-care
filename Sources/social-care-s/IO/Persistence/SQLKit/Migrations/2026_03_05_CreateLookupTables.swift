@@ -24,7 +24,7 @@ struct CreateLookupTables: Migration {
         // 1. Criar as 8 tabelas de dominio com schema identico
         for table in lookupTables {
             try await db.create(table: table)
-                .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+                .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
                 .column("codigo", type: .text, .notNull, .unique)
                 .column("descricao", type: .text, .notNull)
                 .column("ativo", type: .custom(booleanType), .notNull, .default(SQLLiteral.boolean(true)))

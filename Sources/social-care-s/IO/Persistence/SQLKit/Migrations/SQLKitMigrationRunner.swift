@@ -43,7 +43,7 @@ public struct SQLKitMigrationRunner: Sendable {
     private func ensureMetaTableExists() async throws {
         do {
             try await db.create(table: "migrations_meta")
-                .column("name", type: .text, .primaryKey, .notNull)
+                .column("name", type: .text, .notNull, .primaryKey(autoIncrement: false))
                 .run()
         } catch {
             // Se falhar porque a tabela já existe, ignoramos.

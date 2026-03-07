@@ -13,7 +13,7 @@ struct CreateInitialSchema: Migration {
         
         // 1. Tabela de Pacientes (Aggregate Root)
         try await db.create(table: "patients")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("person_id", type: .custom(uuidType), .notNull)
             .column("version", type: .int, .notNull)
             .column("housing_condition", type: .custom(jsonbType))
@@ -41,7 +41,7 @@ struct CreateInitialSchema: Migration {
             
         // 4. Tabela de Atendimentos
         try await db.create(table: "social_care_appointments")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("date", type: .custom(timestampType), .notNull)
             .column("professional_in_charge_id", type: .custom(uuidType), .notNull)
@@ -52,7 +52,7 @@ struct CreateInitialSchema: Migration {
             
         // 5. Tabela de Encaminhamentos
         try await db.create(table: "referrals")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("date", type: .custom(timestampType), .notNull)
             .column("requesting_professional_id", type: .custom(uuidType), .notNull)
@@ -64,7 +64,7 @@ struct CreateInitialSchema: Migration {
             
         // 6. Tabela de Violações de Direitos
         try await db.create(table: "rights_violation_reports")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("patient_id", type: .custom(uuidType), .notNull, .references("patients", "id", onDelete: .cascade))
             .column("report_date", type: .custom(timestampType), .notNull)
             .column("incident_date", type: .custom(timestampType))
@@ -76,7 +76,7 @@ struct CreateInitialSchema: Migration {
             
         // 7. Tabela de Outbox (Pattern Outbox)
         try await db.create(table: "outbox_messages")
-            .column("id", type: .custom(uuidType), .primaryKey, .notNull)
+            .column("id", type: .custom(uuidType), .notNull, .primaryKey(autoIncrement: false))
             .column("event_type", type: .text, .notNull)
             .column("payload", type: .custom(jsonbType), .notNull)
             .column("occurred_at", type: .custom(timestampType), .notNull)

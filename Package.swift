@@ -13,6 +13,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/sql-kit.git", from: "3.0.0"),
         .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
+        .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -21,6 +22,7 @@ let package = Package(
                 .product(name: "SQLKit", package: "sql-kit"),
                 .product(name: "PostgresKit", package: "postgres-kit"),
                 .product(name: "Vapor", package: "vapor"),
+                .product(name: "JWT", package: "jwt"),
             ],
             path: "Sources/social-care-s"
         ),

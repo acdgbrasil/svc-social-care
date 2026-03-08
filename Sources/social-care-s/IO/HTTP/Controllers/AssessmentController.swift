@@ -3,6 +3,7 @@ import Vapor
 struct AssessmentController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let patient = routes.grouped("api", "v1", "patients", ":patientId")
+            .grouped(RoleGuardMiddleware("social_worker"))
 
         patient.put("housing-condition", use: updateHousingCondition)
         patient.put("socioeconomic-situation", use: updateSocioEconomicSituation)

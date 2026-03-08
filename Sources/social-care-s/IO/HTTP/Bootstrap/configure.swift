@@ -1,5 +1,6 @@
 import Vapor
 import PostgresKit
+import JWT
 
 func configure(_ app: Application) async throws {
     // MARK: - Database
@@ -42,9 +43,20 @@ func configure(_ app: Application) async throws {
     app.http.server.configuration.hostname = Environment.get("SERVER_HOST") ?? "0.0.0.0"
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init) ?? 8080
 
+    // MARK: - JWT (Zitadel OIDC)
+
+    let jwksUrl = Environment.get("JWKS_URL") ?? "https://auth.acdgbrasil.com.br/oauth/v2/keys"
+    let jwksResponse = try await app.client.get(URI(string: jwksUrl))
+    guard let jwksData = jwksResponse.body else {
+        throw Abort(.internalServerError, reason: "Failed to fetch JWKS from identity provider.")
+    }
+    let jwksJSON = String(buffer: jwksData)
+    try await app.jwt.keys.add(jwksJSON: jwksJSON)
+
     // MARK: - Middleware
 
     app.middleware.use(AppErrorMiddleware())
+    app.middleware.use(JWTAuthMiddleware())
 
     // MARK: - Content Configuration
 

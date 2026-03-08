@@ -3,6 +3,7 @@ import Vapor
 struct ProtectionController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let patient = routes.grouped("api", "v1", "patients", ":patientId")
+            .grouped(RoleGuardMiddleware("social_worker"))
 
         patient.put("placement-history", use: updatePlacementHistory)
         patient.post("violation-reports", use: reportRightsViolation)

@@ -20,6 +20,7 @@ struct LookupController: RouteCollection {
 
     func boot(routes: any RoutesBuilder) throws {
         let dominios = routes.grouped("api", "v1", "dominios")
+            .grouped(RoleGuardMiddleware("social_worker", "owner", "admin"))
         dominios.get(":tableName", use: list)
     }
 

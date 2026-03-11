@@ -63,6 +63,10 @@ func configure(_ app: Application) async throws {
             clientId: introspectClientId,
             clientSecret: introspectClientSecret
         )
+
+        if let allowedIds = Environment.get("ALLOWED_SERVICE_ACCOUNTS") {
+            app.allowedServiceAccounts = Set(allowedIds.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) })
+        }
     }
 
     // MARK: - Middleware

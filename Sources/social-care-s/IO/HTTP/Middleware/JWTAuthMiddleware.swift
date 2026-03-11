@@ -19,6 +19,10 @@ struct JWTAuthMiddleware: AsyncMiddleware {
         var roles = payload.roleNames
 
         if roles.isEmpty, let introspector = request.application.tokenIntrospector {
+            let allowedAccounts = request.application.allowedServiceAccounts
+            guard allowedAccounts.contains(payload.sub.value) else {
+                throw Abort(.forbidden, reason: "Service account not authorized.")
+            }
             let token = request.bearerToken ?? ""
             roles = try await introspector.introspect(token: token, client: request.client)
         }

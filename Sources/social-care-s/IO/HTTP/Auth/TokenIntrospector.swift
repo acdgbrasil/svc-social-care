@@ -49,9 +49,18 @@ struct TokenIntrospectorKey: StorageKey {
     typealias Value = any TokenIntrospecting
 }
 
+struct AllowedServiceAccountsKey: StorageKey {
+    typealias Value = Set<String>
+}
+
 extension Application {
     var tokenIntrospector: (any TokenIntrospecting)? {
         get { storage[TokenIntrospectorKey.self] }
         set { storage[TokenIntrospectorKey.self] = newValue }
+    }
+
+    var allowedServiceAccounts: Set<String> {
+        get { storage[AllowedServiceAccountsKey.self] ?? [] }
+        set { storage[AllowedServiceAccountsKey.self] = newValue }
     }
 }

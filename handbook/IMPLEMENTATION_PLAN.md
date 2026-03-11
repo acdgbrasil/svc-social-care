@@ -39,10 +39,10 @@
 | **Domain/Assessment** | COMPLETO | HousingCondition, SocioEconomicSituation, WorkAndIncome, EducationalStatus, HealthStatus, CommunitySupportNetwork, SocialHealthSummary, SocialBenefit, SocialBenefitsCollection. Analytics: Financial, Housing, Education. |
 | **Application Services** | 17 SERVICOS | RegisterPatient, AddFamilyMember, RemoveFamilyMember, AssignPrimaryCaregiver, UpdateSocialIdentity, UpdateHousingCondition, UpdateSocioEconomicSituation, UpdateWorkAndIncome, UpdateEducationalStatus, UpdateHealthStatus, UpdateCommunitySupportNetwork, UpdateSocialHealthSummary, UpdatePlacementHistory, CreateReferral, ReportRightsViolation, RegisterAppointment, RegisterIntakeInfo. Cada um com Command (actorId) + UseCase protocol + Service + Errors. |
 | **Application Query** | COMPLETO | GetPatientByIdQueryHandler, GetPatientByPersonIdQueryHandler, PatientRegistrationService (orquestrador de cadastro). |
-| **HTTP Controllers** | 6 CONTROLLERS | PatientController (8 rotas incl. audit trail com filtro eventType), AssessmentController (7 rotas + validacao metadata-driven), ProtectionController (3 rotas + validacao metadata-driven), CareController (2 rotas), LookupController (1 rota), HealthController (2 rotas: /health + /ready). Todos com `X-Actor-Id` header obrigatorio em mutations. |
+| **HTTP Controllers** | 6 CONTROLLERS | PatientController (8 rotas incl. audit trail com filtro eventType), AssessmentController (7 rotas + validacao metadata-driven), ProtectionController (3 rotas + validacao metadata-driven), CareController (2 rotas), LookupController (1 rota), HealthController (2 rotas: /health + /ready). Todos com JWT auth + RBAC por role. |
 | **HTTP DTOs** | COMPLETO | RequestDTOs.swift (17 request structs com `toCommand(actorId:)`, campos metadata opcionais), ResponseDTOs.swift (response structs com `computedAnalytics`, `StandardResponse<T>` wrapper, AuditTrailEntryResponse com actorId). |
-| **HTTP Middleware** | PARCIAL | AppErrorMiddleware (erro global). Faltam: CORS, Auth, Logging. |
-| **HTTP Extensions** | COMPLETO | Request+ActorId.swift (`extractActorId()` via header `X-Actor-Id`). |
+| **HTTP Middleware** | COMPLETO | AppErrorMiddleware (erro global), JWTAuthMiddleware (validacao JWKS via Zitadel), RoleGuardMiddleware (RBAC por grupo de rotas). |
+| **HTTP Extensions** | COMPLETO | Request+ActorId.swift (`extractActorId()` via JWT sub claim), AuthenticatedUser (model + Request storage). |
 | **HTTP Validation** | COMPLETO | MetadataValidator (validacao dinamica contra flags em lookup tables) + CrossValidator (validacoes cruzadas Saude/Sexo e Acolhimento/Idade). |
 | **Persistence** | COMPLETO | SQLKitPatientRepository (save com transacao SQL, find, exists), SQLKitLookupRepository, PatientDatabaseMapper (normalizado), PatientDatabaseModels (colunas diretas + 8 tabelas filhas). |
 | **Migrations** | 7 MIGRATIONS | CreateInitialSchema, AddRegistrationFields, CreateLookupTables, AddV2AssessmentFields, AddPerformanceIndexes, NormalizeSchema, CreateAuditTrail. MigrationRunner com tabela `_migrations`. |
@@ -59,7 +59,7 @@
 - PoP: cada camada comunica via protocolo
 - Strict concurrency (Sendable em tudo)
 - Swift Testing (nao XCTest)
-- actorId em todos os eventos e comandos (rastreabilidade de quem fez a acao)
+- actorId em todos os eventos e comandos (extraido do JWT sub claim — rastreabilidade de quem fez a acao)
 - Before/after diff em eventos de assessment (rastreabilidade do que mudou)
 - StandardResponse<T> com meta.timestamp em todos os endpoints de sucesso
 - Validacao metadata-driven para beneficios e violacoes (flags dinamicos via lookup tables)
@@ -93,7 +93,7 @@
 | G12 | Sem request logging / tracing | Nenhum middleware de observabilidade | PENDENTE |
 | G13 | Sem CORS middleware | Necessario se front-end consome direto | PENDENTE |
 | G14 | Sem rate limiting | Importante para producao | PENDENTE |
-| G15 | Sem JWT/Bearer auth | Usa `X-Actor-Id` header como placeholder | PENDENTE |
+| G15 | ~~Sem JWT/Bearer auth~~ | ~~Usa `X-Actor-Id` header como placeholder~~ | RESOLVIDO (JWTAuthMiddleware + RoleGuardMiddleware + Zitadel OIDC) |
 | G16 | ~~Outbox relay marca mensagens como processadas~~ | `SQLKitOutboxRelay` | RESOLVIDO |
 | G17 | ~~Migration runner nao tem tabela de controle~~ | `SQLKitMigrationRunner` | RESOLVIDO |
 
@@ -124,11 +124,11 @@ FASE 3: HTTP Layer (Vapor & Form Integration)          ████████�
 FASE 4: Persistencia Robusta (v2.0 fields)             ██████████ COMPLETO (normalizado)
 FASE 5: Outbox Relay Real                              ██████████ COMPLETO (+ audit trail)
 FASE 6: Read Side / Queries                            ██████████ COMPLETO (+ calculos automaticos)
-FASE 7: Cross-Cutting (Error, Health, Auth)            ██████████ COMPLETO (health, shutdown, CORS/auth na infra)
+FASE 7: Cross-Cutting (Error, Health, Auth)            ██████████ COMPLETO (health, shutdown, JWT/RBAC, Zitadel OIDC)
 FASE 8: Testes (unit + integration + 95%)              █████████░ ~85% (32 arquivos, 135 testes, falta integration HTTP)
 FASE 9: Production Readiness                           ██████████ COMPLETO (Dockerfile, compose, CI, README, CHANGELOG)
                                                        ─────────────────
-                                                       Progresso: ~97%
+                                                       Progresso: ~98%
 ```
 
 ---
@@ -219,7 +219,7 @@ FASE 9: Production Readiness                           ████████�
 ### 3.2 Funcionalidades Transversais HTTP (COMPLETAS)
 
 - **`StandardResponse<T>`** — wrapper padronizado com `data` + `meta.timestamp` em todos os endpoints de sucesso
-- **`X-Actor-Id` header** — obrigatorio em todas as mutations (via `Request.extractActorId()`)
+- **JWT actorId** — extraido do `sub` claim do JWT (via `Request.extractActorId()`)
 - **Audit trail** — `GET /patients/:id/audit-trail?eventType=` com filtro por tipo de evento
 - **Before/after diff** — eventos de assessment com snapshots para rastreabilidade
 - **Relay automatico** — outbox_messages -> audit_trail (com actor_id)
@@ -322,33 +322,61 @@ Todos retornados no campo `computedAnalytics` do `PatientResponse`:
 
 ### 7.1 Implementado
 - [x] Middleware de erro global (`AppErrorMiddleware`)
-- [x] Rastreabilidade de ator (`X-Actor-Id` header)
+- [x] Rastreabilidade de ator (JWT `sub` claim via `Request.extractActorId()`)
 - [x] Audit trail com actorId + before/after diff
 - [x] `StandardResponse<T>` wrapper padronizado com `meta.timestamp`
 - [x] Validacao metadata-driven (`MetadataValidator`)
 - [x] Validacoes cruzadas (`CrossValidator`)
 - [x] Health check (`GET /health`) e readiness (`GET /ready` — testa conexao DB)
 - [x] Graceful shutdown (Vapor lifecycle hooks — `GracefulShutdownHandler` com log de startup/shutdown, compativel com SIGTERM do K8s)
+- [x] JWT Authentication (`JWTAuthMiddleware` — valida tokens via JWKS do Zitadel, skipa /health e /ready)
+- [x] RBAC (`RoleGuardMiddleware` — 3 roles: `social_worker` full CRUD, `owner` read-only, `admin` read-only + gestao)
 
-### 7.2 Decisoes de Arquitetura (Edge Cloud)
+### 7.2 Autenticacao e Autorizacao (Zitadel OIDC)
+
+**Identity Provider:** Zitadel (self-hosted, deploy via FluxCD HelmRelease no K3s)
+**Dominio:** `auth.acdgbrasil.com.br`
+**Flow:** Authorization Code + PKCE
+
+| Componente | Arquivo | Descricao |
+|------------|---------|-----------|
+| `ZitadelJWTPayload` | `IO/HTTP/Auth/ZitadelJWTPayload.swift` | Decodifica JWT com claim `urn:zitadel:iam:org:project:roles` |
+| `AuthenticatedUser` | `IO/HTTP/Auth/AuthenticatedUser.swift` | Model com userId + roles, armazenado no Request.storage |
+| `JWTAuthMiddleware` | `IO/HTTP/Middleware/JWTAuthMiddleware.swift` | Valida JWT via JWKS, popula authenticatedUser. Skipa /health e /ready |
+| `RoleGuardMiddleware` | `IO/HTTP/Middleware/RoleGuardMiddleware.swift` | Verifica se usuario tem role permitida para o grupo de rotas |
+
+**Mapa de permissoes por controller:**
+
+| Controller | Operacao | Roles permitidas |
+|------------|----------|-----------------|
+| PatientController | GET (read) | `social_worker`, `owner`, `admin` |
+| PatientController | POST/PUT/DELETE (write) | `social_worker` |
+| AssessmentController | PUT (write) | `social_worker` |
+| CareController | POST/PUT (write) | `social_worker` |
+| ProtectionController | PUT/POST (write) | `social_worker` |
+| LookupController | GET (read) | `social_worker`, `owner`, `admin` |
+| HealthController | GET (public) | Sem autenticacao (skipped pelo JWTAuthMiddleware) |
+
+### 7.3 Decisoes de Arquitetura (Edge Cloud)
 
 | Item | Decisao | Motivo |
 |------|---------|--------|
 | CORS | **Resolvido no Caddy (VPS Gateway)** | Caddy e o ponto de entrada publico; headers CORS globais la evitam duplicacao no app. |
-| Auth/JWT | **Resolvido no API Gateway** | O social-care so recebe trafego da rede privada (Tailnet). JWT e validado no gateway antes de chegar aqui. |
-| Authorization (roles) | **Adiado** | Depende de definicao de produto (quais roles existem e permissoes por rota). |
+| Auth/JWT | **Implementado no app** | JWTAuthMiddleware valida tokens JWT via JWKS do Zitadel. actorId extraido do `sub` claim. |
+| Authorization (roles) | **Implementado no app** | RoleGuardMiddleware com 3 roles: social_worker (CRUD), owner (read), admin (read + gestao). |
 | Request logging | **Simplificado** | Traefik (ingress K3s) ja faz access log. O app usa o Logger padrao do Vapor para eventos de negocio. |
 
 ### Entregaveis Fase 7:
 - [x] Middleware de erro global
-- [x] Rastreabilidade (actorId + audit trail)
+- [x] Rastreabilidade (actorId via JWT + audit trail)
 - [x] StandardResponse wrapper
 - [x] Validacao metadata-driven + cruzada
 - [x] Health check + readiness endpoints (`HealthController`)
 - [x] Graceful shutdown (`GracefulShutdownHandler`)
 - [x] CORS (Caddy — infra, nao app)
 - [x] Request logging (Traefik access log + Vapor Logger)
-- N/A Auth JWT (gateway) / Authorization (adiado — decisao de produto)
+- [x] JWT Authentication (JWTAuthMiddleware + JWKS do Zitadel)
+- [x] RBAC Authorization (RoleGuardMiddleware — social_worker, owner, admin)
 
 ---
 
@@ -481,7 +509,7 @@ Quando TODOS os itens abaixo estiverem marcados, o microservico esta pronto para
 - [x] 6 Controllers com 23 rotas implementadas
 - [x] Padrao **CRU** rigoroso (Delete somente em family-members)
 - [x] `AppErrorMiddleware` global
-- [x] actorId via `X-Actor-Id` header em todas as mutations
+- [x] actorId via JWT `sub` claim em todas as mutations
 - [x] Audit trail com filtro `?eventType=`
 - [x] Before/after diff nos eventos de assessment
 - [x] `StandardResponse<T>` wrapper com `meta.timestamp`
@@ -492,7 +520,8 @@ Quando TODOS os itens abaixo estiverem marcados, o microservico esta pronto para
 - [x] Graceful shutdown (`GracefulShutdownHandler` — compativel com SIGTERM/K8s)
 - [x] CORS (resolvido no Caddy/VPS Gateway — decisao de infra)
 - [x] Request logging (Traefik access log + Vapor Logger)
-- N/A Auth JWT (gateway) / Authorization roles (adiado — decisao de produto)
+- [x] JWT Authentication (`JWTAuthMiddleware` — JWKS via Zitadel OIDC)
+- [x] RBAC Authorization (`RoleGuardMiddleware` — social_worker, owner, admin)
 
 ### Persistencia (I/O)
 - [x] Repository usando transacao SQL
@@ -535,4 +564,4 @@ Prioridade 1:  Testes de integracao HTTP (VaporTesting)
 Prioridade 2:  Testes de Outbox/AuditTrail/ErrorMiddleware (MEDIA prioridade)
 ```
 
-> **Nota:** Progresso geral estimado em ~97%. As fases 0-7 e 9 estao completas. Fase 8: todos os 17 UCs cobertos por testes Application (67 testes). Restam apenas testes de integracao HTTP e cobertura >= 95%.
+> **Nota:** Progresso geral estimado em ~98%. As fases 0-7 e 9 estao completas (incluindo JWT auth e RBAC com Zitadel). Fase 8: todos os 17 UCs cobertos por testes Application (67 testes). Restam apenas testes de integracao HTTP e cobertura >= 95%.

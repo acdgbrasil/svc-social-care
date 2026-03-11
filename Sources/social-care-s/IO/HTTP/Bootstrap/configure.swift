@@ -53,6 +53,18 @@ func configure(_ app: Application) async throws {
     let jwksJSON = String(buffer: jwksData)
     try await app.jwt.keys.add(jwksJSON: jwksJSON)
 
+    // MARK: - Token Introspection (fallback for service accounts without role claims)
+
+    if let introspectClientId = Environment.get("ZITADEL_INTROSPECT_CLIENT_ID"),
+       let introspectClientSecret = Environment.get("ZITADEL_INTROSPECT_CLIENT_SECRET") {
+        let issuer = Environment.get("ZITADEL_ISSUER") ?? "https://auth.acdgbrasil.com.br"
+        app.tokenIntrospector = ZitadelTokenIntrospector(
+            introspectURL: "\(issuer)/oauth/v2/introspect",
+            clientId: introspectClientId,
+            clientSecret: introspectClientSecret
+        )
+    }
+
     // MARK: - Middleware
 
     app.middleware.use(AppErrorMiddleware())

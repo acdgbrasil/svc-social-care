@@ -16,11 +16,24 @@ struct JWTAuthMiddleware: AsyncMiddleware {
             throw Abort(.unauthorized, reason: "Invalid or expired token.")
         }
 
+        var roles = payload.roleNames
+
+        if roles.isEmpty, let introspector = request.application.tokenIntrospector {
+            let token = request.bearerToken ?? ""
+            roles = try await introspector.introspect(token: token, client: request.client)
+        }
+
         request.authenticatedUser = AuthenticatedUser(
             userId: payload.sub.value,
-            roles: payload.roleNames
+            roles: roles
         )
 
         return try await next.respond(to: request)
+    }
+}
+
+private extension Request {
+    var bearerToken: String? {
+        headers.bearerAuthorization?.token
     }
 }

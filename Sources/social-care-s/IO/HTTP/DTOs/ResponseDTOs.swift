@@ -486,7 +486,7 @@ struct AuditTrailEntryResponse: Content {
         self.occurredAt = model.occurred_at
         self.recordedAt = model.recorded_at
 
-        if let json = try? JSONSerialization.jsonObject(with: model.payload) {
+        if let json = try? JSONSerialization.jsonObject(with: Data(model.payload.utf8)) {
             self.payload = AnyJSON(value: json)
         } else {
             self.payload = AnyJSON(value: [:] as [String: Any])

@@ -58,7 +58,7 @@ struct AuditTrailTests {
         let outboxModels = try PatientDatabaseMapper.toOutbox(patient.uncommittedEvents)
         let payload = outboxModels[0].payload
 
-        let json = try JSONSerialization.jsonObject(with: payload) as? [String: Any]
+        let json = try JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any]
         #expect(json?["actorId"] as? String == "audit-actor-42")
         #expect(json?["patientId"] != nil)
     }
@@ -108,7 +108,7 @@ struct AuditTrailTests {
             aggregate_id: aggregateId,
             event_type: "HousingConditionUpdatedEvent",
             actor_id: "actor-42",
-            payload: Data("{\"test\":true}".utf8),
+            payload: "{\"test\":true}",
             occurred_at: occurred,
             recorded_at: recorded
         )
@@ -131,7 +131,7 @@ struct AuditTrailTests {
             aggregate_id: UUID(),
             event_type: "PatientCreatedEvent",
             actor_id: nil,
-            payload: Data("{}".utf8),
+            payload: "{}",
             occurred_at: Date(),
             recorded_at: Date()
         )
@@ -151,7 +151,7 @@ struct AuditTrailTests {
         let outboxModels = try PatientDatabaseMapper.toOutbox(patient.uncommittedEvents)
 
         for model in outboxModels {
-            let decoded = try await registry.decode(typeName: model.event_type, data: model.payload)
+            let decoded = try await registry.decode(typeName: model.event_type, data: Data(model.payload.utf8))
             #expect(decoded.id == model.id)
         }
     }
@@ -178,7 +178,7 @@ struct AuditTrailTests {
         #expect(outboxModels.count >= 2)
 
         for model in outboxModels {
-            let decoded = try await registry.decode(typeName: model.event_type, data: model.payload)
+            let decoded = try await registry.decode(typeName: model.event_type, data: Data(model.payload.utf8))
             #expect(decoded.id == model.id)
         }
     }

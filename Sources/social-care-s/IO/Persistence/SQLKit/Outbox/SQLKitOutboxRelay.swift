@@ -83,7 +83,7 @@ public actor SQLKitOutboxRelay: Sendable {
             do {
                 let event = try await DomainEventRegistry.shared.decode(
                     typeName: message.event_type,
-                    data: message.payload
+                    data: Data(message.payload.utf8)
                 )
 
                 // 3. Distribui para todos os streams ativos
@@ -128,8 +128,8 @@ public actor SQLKitOutboxRelay: Sendable {
         }
     }
 
-    private static func extractFields(from payload: Data) -> (aggregateId: UUID?, actorId: String?) {
-        guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any] else {
+    private static func extractFields(from payload: String) -> (aggregateId: UUID?, actorId: String?) {
+        guard let json = try? JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any] else {
             return (nil, nil)
         }
         let aggregateId = (json["patientId"] as? String).flatMap { UUID(uuidString: $0) }

@@ -70,7 +70,7 @@ struct PatientModel: Codable {
     // social_health_summary
     let shs_requires_constant_care: Bool?
     let shs_has_mobility_impairment: Bool?
-    let shs_functional_dependencies: Data?
+    let shs_functional_dependencies: String?
     let shs_has_relevant_drug_therapy: Bool?
 
     // socioeconomic_situation
@@ -85,7 +85,7 @@ struct PatientModel: Codable {
 
     // health_status
     let hs_food_insecurity: Bool?
-    let hs_constant_care_member_ids: Data?
+    let hs_constant_care_member_ids: String?
 
     // placement_history
     let ph_home_loss_report: String?
@@ -109,7 +109,7 @@ struct FamilyMemberModel: Codable {
     let is_primary_caregiver: Bool
     let resides_with_patient: Bool
     let has_disability: Bool
-    let required_documents: Data
+    let required_documents: String
     let birth_date: Date
 }
 
@@ -228,7 +228,7 @@ struct IngressLinkedProgramModel: Codable {
 struct OutboxMessageModel: Codable {
     let id: UUID
     let event_type: String
-    let payload: Data
+    let payload: String
     let occurred_at: Date
     let processed_at: Date?
 }
@@ -241,7 +241,7 @@ struct AuditTrailModel: Codable {
     let aggregate_id: UUID
     let event_type: String
     let actor_id: String?
-    let payload: Data
+    let payload: String
     let occurred_at: Date
     let recorded_at: Date
 }

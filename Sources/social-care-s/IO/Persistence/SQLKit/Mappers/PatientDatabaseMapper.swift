@@ -28,7 +28,7 @@ struct PatientDatabaseMapper {
                 is_primary_caregiver: m.isPrimaryCaregiver,
                 resides_with_patient: m.residesWithPatient,
                 has_disability: m.hasDisability,
-                required_documents: try encoder.encode(m.requiredDocuments.map { $0.rawValue }),
+                required_documents: String(data: try encoder.encode(m.requiredDocuments.map { $0.rawValue }), encoding: .utf8)!,
                 birth_date: m.birthDate.date
             )
         }
@@ -128,7 +128,7 @@ struct PatientDatabaseMapper {
         }
 
         let domainFamily = try familyMembers.map { m in
-            let rawDocs = (try? decoder.decode([String].self, from: m.required_documents)) ?? []
+            let rawDocs = (try? decoder.decode([String].self, from: Data(m.required_documents.utf8))) ?? []
             let docs = rawDocs.compactMap { RequiredDocument(rawValue: $0) }
             return try FamilyMember(
                 personId: try PersonId(m.person_id.uuidString),
@@ -223,7 +223,8 @@ struct PatientDatabaseMapper {
     static func toOutbox(_ events: [any DomainEvent]) throws -> [OutboxMessageModel] {
         let encoder = JSONEncoder()
         return try events.map { event in
-            let payload = try encoder.encode(AnySendableEvent(event: event))
+            let payloadData = try encoder.encode(AnySendableEvent(event: event))
+            let payload = String(data: payloadData, encoding: .utf8)!
             return OutboxMessageModel(
                 id: event.id,
                 event_type: String(describing: type(of: event)),
@@ -328,7 +329,7 @@ private extension PatientDatabaseMapper {
             // social_health_summary
             shs_requires_constant_care: patient.socialHealthSummary?.requiresConstantCare,
             shs_has_mobility_impairment: patient.socialHealthSummary?.hasMobilityImpairment,
-            shs_functional_dependencies: patient.socialHealthSummary.map { try! encoder.encode($0.functionalDependencies) },
+            shs_functional_dependencies: patient.socialHealthSummary.map { String(data: try! encoder.encode($0.functionalDependencies), encoding: .utf8)! },
             shs_has_relevant_drug_therapy: patient.socialHealthSummary?.hasRelevantDrugTherapy,
             // socioeconomic_situation
             ses_total_family_income: patient.socioeconomicSituation?.totalFamilyIncome,
@@ -340,7 +341,7 @@ private extension PatientDatabaseMapper {
             wi_has_retired_members: patient.workAndIncome?.hasRetiredMembers,
             // health_status
             hs_food_insecurity: patient.healthStatus?.foodInsecurity,
-            hs_constant_care_member_ids: patient.healthStatus.map { try! encoder.encode($0.constantCareNeeds.map { $0.description }) },
+            hs_constant_care_member_ids: patient.healthStatus.map { String(data: try! encoder.encode($0.constantCareNeeds.map { $0.description }), encoding: .utf8)! },
             // placement_history
             ph_home_loss_report: patient.placementHistory?.collectiveSituations.homeLossReport,
             ph_third_party_guard_report: patient.placementHistory?.collectiveSituations.thirdPartyGuardReport,
@@ -615,7 +616,7 @@ private extension PatientDatabaseMapper {
               let drugTherapy = p.shs_has_relevant_drug_therapy else { return nil }
 
         let dependencies: [String] = p.shs_functional_dependencies
-            .flatMap { try? decoder.decode([String].self, from: $0) } ?? []
+            .flatMap { try? decoder.decode([String].self, from: Data($0.utf8)) } ?? []
 
         return try SocialHealthSummary(
             requiresConstantCare: constantCare,
@@ -744,8 +745,8 @@ private extension PatientDatabaseMapper {
         }
 
         let careIds: [PersonId] = {
-            guard let data = p.hs_constant_care_member_ids,
-                  let ids = try? decoder.decode([String].self, from: data) else { return [] }
+            guard let jsonString = p.hs_constant_care_member_ids,
+                  let ids = try? decoder.decode([String].self, from: Data(jsonString.utf8)) else { return [] }
             return ids.compactMap { try? PersonId($0) }
         }()
 

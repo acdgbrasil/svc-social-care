@@ -48,6 +48,7 @@ struct SQLKitPatientRepository: PatientRepository {
     func find(byPersonId personId: PersonId) async throws -> Patient? {
         let personUUID = UUID(uuidString: personId.description)!
         guard let patientModel = try await db.select()
+            .column("*")
             .from("patients")
             .where("person_id", .equal, personUUID)
             .first(decoding: PatientModel.self) else { return nil }
@@ -58,6 +59,7 @@ struct SQLKitPatientRepository: PatientRepository {
     func find(byId id: PatientId) async throws -> Patient? {
         let uuid = UUID(uuidString: id.description)!
         guard let patientModel = try await db.select()
+            .column("*")
             .from("patients")
             .where("id", .equal, uuid)
             .first(decoding: PatientModel.self) else { return nil }
@@ -93,20 +95,20 @@ struct SQLKitPatientRepository: PatientRepository {
     private func loadAggregate(_ patientModel: PatientModel) async throws -> Patient {
         let id = patientModel.id
 
-        let diagnoses = try await db.select().from("patient_diagnoses").where("patient_id", .equal, id).all(decoding: DiagnosisModel.self)
-        let family = try await db.select().from("family_members").where("patient_id", .equal, id).all(decoding: FamilyMemberModel.self)
-        let appointments = try await db.select().from("social_care_appointments").where("patient_id", .equal, id).all(decoding: AppointmentModel.self)
-        let referrals = try await db.select().from("referrals").where("patient_id", .equal, id).all(decoding: ReferralModel.self)
-        let reports = try await db.select().from("rights_violation_reports").where("patient_id", .equal, id).all(decoding: ViolationReportModel.self)
+        let diagnoses = try await db.select().column("*").from("patient_diagnoses").where("patient_id", .equal, id).all(decoding: DiagnosisModel.self)
+        let family = try await db.select().column("*").from("family_members").where("patient_id", .equal, id).all(decoding: FamilyMemberModel.self)
+        let appointments = try await db.select().column("*").from("social_care_appointments").where("patient_id", .equal, id).all(decoding: AppointmentModel.self)
+        let referrals = try await db.select().column("*").from("referrals").where("patient_id", .equal, id).all(decoding: ReferralModel.self)
+        let reports = try await db.select().column("*").from("rights_violation_reports").where("patient_id", .equal, id).all(decoding: ViolationReportModel.self)
 
-        let memberIncomes = try await db.select().from("member_incomes").where("patient_id", .equal, id).all(decoding: MemberIncomeModel.self)
-        let socialBenefits = try await db.select().from("social_benefits").where("patient_id", .equal, id).all(decoding: SocialBenefitModel.self)
-        let educationalProfiles = try await db.select().from("member_educational_profiles").where("patient_id", .equal, id).all(decoding: MemberEducationalProfileModel.self)
-        let programOccurrences = try await db.select().from("program_occurrences").where("patient_id", .equal, id).all(decoding: ProgramOccurrenceModel.self)
-        let memberDeficiencies = try await db.select().from("member_deficiencies").where("patient_id", .equal, id).all(decoding: MemberDeficiencyModel.self)
-        let gestatingMembers = try await db.select().from("gestating_members").where("patient_id", .equal, id).all(decoding: GestatingMemberModel.self)
-        let placementRegistries = try await db.select().from("placement_registries").where("patient_id", .equal, id).all(decoding: PlacementRegistryModel.self)
-        let ingressLinkedPrograms = try await db.select().from("ingress_linked_programs").where("patient_id", .equal, id).all(decoding: IngressLinkedProgramModel.self)
+        let memberIncomes = try await db.select().column("*").from("member_incomes").where("patient_id", .equal, id).all(decoding: MemberIncomeModel.self)
+        let socialBenefits = try await db.select().column("*").from("social_benefits").where("patient_id", .equal, id).all(decoding: SocialBenefitModel.self)
+        let educationalProfiles = try await db.select().column("*").from("member_educational_profiles").where("patient_id", .equal, id).all(decoding: MemberEducationalProfileModel.self)
+        let programOccurrences = try await db.select().column("*").from("program_occurrences").where("patient_id", .equal, id).all(decoding: ProgramOccurrenceModel.self)
+        let memberDeficiencies = try await db.select().column("*").from("member_deficiencies").where("patient_id", .equal, id).all(decoding: MemberDeficiencyModel.self)
+        let gestatingMembers = try await db.select().column("*").from("gestating_members").where("patient_id", .equal, id).all(decoding: GestatingMemberModel.self)
+        let placementRegistries = try await db.select().column("*").from("placement_registries").where("patient_id", .equal, id).all(decoding: PlacementRegistryModel.self)
+        let ingressLinkedPrograms = try await db.select().column("*").from("ingress_linked_programs").where("patient_id", .equal, id).all(decoding: IngressLinkedProgramModel.self)
 
         return try PatientDatabaseMapper.toDomain(
             patient: patientModel,

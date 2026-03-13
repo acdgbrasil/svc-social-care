@@ -66,6 +66,7 @@ public actor SQLKitOutboxRelay: Sendable {
     private func pollAndDistribute() async throws {
         // 1. Busca mensagens não processadas
         let messages = try await db.select()
+            .column("*")
             .from("outbox_messages")
             .where("processed_at", .is, SQLLiteral.null)
             .orderBy("occurred_at", .ascending)

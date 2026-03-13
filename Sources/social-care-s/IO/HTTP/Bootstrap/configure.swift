@@ -32,6 +32,7 @@ func configure(_ app: Application) async throws {
         AddPerformanceIndexes(),
         NormalizeSchema(),
         CreateAuditTrail(),
+        ConvertJsonbToText(),
     ])
 
     // MARK: - Service Container

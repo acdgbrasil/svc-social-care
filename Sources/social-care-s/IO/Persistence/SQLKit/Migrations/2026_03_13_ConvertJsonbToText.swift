@@ -9,11 +9,15 @@ struct ConvertJsonbToText: Migration {
         try await db.raw("ALTER TABLE family_members ALTER COLUMN required_documents TYPE TEXT USING required_documents::text").run()
         try await db.raw("ALTER TABLE patients ALTER COLUMN shs_functional_dependencies TYPE TEXT USING shs_functional_dependencies::text").run()
         try await db.raw("ALTER TABLE patients ALTER COLUMN hs_constant_care_member_ids TYPE TEXT USING hs_constant_care_member_ids::text").run()
+        try await db.raw("ALTER TABLE outbox_messages ALTER COLUMN payload TYPE TEXT USING payload::text").run()
+        try await db.raw("ALTER TABLE audit_trail ALTER COLUMN payload TYPE TEXT USING payload::text").run()
     }
 
     func revert(on db: any SQLDatabase) async throws {
         try await db.raw("ALTER TABLE family_members ALTER COLUMN required_documents TYPE JSONB USING required_documents::jsonb").run()
         try await db.raw("ALTER TABLE patients ALTER COLUMN shs_functional_dependencies TYPE JSONB USING shs_functional_dependencies::jsonb").run()
         try await db.raw("ALTER TABLE patients ALTER COLUMN hs_constant_care_member_ids TYPE JSONB USING hs_constant_care_member_ids::jsonb").run()
+        try await db.raw("ALTER TABLE outbox_messages ALTER COLUMN payload TYPE JSONB USING payload::jsonb").run()
+        try await db.raw("ALTER TABLE audit_trail ALTER COLUMN payload TYPE JSONB USING payload::jsonb").run()
     }
 }

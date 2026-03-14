@@ -20,7 +20,7 @@ struct UpdateHealthStatusTests {
         )
 
         try await handler.handle(UpdateHealthStatusCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             deficiencies: [
                 .init(memberId: memberId, deficiencyTypeId: defTypeId,
                       needsConstantCare: true, responsibleCaregiverName: "Joao")
@@ -54,7 +54,7 @@ struct UpdateHealthStatusTests {
 
         await #expect(throws: UpdateHealthStatusError.self) {
             try await handler.handle(UpdateHealthStatusCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 deficiencies: [
                     .init(memberId: patient.personId.description,
                           deficiencyTypeId: UUID().uuidString,
@@ -102,13 +102,13 @@ struct UpdateHealthStatusTests {
         await repo.seed(p2)
 
         async let r1: Void = handler.handle(UpdateHealthStatusCommand(
-            patientId: p1.personId.description,
+            patientId: p1.id.description,
             deficiencies: [], gestatingMembers: [],
             constantCareNeeds: [], foodInsecurity: true,
             actorId: "actor-1"
         ))
         async let r2: Void = handler.handle(UpdateHealthStatusCommand(
-            patientId: p2.personId.description,
+            patientId: p2.id.description,
             deficiencies: [], gestatingMembers: [],
             constantCareNeeds: [], foodInsecurity: false,
             actorId: "actor-2"

@@ -26,7 +26,7 @@ struct UpdateWorkAndIncomeTests {
         let handler = makeHandler(repo: repo, bus: bus)
 
         try await handler.handle(UpdateWorkAndIncomeCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             individualIncomes: [
                 .init(memberId: memberId, occupationId: occId, hasWorkCard: true, monthlyAmount: 2500.0)
             ],
@@ -59,7 +59,7 @@ struct UpdateWorkAndIncomeTests {
 
         await #expect(throws: UpdateWorkAndIncomeError.self) {
             try await handler.handle(UpdateWorkAndIncomeCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 individualIncomes: [
                     .init(memberId: patient.personId.description,
                           occupationId: UUID().uuidString,
@@ -106,14 +106,14 @@ struct UpdateWorkAndIncomeTests {
         let occ = UUID().uuidString
 
         async let r1: Void = handler.handle(UpdateWorkAndIncomeCommand(
-            patientId: p1.personId.description,
+            patientId: p1.id.description,
             individualIncomes: [.init(memberId: p1.personId.description, occupationId: occ, hasWorkCard: true, monthlyAmount: 3000)],
             socialBenefits: [],
             hasRetiredMembers: false,
             actorId: "actor-1"
         ))
         async let r2: Void = handler.handle(UpdateWorkAndIncomeCommand(
-            patientId: p2.personId.description,
+            patientId: p2.id.description,
             individualIncomes: [.init(memberId: p2.personId.description, occupationId: occ, hasWorkCard: false, monthlyAmount: 1500)],
             socialBenefits: [],
             hasRetiredMembers: true,

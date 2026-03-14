@@ -14,7 +14,7 @@ public actor UpdateWorkAndIncomeCommandHandler: UpdateWorkAndIncomeUseCase {
     public func handle(_ command: UpdateWorkAndIncomeCommand) async throws {
         do {
             // 1. Parse
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
 
             // 2. Lookup Validation
             for draft in command.individualIncomes {
@@ -43,7 +43,7 @@ public actor UpdateWorkAndIncomeCommandHandler: UpdateWorkAndIncomeUseCase {
             }
 
             // 4. Fetch
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw UpdateWorkAndIncomeError.patientNotFound
             }
 

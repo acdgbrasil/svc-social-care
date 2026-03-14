@@ -14,7 +14,7 @@ public actor RegisterIntakeInfoCommandHandler: RegisterIntakeInfoUseCase {
     public func handle(_ command: RegisterIntakeInfoCommand) async throws {
         do {
             // 1. Parse
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
             let ingressTypeId = try LookupId(command.ingressTypeId)
 
             // 2. Lookup Validation
@@ -46,7 +46,7 @@ public actor RegisterIntakeInfoCommandHandler: RegisterIntakeInfoUseCase {
             )
 
             // 4. Fetch
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw RegisterIntakeInfoError.patientNotFound
             }
 

@@ -35,7 +35,7 @@ struct UpdateHousingConditionTests {
         let handler = UpdateHousingConditionCommandHandler(repository: repo, eventBus: bus)
 
         try await handler.handle(UpdateHousingConditionCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             condition: Self.validConditionDraft(),
             actorId: "actor-1"
         ))
@@ -78,7 +78,7 @@ struct UpdateHousingConditionTests {
 
         await #expect(throws: UpdateHousingConditionError.self) {
             try await handler.handle(UpdateHousingConditionCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 condition: invalidDraft,
                 actorId: "actor-1"
             ))
@@ -113,12 +113,12 @@ struct UpdateHousingConditionTests {
         let handler = UpdateHousingConditionCommandHandler(repository: repo, eventBus: bus)
 
         async let r1: Void = handler.handle(UpdateHousingConditionCommand(
-            patientId: p1.personId.description,
+            patientId: p1.id.description,
             condition: Self.validConditionDraft(),
             actorId: "actor-1"
         ))
         async let r2: Void = handler.handle(UpdateHousingConditionCommand(
-            patientId: p2.personId.description,
+            patientId: p2.id.description,
             condition: Self.validConditionDraft(),
             actorId: "actor-2"
         ))

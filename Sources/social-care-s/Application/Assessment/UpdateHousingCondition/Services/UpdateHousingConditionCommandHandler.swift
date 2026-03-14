@@ -13,7 +13,7 @@ public actor UpdateHousingConditionCommandHandler: UpdateHousingConditionUseCase
     public func handle(_ command: UpdateHousingConditionCommand) async throws {
         do {
             // 1. Parse
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
             
             guard let type = HousingCondition.ConditionType(rawValue: command.condition.type) else {
                 throw UpdateHousingConditionError.invalidHousingType(command.condition.type)
@@ -56,7 +56,7 @@ public actor UpdateHousingConditionCommandHandler: UpdateHousingConditionUseCase
             )
             
             // 2. Fetch
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw UpdateHousingConditionError.patientNotFound
             }
             

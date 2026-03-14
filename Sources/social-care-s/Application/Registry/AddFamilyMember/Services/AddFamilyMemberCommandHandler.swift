@@ -15,7 +15,7 @@ public actor AddFamilyMemberCommandHandler: AddFamilyMemberUseCase {
     public func handle(_ command: AddFamilyMemberCommand) async throws {
         do {
             // 1. Parse de IDs e instantes
-            let patientPersonId = try PersonId(command.patientPersonId)
+            let patientId = try PatientId(command.patientId)
             let memberPersonId = try PersonId(command.memberPersonId)
             let relationshipId = try LookupId(command.relationship)
             let now = TimeStamp.now
@@ -26,7 +26,7 @@ public actor AddFamilyMemberCommandHandler: AddFamilyMemberUseCase {
             }
 
             // 3. Localização do Agregado Patient
-            guard var patient = try await patientRepository.find(byPersonId: patientPersonId) else {
+            guard var patient = try await patientRepository.find(byId: patientId) else {
                 throw AddFamilyMemberError.patientNotFound
             }
 

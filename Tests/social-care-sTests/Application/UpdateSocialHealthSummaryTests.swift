@@ -15,7 +15,7 @@ struct UpdateSocialHealthSummaryTests {
         let handler = UpdateSocialHealthSummaryCommandHandler(repository: repo, eventBus: bus)
 
         try await handler.handle(UpdateSocialHealthSummaryCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             requiresConstantCare: true,
             hasMobilityImpairment: false,
             functionalDependencies: ["Alimentacao", "Higiene"],
@@ -61,7 +61,7 @@ struct UpdateSocialHealthSummaryTests {
 
         // Duas chamadas sequenciais no mesmo patient — a segunda sobrescreve
         try await handler.handle(UpdateSocialHealthSummaryCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             requiresConstantCare: false,
             hasMobilityImpairment: false,
             functionalDependencies: [],
@@ -70,7 +70,7 @@ struct UpdateSocialHealthSummaryTests {
         ))
 
         try await handler.handle(UpdateSocialHealthSummaryCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             requiresConstantCare: true,
             hasMobilityImpairment: true,
             functionalDependencies: ["Locomocao"],

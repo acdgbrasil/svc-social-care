@@ -27,6 +27,13 @@ extension CreateReferralCommandHandler {
             }
         }
         
+        if let e = error as? PatientIdError {
+            switch e {
+            case .invalidFormat(let value):
+                return .invalidPersonIdFormat(value)
+            }
+        }
+
         if let e = error as? PIDError {
             switch e {
             case .invalidFormat(let value):

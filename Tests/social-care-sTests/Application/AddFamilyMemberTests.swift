@@ -21,7 +21,7 @@ struct AddFamilyMemberTests {
         let prRelId = patient.familyMembers.first!.relationshipId.description
 
         try await handler.handle(AddFamilyMemberCommand(
-            patientPersonId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             memberPersonId: Self.newMemberId,
             relationship: UUID().uuidString,
             isResiding: true,
@@ -55,7 +55,7 @@ struct AddFamilyMemberTests {
 
         await #expect(throws: AddFamilyMemberError.self) {
             try await handler.handle(AddFamilyMemberCommand(
-                patientPersonId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 memberPersonId: PatientFixture.defaultPersonId,
                 relationship: UUID().uuidString,
                 isResiding: true,
@@ -79,7 +79,7 @@ struct AddFamilyMemberTests {
 
         await #expect(throws: AddFamilyMemberError.self) {
             try await handler.handle(AddFamilyMemberCommand(
-                patientPersonId: UUID().uuidString,
+                patientId: UUID().uuidString,
                 memberPersonId: UUID().uuidString,
                 relationship: UUID().uuidString,
                 isResiding: true,
@@ -107,7 +107,7 @@ struct AddFamilyMemberTests {
 
         await #expect(throws: AddFamilyMemberError.self) {
             try await handler.handle(AddFamilyMemberCommand(
-                patientPersonId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 memberPersonId: Self.newMemberId,
                 relationship: UUID().uuidString,
                 isResiding: true,

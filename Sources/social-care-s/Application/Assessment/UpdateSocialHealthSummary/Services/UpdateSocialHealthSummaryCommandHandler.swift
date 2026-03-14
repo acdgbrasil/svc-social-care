@@ -11,7 +11,7 @@ public actor UpdateSocialHealthSummaryCommandHandler: UpdateSocialHealthSummaryU
 
     public func handle(_ command: UpdateSocialHealthSummaryCommand) async throws {
         do {
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
 
             let summary = try SocialHealthSummary(
                 requiresConstantCare: command.requiresConstantCare,
@@ -20,7 +20,7 @@ public actor UpdateSocialHealthSummaryCommandHandler: UpdateSocialHealthSummaryU
                 hasRelevantDrugTherapy: command.hasRelevantDrugTherapy
             )
 
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw UpdateSocialHealthSummaryError.patientNotFound
             }
 
@@ -39,6 +39,9 @@ public actor UpdateSocialHealthSummaryCommandHandler: UpdateSocialHealthSummaryU
             switch e {
             case .functionalDependenciesEmpty: return .functionalDependenciesEmpty
             }
+        }
+        if let e = error as? PatientIdError {
+            switch e { case .invalidFormat(let v): return .invalidPersonIdFormat(v) }
         }
         if let e = error as? PIDError {
             switch e { case .invalidFormat(let v): return .invalidPersonIdFormat(v) }

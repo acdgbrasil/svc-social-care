@@ -13,7 +13,7 @@ public actor RegisterAppointmentCommandHandler: RegisterAppointmentUseCase {
     public func handle(_ command: RegisterAppointmentCommand) async throws -> String {
         do {
             // 1. Parse
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
             let professionalId = try ProfessionalId(command.professionalId)
             let date = try command.date.map { try TimeStamp($0) } ?? TimeStamp.now
             
@@ -28,7 +28,7 @@ public actor RegisterAppointmentCommandHandler: RegisterAppointmentUseCase {
             }
             
             // 2. Fetch
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw RegisterAppointmentError.patientNotFound
             }
             

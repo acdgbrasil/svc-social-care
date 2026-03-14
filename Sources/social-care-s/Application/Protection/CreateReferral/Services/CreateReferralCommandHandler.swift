@@ -13,7 +13,7 @@ public actor CreateReferralCommandHandler: CreateReferralUseCase {
     public func handle(_ command: CreateReferralCommand) async throws -> String {
         do {
             // 1. Parse
-            let patientPersonId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
             let referredPersonId = try PersonId(command.referredPersonId)
             
             let requestingProfessionalId = try command.professionalId.map { try ProfessionalId($0) } ?? ProfessionalId()
@@ -24,7 +24,7 @@ public actor CreateReferralCommandHandler: CreateReferralUseCase {
             }
             
             // 2. Fetch
-            guard var patient = try await repository.find(byPersonId: patientPersonId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw CreateReferralError.patientNotFound
             }
             

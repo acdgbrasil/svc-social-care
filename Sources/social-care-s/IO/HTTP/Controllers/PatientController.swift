@@ -61,7 +61,7 @@ struct PatientController: RouteCollection {
         let patientId = try req.parameters.require("patientId")
         let body = try req.content.decode(AddFamilyMemberRequest.self)
         let command = AddFamilyMemberCommand(
-            patientPersonId: patientId,
+            patientId: patientId,
             memberPersonId: body.memberPersonId,
             relationship: body.relationship,
             isResiding: body.isResiding,

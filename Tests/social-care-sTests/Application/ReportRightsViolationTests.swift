@@ -15,7 +15,7 @@ struct ReportRightsViolationTests {
         let handler = ReportRightsViolationCommandHandler(repository: repo, eventBus: bus)
 
         let reportId = try await handler.handle(ReportRightsViolationCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             victimId: PatientFixture.defaultPersonId,
             violationType: "NEGLECT",
             descriptionOfFact: "Descricao detalhada do fato ocorrido",
@@ -42,7 +42,7 @@ struct ReportRightsViolationTests {
 
         await #expect(throws: ReportRightsViolationError.self) {
             try await handler.handle(ReportRightsViolationCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 victimId: PatientFixture.defaultPersonId,
                 violationType: "TIPO_INVALIDO",
                 descriptionOfFact: "Descricao",
@@ -81,14 +81,14 @@ struct ReportRightsViolationTests {
         let handler = ReportRightsViolationCommandHandler(repository: repo, eventBus: bus)
 
         async let r1 = handler.handle(ReportRightsViolationCommand(
-            patientId: p1.personId.description,
+            patientId: p1.id.description,
             victimId: p1.personId.description,
             violationType: "NEGLECT",
             descriptionOfFact: "Fato A",
             actorId: "actor-1"
         ))
         async let r2 = handler.handle(ReportRightsViolationCommand(
-            patientId: p2.personId.description,
+            patientId: p2.id.description,
             victimId: p2.personId.description,
             violationType: "DISCRIMINATION",
             descriptionOfFact: "Fato B",

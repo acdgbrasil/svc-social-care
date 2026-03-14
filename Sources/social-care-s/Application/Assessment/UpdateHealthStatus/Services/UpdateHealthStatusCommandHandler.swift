@@ -14,7 +14,7 @@ public actor UpdateHealthStatusCommandHandler: UpdateHealthStatusUseCase {
     public func handle(_ command: UpdateHealthStatusCommand) async throws {
         do {
             // 1. Parse
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
 
             // 2. Lookup Validation
             for draft in command.deficiencies {
@@ -45,7 +45,7 @@ public actor UpdateHealthStatusCommandHandler: UpdateHealthStatusUseCase {
             let careNeeds = try command.constantCareNeeds.map { try PersonId($0) }
 
             // 4. Fetch
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw UpdateHealthStatusError.patientNotFound
             }
 

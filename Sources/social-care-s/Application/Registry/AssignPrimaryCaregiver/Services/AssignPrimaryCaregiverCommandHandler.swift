@@ -13,11 +13,11 @@ public actor AssignPrimaryCaregiverCommandHandler: AssignPrimaryCaregiverUseCase
     public func handle(_ command: AssignPrimaryCaregiverCommand) async throws {
         do {
             // 1. Parse
-            let patientPersonId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
             let memberPersonId = try PersonId(command.memberPersonId)
             
             // 2. Fetch
-            guard var patient = try await repository.find(byPersonId: patientPersonId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw AssignPrimaryCaregiverError.patientNotFound
             }
             

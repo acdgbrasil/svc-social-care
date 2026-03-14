@@ -15,7 +15,7 @@ struct CreateReferralTests {
         let handler = CreateReferralCommandHandler(repository: repo, eventBus: bus)
 
         let referralId = try await handler.handle(CreateReferralCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             referredPersonId: PatientFixture.defaultPersonId,
             destinationService: "CRAS",
             reason: "Acompanhamento familiar",
@@ -42,7 +42,7 @@ struct CreateReferralTests {
 
         await #expect(throws: CreateReferralError.self) {
             try await handler.handle(CreateReferralCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 referredPersonId: PatientFixture.defaultPersonId,
                 destinationService: "SERVICO_INVALIDO",
                 reason: "Motivo",
@@ -81,14 +81,14 @@ struct CreateReferralTests {
         let handler = CreateReferralCommandHandler(repository: repo, eventBus: bus)
 
         async let r1 = handler.handle(CreateReferralCommand(
-            patientId: p1.personId.description,
+            patientId: p1.id.description,
             referredPersonId: p1.personId.description,
             destinationService: "CRAS",
             reason: "Motivo A",
             actorId: "actor-1"
         ))
         async let r2 = handler.handle(CreateReferralCommand(
-            patientId: p2.personId.description,
+            patientId: p2.id.description,
             referredPersonId: p2.personId.description,
             destinationService: "CREAS",
             reason: "Motivo B",

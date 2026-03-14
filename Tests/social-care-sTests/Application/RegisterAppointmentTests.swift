@@ -15,7 +15,7 @@ struct RegisterAppointmentTests {
         let handler = RegisterAppointmentCommandHandler(repository: repo, eventBus: bus)
 
         let appointmentId = try await handler.handle(RegisterAppointmentCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             professionalId: UUID().uuidString,
             summary: "Atendimento inicial",
             actionPlan: "Encaminhar para CRAS",
@@ -42,7 +42,7 @@ struct RegisterAppointmentTests {
         let handler = RegisterAppointmentCommandHandler(repository: repo, eventBus: bus)
 
         let appointmentId = try await handler.handle(RegisterAppointmentCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             professionalId: UUID().uuidString,
             summary: "Resumo",
             actorId: "actor-1"
@@ -62,7 +62,7 @@ struct RegisterAppointmentTests {
 
         await #expect(throws: RegisterAppointmentError.self) {
             try await handler.handle(RegisterAppointmentCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 professionalId: UUID().uuidString,
                 type: "TIPO_INVALIDO",
                 actorId: "actor-1"
@@ -99,14 +99,14 @@ struct RegisterAppointmentTests {
         let handler = RegisterAppointmentCommandHandler(repository: repo, eventBus: bus)
 
         async let r1 = handler.handle(RegisterAppointmentCommand(
-            patientId: p1.personId.description,
+            patientId: p1.id.description,
             professionalId: UUID().uuidString,
             summary: "Visita A",
             type: "HOME_VISIT",
             actorId: "actor-1"
         ))
         async let r2 = handler.handle(RegisterAppointmentCommand(
-            patientId: p2.personId.description,
+            patientId: p2.id.description,
             professionalId: UUID().uuidString,
             summary: "Atendimento B",
             type: "OFFICE_APPOINTMENT",

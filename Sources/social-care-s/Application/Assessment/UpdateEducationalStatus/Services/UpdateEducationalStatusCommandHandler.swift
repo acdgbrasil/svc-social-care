@@ -14,7 +14,7 @@ public actor UpdateEducationalStatusCommandHandler: UpdateEducationalStatusUseCa
     public func handle(_ command: UpdateEducationalStatusCommand) async throws {
         do {
             // 1. Parse
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
 
             // 2. Lookup Validation
             for draft in command.memberProfiles {
@@ -50,7 +50,7 @@ public actor UpdateEducationalStatusCommandHandler: UpdateEducationalStatusUseCa
             }
 
             // 4. Fetch
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw UpdateEducationalStatusError.patientNotFound
             }
 

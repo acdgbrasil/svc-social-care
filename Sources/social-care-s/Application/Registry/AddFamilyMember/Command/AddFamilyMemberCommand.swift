@@ -1,7 +1,7 @@
 import Foundation
 
 public struct AddFamilyMemberCommand: Command {
-    public let patientPersonId: String
+    public let patientId: String
     public let memberPersonId: String
     public let relationship: String
     public let isResiding: Bool
@@ -13,7 +13,7 @@ public struct AddFamilyMemberCommand: Command {
     public let actorId: String
 
     public init(
-        patientPersonId: String,
+        patientId: String,
         memberPersonId: String,
         relationship: String,
         isResiding: Bool,
@@ -24,7 +24,7 @@ public struct AddFamilyMemberCommand: Command {
         prRelationshipId: String,
         actorId: String
     ) {
-        self.patientPersonId = patientPersonId
+        self.patientId = patientId
         self.memberPersonId = memberPersonId
         self.relationship = relationship
         self.isResiding = isResiding

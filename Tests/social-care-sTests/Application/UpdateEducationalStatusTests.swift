@@ -21,7 +21,7 @@ struct UpdateEducationalStatusTests {
         )
 
         try await handler.handle(UpdateEducationalStatusCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             memberProfiles: [
                 .init(memberId: memberId, canReadWrite: true, attendsSchool: true, educationLevelId: levelId)
             ],
@@ -54,7 +54,7 @@ struct UpdateEducationalStatusTests {
 
         await #expect(throws: UpdateEducationalStatusError.self) {
             try await handler.handle(UpdateEducationalStatusCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 memberProfiles: [
                     .init(memberId: patient.personId.description,
                           canReadWrite: true, attendsSchool: false,

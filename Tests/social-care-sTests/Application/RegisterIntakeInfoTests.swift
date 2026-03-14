@@ -20,7 +20,7 @@ struct RegisterIntakeInfoTests {
         )
 
         try await handler.handle(RegisterIntakeInfoCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             ingressTypeId: ingressTypeId,
             originName: "CRAS Norte",
             originContact: "3333-4444",
@@ -54,7 +54,7 @@ struct RegisterIntakeInfoTests {
 
         await #expect(throws: RegisterIntakeInfoError.self) {
             try await handler.handle(RegisterIntakeInfoCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 ingressTypeId: UUID().uuidString,
                 originName: "CRAS",
                 originContact: nil,
@@ -82,7 +82,7 @@ struct RegisterIntakeInfoTests {
 
         await #expect(throws: RegisterIntakeInfoError.self) {
             try await handler.handle(RegisterIntakeInfoCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 ingressTypeId: ingressTypeId.description,
                 originName: "CRAS",
                 originContact: nil,
@@ -134,14 +134,14 @@ struct RegisterIntakeInfoTests {
         )
 
         async let r1: Void = handler1.handle(RegisterIntakeInfoCommand(
-            patientId: p1.personId.description,
+            patientId: p1.id.description,
             ingressTypeId: UUID().uuidString,
             originName: "CRAS A", originContact: nil,
             serviceReason: "Motivo A", linkedSocialPrograms: [],
             actorId: "actor-1"
         ))
         async let r2: Void = handler2.handle(RegisterIntakeInfoCommand(
-            patientId: p2.personId.description,
+            patientId: p2.id.description,
             ingressTypeId: UUID().uuidString,
             originName: "CRAS B", originContact: nil,
             serviceReason: "Motivo B", linkedSocialPrograms: [],

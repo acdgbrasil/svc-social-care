@@ -15,7 +15,7 @@ struct AssignPrimaryCaregiverTests {
         let handler = AssignPrimaryCaregiverCommandHandler(repository: repo, eventBus: bus)
 
         try await handler.handle(AssignPrimaryCaregiverCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             memberPersonId: PatientFixture.defaultMemberId,
             actorId: "actor-1"
         ))
@@ -39,7 +39,7 @@ struct AssignPrimaryCaregiverTests {
 
         await #expect(throws: AssignPrimaryCaregiverError.self) {
             try await handler.handle(AssignPrimaryCaregiverCommand(
-                patientId: PatientFixture.defaultPersonId,
+                patientId: patient.id.description,
                 memberPersonId: UUID().uuidString,
                 actorId: "actor-1"
             ))

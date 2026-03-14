@@ -15,7 +15,7 @@ struct UpdateSocioEconomicSituationTests {
         let handler = UpdateSocioEconomicSituationCommandHandler(repository: repo, eventBus: bus)
 
         try await handler.handle(UpdateSocioEconomicSituationCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             situation: .init(
                 totalFamilyIncome: 2500.0,
                 incomePerCapita: 1250.0,
@@ -47,7 +47,7 @@ struct UpdateSocioEconomicSituationTests {
         let handler = UpdateSocioEconomicSituationCommandHandler(repository: repo, eventBus: bus)
 
         try await handler.handle(UpdateSocioEconomicSituationCommand(
-            patientId: PatientFixture.defaultPersonId,
+            patientId: patient.id.description,
             situation: .init(
                 totalFamilyIncome: 1500.0,
                 incomePerCapita: 750.0,
@@ -98,7 +98,7 @@ struct UpdateSocioEconomicSituationTests {
         let handler = UpdateSocioEconomicSituationCommandHandler(repository: repo, eventBus: bus)
 
         async let r1: Void = handler.handle(UpdateSocioEconomicSituationCommand(
-            patientId: p1.personId.description,
+            patientId: p1.id.description,
             situation: .init(
                 totalFamilyIncome: 3000.0, incomePerCapita: 1500.0,
                 receivesSocialBenefit: false, socialBenefits: [],
@@ -107,7 +107,7 @@ struct UpdateSocioEconomicSituationTests {
             actorId: "actor-1"
         ))
         async let r2: Void = handler.handle(UpdateSocioEconomicSituationCommand(
-            patientId: p2.personId.description,
+            patientId: p2.id.description,
             situation: .init(
                 totalFamilyIncome: 1000.0, incomePerCapita: 500.0,
                 receivesSocialBenefit: false, socialBenefits: [],

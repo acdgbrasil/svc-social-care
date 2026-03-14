@@ -7,6 +7,10 @@ extension AddFamilyMemberCommandHandler {
             return e
         }
         
+        if error is PatientIdError {
+            return .invalidPersonIdFormat
+        }
+
         if error is PIDError {
             return .invalidPersonIdFormat
         }

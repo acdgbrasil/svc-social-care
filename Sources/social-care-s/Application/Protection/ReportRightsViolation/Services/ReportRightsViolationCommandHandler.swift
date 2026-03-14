@@ -13,7 +13,7 @@ public actor ReportRightsViolationCommandHandler: ReportRightsViolationUseCase {
     public func handle(_ command: ReportRightsViolationCommand) async throws -> String {
         do {
             // 1. Parse
-            let patientPersonId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
             let victimId = try PersonId(command.victimId)
             let violationReportId = try command.id.map { try ViolationReportId($0) } ?? ViolationReportId()
             let reportDate = try command.reportDate.map { try TimeStamp($0) } ?? TimeStamp.now
@@ -24,7 +24,7 @@ public actor ReportRightsViolationCommandHandler: ReportRightsViolationUseCase {
             }
             
             // 2. Fetch
-            guard var patient = try await repository.find(byPersonId: patientPersonId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw ReportRightsViolationError.patientNotFound
             }
             

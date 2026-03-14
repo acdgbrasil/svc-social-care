@@ -13,7 +13,7 @@ public actor UpdateSocioEconomicSituationCommandHandler: UpdateSocioEconomicSitu
     public func handle(_ command: UpdateSocioEconomicSituationCommand) async throws {
         do {
             // 1. Parse
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
             
             let benefits = try command.situation.socialBenefits.map { draft in
                 let beneficiaryId = try PersonId(draft.beneficiaryId)
@@ -36,7 +36,7 @@ public actor UpdateSocioEconomicSituationCommandHandler: UpdateSocioEconomicSitu
             )
             
             // 2. Fetch
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw UpdateSocioEconomicSituationError.patientNotFound
             }
             

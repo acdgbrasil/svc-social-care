@@ -11,7 +11,7 @@ public actor UpdateCommunitySupportNetworkCommandHandler: UpdateCommunitySupport
 
     public func handle(_ command: UpdateCommunitySupportNetworkCommand) async throws {
         do {
-            let personId = try PersonId(command.patientId)
+            let patientId = try PatientId(command.patientId)
 
             let network = try CommunitySupportNetwork(
                 hasRelativeSupport: command.hasRelativeSupport,
@@ -23,7 +23,7 @@ public actor UpdateCommunitySupportNetworkCommandHandler: UpdateCommunitySupport
                 facesDiscrimination: command.facesDiscrimination
             )
 
-            guard var patient = try await repository.find(byPersonId: personId) else {
+            guard var patient = try await repository.find(byId: patientId) else {
                 throw UpdateCommunitySupportNetworkError.patientNotFound
             }
 
@@ -43,6 +43,9 @@ public actor UpdateCommunitySupportNetworkCommandHandler: UpdateCommunitySupport
             case .familyConflictsWhitespace: return .familyConflictsWhitespace
             case .familyConflictsTooLong(let limit): return .familyConflictsTooLong(limit: limit)
             }
+        }
+        if let e = error as? PatientIdError {
+            switch e { case .invalidFormat(let v): return .invalidPersonIdFormat(v) }
         }
         if let e = error as? PIDError {
             switch e { case .invalidFormat(let v): return .invalidPersonIdFormat(v) }

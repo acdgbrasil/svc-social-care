@@ -2,10 +2,13 @@ import Vapor
 
 struct AppErrorMiddleware: AsyncMiddleware {
     private static let verboseErrors = Environment.get("VERBOSE_ERRORS") == "true"
+    static let buildVersion = Environment.get("BUILD_SHA") ?? "dev"
 
     func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
         do {
-            return try await next.respond(to: request)
+            let response = try await next.respond(to: request)
+            response.headers.add(name: "X-Build-Version", value: Self.buildVersion)
+            return response
         } catch let appError as AppError {
             logAppError(appError, request: request)
             return makeResponse(
@@ -68,6 +71,7 @@ struct AppErrorMiddleware: AsyncMiddleware {
             let data = try JSONEncoder().encode(["error": body])
             var headers = HTTPHeaders()
             headers.contentType = .json
+            headers.add(name: "X-Build-Version", value: Self.buildVersion)
             return Response(status: status, headers: headers, body: .init(data: data))
         } catch {
             return Response(status: .internalServerError)

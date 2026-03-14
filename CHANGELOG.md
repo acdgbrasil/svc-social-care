@@ -4,6 +4,43 @@ Todas as mudancas relevantes deste servico serao registradas aqui.
 
 ## [Unreleased]
 
+### Adicionado
+- Header `X-Build-Version` em todas as respostas HTTP (sucesso e erro) via `AppErrorMiddleware`, lendo `BUILD_SHA` do environment (default: `dev`). Permite verificar qual versao do backend esta rodando sem acesso ao cluster Kubernetes.
+
+## [0.5.3] - 2026-03-13
+
+### Corrigido
+- **Queries SELECT sem colunas geravam `DecodingError` (HTTP 400).** O SQLKit 3.34.0 nao emite `*` quando nenhuma coluna e especificada no builder (`SQLSelect.serialize` ignora a clausula de colunas quando o array esta vazio). Todas as queries de leitura do `SQLKitPatientRepository` (`find(byId:)`, `find(byPersonId:)`, e as 13 queries do `loadAggregate()`) e do `SQLKitOutboxRelay` (`pollAndDistribute()`) geravam `SELECT FROM table` em vez de `SELECT * FROM table`. O PostgreSQL retorna rows com zero colunas, o `SQLRowDecoder` falha no primeiro campo obrigatorio (`id: UUID`) com `DecodingError.keyNotFound("id")`, e o Vapor 4 converte `DecodingError` para `AbortError(.badRequest)` — resultando no erro `400: "No such key 'id' at path ''"` reportado pelo frontend. Corrigido adicionando `.column("*")` explicito em todas as 16 queries afetadas. O `SQLColumn("*")` e tratado corretamente pelo SQLKit: o init converte `"*"` para `SQLLiteral.all` (wildcard nao-quoted).
+
+## [0.5.2] - 2026-03-13
+
+### Corrigido
+- Migration `ConvertJsonbToText` expandida para incluir `outbox_messages.payload` e `audit_trail.payload`, que tambem sofriam do mismatch JSONB/TEXT e causavam falha silenciosa no outbox relay e no registro de audit trail.
+
+## [0.5.1] - 2026-03-13
+
+### Corrigido
+- **Colunas JSONB causavam erro de tipo no PostgresKit.** O SQLKit `.model()` serializa campos `String` do Swift como TEXT, mas as colunas `required_documents` (family_members), `shs_functional_dependencies` e `hs_constant_care_member_ids` (patients) estavam definidas como JSONB no PostgreSQL. O PostgresKit rejeitava o bind com type mismatch. Corrigido com migration `ConvertJsonbToText` que converte essas colunas de JSONB para TEXT via `ALTER COLUMN ... TYPE TEXT USING ...::text`.
+
+### Complementar (sem tag)
+- `AppErrorMiddleware` passou a incluir `details` no body de erro quando `VERBOSE_ERRORS=true`, para facilitar debug no HML.
+- Colunas JSONB dos modelos `PatientDatabaseModels` alteradas de `Data` para `String` para alinhar com o tipo TEXT do PostgreSQL.
+
+### Complementar entre v0.5.0 e v0.5.1 (sem tag)
+
+#### 2026-03-07 — Infraestrutura de deploy
+- `fix: usar primaryKey(autoIncrement: false) em colunas UUID` — PostgreSQL requer flag explicita para PKs nao-autoincrementadas com SQLKit.
+- `fix: bind server on 0.0.0.0 and lower coverage gate to 30%` — servidor bindava em localhost, inacessivel dentro do container Docker/K8s.
+- `fix: read PORT env var for K8s container port alignment` — porta fixa impedia configuracao via Kubernetes.
+
+#### 2026-03-07 — Autenticacao e RBAC
+- `feat: add JWT authentication and RBAC middleware with Zitadel integration` (PR #1) — `JWTAuthMiddleware` valida tokens JWT via JWKS do Zitadel. `RoleGuardMiddleware` implementa RBAC por rota. `ZitadelJWTPayload` extrai roles do claim `urn:zitadel:iam:org:project:roles`. `AuthenticatedUser` armazenado no request storage.
+
+#### 2026-03-11 — Service Accounts e persistencia
+- `feat: add Zitadel Token Introspection fallback for service accounts` — fallback de introspeccao OAuth2 para service accounts que nao carregam roles no JWT. Configuravel via `ZITADEL_INTROSPECT_CLIENT_ID/SECRET` e `ALLOWED_SERVICE_ACCOUNTS`.
+- `feat: add service account allowlist + remove CI coverage gate` — allowlist de service accounts confiavies e remocao temporaria do gate de cobertura no CI para desbloquear deploys.
+- `fix(persistence): replace Data with String for JSONB columns to fix REGP-024` — campos JSONB nos modelos de banco usavam `Data` (bytes) em vez de `String`, causando falha na serializacao do PostgresKit.
+
 ## [0.5.0] - 2026-03-07
 
 ### Adicionado

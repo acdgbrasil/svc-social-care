@@ -24,7 +24,7 @@ func configure(_ app: Application) async throws {
     // MARK: - Migrations
 
     let runner = SQLKitMigrationRunner(db: sqlDb)
-    try await runner.run([
+    let migrations: [any Migration] = [
         CreateInitialSchema(),
         AddRegistrationFields(),
         CreateLookupTables(),
@@ -33,7 +33,17 @@ func configure(_ app: Application) async throws {
         NormalizeSchema(),
         CreateAuditTrail(),
         ConvertJsonbToText(),
-    ])
+    ]
+    for attempt in 1...10 {
+        do {
+            try await runner.run(migrations)
+            break
+        } catch {
+            app.logger.warning("Migration attempt \(attempt)/10 failed: \(error)")
+            if attempt == 10 { throw error }
+            try await Task.sleep(for: .seconds(min(attempt * 2, 30)))
+        }
+    }
 
     // MARK: - Service Container
 
@@ -47,12 +57,30 @@ func configure(_ app: Application) async throws {
     // MARK: - JWT (Zitadel OIDC)
 
     let jwksUrl = Environment.get("JWKS_URL") ?? "https://auth.acdgbrasil.com.br/oauth/v2/keys"
-    let jwksResponse = try await app.client.get(URI(string: jwksUrl))
-    guard let jwksData = jwksResponse.body else {
-        throw Abort(.internalServerError, reason: "Failed to fetch JWKS from identity provider.")
+    var jwksLoaded = false
+    for attempt in 1...10 {
+        do {
+            let jwksResponse = try await app.client.get(URI(string: jwksUrl))
+            guard let jwksData = jwksResponse.body else {
+                throw Abort(.internalServerError, reason: "Empty JWKS response")
+            }
+            let jwksJSON = String(buffer: jwksData)
+            guard jwksJSON.trimmingCharacters(in: .whitespaces).hasPrefix("{") else {
+                throw Abort(.internalServerError, reason: "JWKS response is not JSON: \(jwksJSON.prefix(100))")
+            }
+            try await app.jwt.keys.add(jwksJSON: jwksJSON)
+            jwksLoaded = true
+            break
+        } catch {
+            app.logger.warning("JWKS fetch attempt \(attempt)/10 failed: \(error)")
+            if attempt < 10 {
+                try await Task.sleep(for: .seconds(min(attempt * 2, 30)))
+            }
+        }
     }
-    let jwksJSON = String(buffer: jwksData)
-    try await app.jwt.keys.add(jwksJSON: jwksJSON)
+    if !jwksLoaded {
+        throw Abort(.internalServerError, reason: "Failed to load JWKS after 10 attempts from \(jwksUrl)")
+    }
 
     // MARK: - Token Introspection (fallback for service accounts without role claims)
 

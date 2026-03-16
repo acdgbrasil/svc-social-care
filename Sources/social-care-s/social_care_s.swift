@@ -9,7 +9,12 @@ enum social_care_s {
         let app = try await Application.make(env)
         defer { Task { try await app.asyncShutdown() } }
 
-        try await configure(app)
+        do {
+            try await configure(app)
+        } catch {
+            app.logger.critical("Startup failed: \(error)")
+            throw error
+        }
 
         try await app.execute()
     }

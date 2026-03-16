@@ -45,6 +45,18 @@ func configure(_ app: Application) async throws {
         }
     }
 
+    // MARK: - Domain Event Registry
+
+    await DomainEventRegistry.shared.bootstrap()
+
+    // MARK: - Outbox Relay + NATS
+
+    let natsPublisher: NATSEventPublisher? = Environment.get("NATS_URL").map {
+        NATSEventPublisher(url: $0)
+    }
+    let relay = SQLKitOutboxRelay(db: sqlDb, natsPublisher: natsPublisher)
+    Task { await relay.startContinuousPolling() }
+
     // MARK: - Service Container
 
     app.services = ServiceContainer(db: sqlDb)

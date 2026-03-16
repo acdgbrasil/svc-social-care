@@ -14,6 +14,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/postgres-kit.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0"),
+        .package(url: "https://github.com/nats-io/nats.swift.git", from: "0.1.0"),
     ],
     targets: [
         .executableTarget(
@@ -23,6 +24,7 @@ let package = Package(
                 .product(name: "PostgresKit", package: "postgres-kit"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "JWT", package: "jwt"),
+                .product(name: "Nats", package: "nats.swift"),
             ],
             path: "Sources/social-care-s"
         ),

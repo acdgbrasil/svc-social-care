@@ -8,12 +8,14 @@ public actor SQLKitOutboxRelay: Sendable {
     private let db: any SQLDatabase
     private var isPolling = false
     private let pollInterval: Duration
-    
+    private let natsPublisher: (any NATSPublishing)?
+
     // Armazena as continuações dos streams ativos
     private var continuations: [UUID: AsyncStream<any DomainEvent>.Continuation] = [:]
-    
-    public init(db: any SQLDatabase, pollInterval: Duration = .seconds(1)) {
+
+    public init(db: any SQLDatabase, natsPublisher: (any NATSPublishing)? = nil, pollInterval: Duration = .seconds(1)) {
         self.db = db
+        self.natsPublisher = natsPublisher
         self.pollInterval = pollInterval
     }
     
@@ -46,20 +48,40 @@ public actor SQLKitOutboxRelay: Sendable {
         continuations.removeValue(forKey: id)
     }
     
+    /// Inicia o polling em modo standalone (sem consumers in-process).
+    /// Usado quando o relay tem um NATSPublisher configurado e precisa
+    /// rodar continuamente independente de ter consumers via `events()`.
+    public func startContinuousPolling() async {
+        guard !isPolling else { return }
+        isPolling = true
+
+        while !Task.isCancelled {
+            do {
+                try await pollAndDistribute()
+            } catch {
+                print("❌ Outbox Relay Error: \(error.localizedDescription)")
+            }
+
+            try? await Task.sleep(for: pollInterval)
+        }
+
+        isPolling = false
+    }
+
     private func startPolling() async {
         guard !isPolling else { return }
         isPolling = true
-        
+
         while !continuations.isEmpty {
             do {
                 try await pollAndDistribute()
             } catch {
                 print("❌ Outbox Relay Error: \(error.localizedDescription)")
             }
-            
+
             try? await Task.sleep(for: pollInterval)
         }
-        
+
         isPolling = false
     }
     
@@ -87,12 +109,17 @@ public actor SQLKitOutboxRelay: Sendable {
                     data: Data(message.payload.utf8)
                 )
 
-                // 3. Distribui para todos os streams ativos
+                // 3. Publica no NATS (at-least-once: se falhar, não marca como processed)
+                if let nats = natsPublisher {
+                    try await nats.publish(event, typeName: message.event_type)
+                }
+
+                // 4. Distribui para todos os streams ativos (in-process)
                 for continuation in continuations.values {
                     continuation.yield(event)
                 }
 
-                // 4. Prepara entrada no audit trail
+                // 5. Prepara entrada no audit trail
                 let parsed = Self.extractFields(from: message.payload)
                 let aggregateId = parsed.aggregateId ?? message.id
                 auditEntries.append(AuditTrailModel(
@@ -108,8 +135,12 @@ public actor SQLKitOutboxRelay: Sendable {
 
                 processedIds.append(message.id)
             } catch {
-                print("⚠️ Failed to decode outbox event \(message.id): \(error)")
-                processedIds.append(message.id)
+                print("⚠️ Failed to process outbox event \(message.id): \(error)")
+                // Só marca como processed se foi erro de decode (não de NATS)
+                if (error as? DomainEventError) != nil {
+                    processedIds.append(message.id)
+                }
+                // Se NATS falhou: não adiciona ao processedIds → retry na próxima poll
             }
         }
 

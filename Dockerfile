@@ -7,7 +7,11 @@ LABEL org.opencontainers.image.source="https://github.com/acdgbrasil/svc-social-
 LABEL org.opencontainers.image.description="ACDG svc-social-care service"
 LABEL org.opencontainers.image.licenses="Proprietary"
 
-RUN apt-get update && apt-get install -y libsodium-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl build-essential && \
+    curl -sL https://github.com/jedisct1/libsodium/releases/download/1.0.20-RELEASE/libsodium-1.0.20.tar.gz | tar xz && \
+    cd libsodium-1.0.20 && ./configure && make -j$(nproc) && make install && ldconfig && \
+    cd .. && rm -rf libsodium-1.0.20 && \
+    apt-get purge -y build-essential && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 COPY Package.swift Package.resolved ./
 RUN swift package resolve
@@ -18,7 +22,8 @@ RUN swift build -c release --product social-care-s
 
 FROM swift:6.2-jammy-slim
 
-RUN apt-get update && apt-get install -y libsodium23 && rm -rf /var/lib/apt/lists/*
+COPY --from=build /usr/local/lib/libsodium.so* /usr/local/lib/
+RUN ldconfig
 
 WORKDIR /app
 COPY --from=build /build/.build/release/social-care-s /app/social-care-s

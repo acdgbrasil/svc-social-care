@@ -67,6 +67,126 @@ struct SQLKitPatientRepository: PatientRepository {
         return try await loadAggregate(patientModel)
     }
 
+    func list(search: String?, cursor: PatientId?, limit: Int) async throws -> PatientListResult {
+        // 1. Total count (com filtro de busca se aplicável)
+        var countQuery = db.select()
+            .column(SQLFunction("COUNT", args: SQLLiteral.all), as: "count")
+            .from("patients")
+
+        if let search, !search.isEmpty {
+            let pattern = "%\(search)%"
+            countQuery = countQuery.where { group in
+                group.where(SQLFunction("LOWER", args: SQLColumn("first_name")), .like, SQLBind(pattern.lowercased()))
+                    .orWhere(SQLFunction("LOWER", args: SQLColumn("last_name")), .like, SQLBind(pattern.lowercased()))
+                    .orWhere(SQLColumn("cpf"), .like, SQLBind(pattern))
+            }
+        }
+
+        let totalCount = try await countQuery
+            .first()
+            .map { try $0.decode(column: "count", as: Int.self) } ?? 0
+
+        // 2. Query principal: projeção leve sem loadAggregate
+        var query = db.select()
+            .column(SQLColumn("id", table: "patients"))
+            .column(SQLColumn("person_id", table: "patients"))
+            .column(SQLColumn("first_name", table: "patients"))
+            .column(SQLColumn("last_name", table: "patients"))
+            .from("patients")
+
+        if let search, !search.isEmpty {
+            let pattern = "%\(search)%"
+            query = query.where { group in
+                group.where(SQLFunction("LOWER", args: SQLColumn("first_name")), .like, SQLBind(pattern.lowercased()))
+                    .orWhere(SQLFunction("LOWER", args: SQLColumn("last_name")), .like, SQLBind(pattern.lowercased()))
+                    .orWhere(SQLColumn("cpf"), .like, SQLBind(pattern))
+            }
+        }
+
+        if let cursor {
+            let cursorUUID = UUID(uuidString: cursor.description)!
+            query = query.where("id", .greaterThan, cursorUUID)
+        }
+
+        let fetchLimit = limit + 1
+        query = query.orderBy("id").limit(fetchLimit)
+
+        struct PatientListRow: Codable {
+            let id: UUID
+            let person_id: UUID
+            let first_name: String?
+            let last_name: String?
+        }
+
+        let rows = try await query.all(decoding: PatientListRow.self)
+
+        // 3. Buscar diagnóstico primário e contagem de membros para os pacientes retornados
+        let patientIds = rows.prefix(limit).map { $0.id }
+
+        var diagnosisMap: [UUID: String] = [:]
+        var memberCountMap: [UUID: Int] = [:]
+
+        if !patientIds.isEmpty {
+            struct DiagRow: Codable {
+                let patient_id: UUID
+                let description: String
+            }
+
+            // Diagnóstico: primeiro por patient_id
+            let diagRows = try await db.select()
+                .column("patient_id")
+                .column("description")
+                .from("patient_diagnoses")
+                .where("patient_id", .in, patientIds)
+                .all(decoding: DiagRow.self)
+
+            for row in diagRows {
+                if diagnosisMap[row.patient_id] == nil {
+                    diagnosisMap[row.patient_id] = row.description
+                }
+            }
+
+            // Member count por patient_id
+            struct CountRow: Codable {
+                let patient_id: UUID
+                let cnt: Int
+            }
+
+            let countRows = try await db.raw("""
+                SELECT patient_id, COUNT(*)::int AS cnt
+                FROM family_members
+                WHERE patient_id IN (\(unsafeRaw: patientIds.map { "'\($0.uuidString)'" }.joined(separator: ",")))
+                GROUP BY patient_id
+                """).all(decoding: CountRow.self)
+
+            for row in countRows {
+                memberCountMap[row.patient_id] = row.cnt
+            }
+        }
+
+        // 4. Montar resultado
+        let hasMore = rows.count > limit
+        let items: [PatientSummary] = try rows.prefix(limit).map { row in
+            PatientSummary(
+                patientId: try PatientId(row.id.uuidString),
+                personId: try PersonId(row.person_id.uuidString),
+                firstName: row.first_name,
+                lastName: row.last_name,
+                primaryDiagnosis: diagnosisMap[row.id],
+                memberCount: memberCountMap[row.id] ?? 0
+            )
+        }
+
+        let nextCursor = hasMore ? items.last?.patientId : nil
+
+        return PatientListResult(
+            items: items,
+            totalCount: totalCount,
+            hasMore: hasMore,
+            nextCursor: nextCursor
+        )
+    }
+
     func exists(byPersonId personId: PersonId) async throws -> Bool {
         let personUUID = UUID(uuidString: personId.description)!
         let count = try await db.select()

@@ -4,7 +4,19 @@ Todas as mudancas relevantes deste servico serao registradas aqui.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-03-30
+
 ### Adicionado
+- **Endpoint de listagem de pacientes** `GET /api/v1/patients` com paginacao cursor-based e busca server-side. Query params: `search` (filtra por firstName, lastName ou CPF, case-insensitive), `cursor` (UUID para paginacao), `limit` (1-100, default 20). Retorna `PaginatedResponse<[PatientSummaryResponse]>` com meta de paginacao (`pageSize`, `totalCount`, `hasMore`, `nextCursor`).
+- `ListPatientsQueryHandler` na camada Application (CQRS query) com validacao de cursor e limite. Codigos de erro: `QLP-001` (cursor invalido), `QLP-002` (limite fora do range).
+- `PatientSummary` como projecao leve no Domain: `patientId`, `personId`, `firstName`, `lastName`, `primaryDiagnosis`, `memberCount`. Evita carregar o agregado completo (10+ tabelas filhas).
+- `PatientListResult` com metadados de paginacao no protocolo `PatientRepository`.
+- `PaginatedResponse<T>` generico com `PaginatedMeta` separado do `StandardResponse` existente.
+- Implementacao SQL otimizada no `SQLKitPatientRepository.list()`: 3 queries batch (count + list + diagnoses/members) em vez de N+1 com `loadAggregate()`.
+- 14 novos testes no `ListPatientsTests`: lista vazia, resultados, fullName, diagnostico, busca por nome/sobrenome, case-insensitive, paginacao com cursor, validacao de erros, pacientes sem personalData.
+- Total de testes: **149 em 39 suites** (todos passando).
+
+### Complementar
 - Header `X-Build-Version` em todas as respostas HTTP (sucesso e erro) via `AppErrorMiddleware`, lendo `BUILD_SHA` do environment (default: `dev`). Permite verificar qual versao do backend esta rodando sem acesso ao cluster Kubernetes.
 
 ## [0.5.3] - 2026-03-13

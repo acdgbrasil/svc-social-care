@@ -6,6 +6,7 @@ struct PatientController: RouteCollection {
         let patients = routes.grouped("api", "v1", "patients")
 
         let read = patients.grouped(RoleGuardMiddleware("social_worker", "owner", "admin"))
+        read.get(use: list)
         read.get(":patientId", use: getById)
         read.get("by-person", ":personId", use: getByPersonId)
         read.get(":patientId", "audit-trail", use: getAuditTrail)
@@ -16,6 +17,27 @@ struct PatientController: RouteCollection {
         write.delete(":patientId", "family-members", ":memberId", use: removeFamilyMember)
         write.put(":patientId", "primary-caregiver", use: assignPrimaryCaregiver)
         write.put(":patientId", "social-identity", use: updateSocialIdentity)
+    }
+
+    // MARK: - Patient List
+
+    @Sendable
+    private func list(req: Request) async throws -> PaginatedResponse<[PatientSummaryResponse]> {
+        let search: String? = req.query[String.self, at: "search"]
+        let cursor: String? = req.query[String.self, at: "cursor"]
+        let limit = req.query[Int.self, at: "limit"] ?? 20
+
+        let query = ListPatientsQuery(search: search, cursor: cursor, limit: limit)
+        let result = try await req.services.listPatients.handle(query)
+
+        let items = result.items.map { PatientSummaryResponse(from: $0) }
+        return PaginatedResponse(
+            data: items,
+            pageSize: limit,
+            totalCount: result.totalCount,
+            hasMore: result.hasMore,
+            nextCursor: result.nextCursor
+        )
     }
 
     // MARK: - Patient CRUD

@@ -22,6 +22,7 @@ struct ServiceContainer: Sendable {
     let createReferral: CreateReferralCommandHandler
     let registerAppointment: RegisterAppointmentCommandHandler
     let registerIntakeInfo: RegisterIntakeInfoCommandHandler
+    let listPatients: ListPatientsQueryHandler
     let patientRepository: any PatientRepository
     let lookupValidator: any LookupValidating
 
@@ -85,6 +86,7 @@ struct ServiceContainer: Sendable {
         self.registerIntakeInfo = RegisterIntakeInfoCommandHandler(
             repository: repository, eventBus: eventBus, lookupValidator: lookup
         )
+        self.listPatients = ListPatientsQueryHandler(repository: repository)
     }
 }
 

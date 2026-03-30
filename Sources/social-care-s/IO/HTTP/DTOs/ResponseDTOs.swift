@@ -16,6 +16,30 @@ struct ResponseMeta: Content {
     let timestamp: Date
 }
 
+struct PaginatedMeta: Content {
+    let timestamp: Date
+    let pageSize: Int
+    let totalCount: Int
+    let hasMore: Bool
+    let nextCursor: String?
+}
+
+struct PaginatedResponse<T: Content>: Content {
+    let data: T
+    let meta: PaginatedMeta
+
+    init(data: T, pageSize: Int, totalCount: Int, hasMore: Bool, nextCursor: String?) {
+        self.data = data
+        self.meta = PaginatedMeta(
+            timestamp: Date(),
+            pageSize: pageSize,
+            totalCount: totalCount,
+            hasMore: hasMore,
+            nextCursor: nextCursor
+        )
+    }
+}
+
 struct IdResponse: Content {
     let id: String
 }
@@ -69,6 +93,28 @@ struct PatientResponse: Content {
         self.referrals = p.referrals.map { ReferralResponse(from: $0) }
         self.violationReports = p.violationReports.map { ViolationReportResponse(from: $0) }
         self.computedAnalytics = ComputedAnalyticsResponse(from: p)
+    }
+}
+
+// MARK: - Patient Summary Response (listagem leve)
+
+struct PatientSummaryResponse: Content {
+    let patientId: String
+    let personId: String
+    let firstName: String?
+    let lastName: String?
+    let fullName: String?
+    let primaryDiagnosis: String?
+    let memberCount: Int
+
+    init(from dto: PatientSummaryDTO) {
+        self.patientId = dto.patientId
+        self.personId = dto.personId
+        self.firstName = dto.firstName
+        self.lastName = dto.lastName
+        self.fullName = dto.fullName
+        self.primaryDiagnosis = dto.primaryDiagnosis
+        self.memberCount = dto.memberCount
     }
 }
 

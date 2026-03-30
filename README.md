@@ -20,7 +20,7 @@ Sources/social-care-s/
   Domain/         Agregados, entidades, ~24 value objects
   Application/    17 command handlers + 2 query handlers
   IO/
-    HTTP/         6 controllers, 23 rotas (Vapor)
+    HTTP/         6 controllers, 24 rotas (Vapor)
     Persistence/  SQLKit repository, migrations, mapper
   shared/         AppError, DomainEventRegistry, protocolos
 ```
@@ -30,7 +30,7 @@ Sources/social-care-s/
 | Controller | Rotas |
 |---|---|
 | **HealthController** | `GET /health`, `GET /ready` |
-| **PatientController** | `POST /patients`, `GET /patients/:id`, `GET /patients/by-person/:personId`, `POST /:id/family-members`, `DELETE /:id/family-members/:memberId`, `PUT /:id/primary-caregiver`, `PUT /:id/social-identity`, `GET /:id/audit-trail` |
+| **PatientController** | `GET /patients` (listagem paginada), `POST /patients`, `GET /patients/:id`, `GET /patients/by-person/:personId`, `POST /:id/family-members`, `DELETE /:id/family-members/:memberId`, `PUT /:id/primary-caregiver`, `PUT /:id/social-identity`, `GET /:id/audit-trail` |
 | **AssessmentController** | `PUT` housing-condition, socioeconomic-situation, work-and-income, educational-status, health-status, community-support-network, social-health-summary |
 | **ProtectionController** | `PUT` placement-history, `POST` violation-reports, `POST` referrals |
 | **CareController** | `POST` appointments, `PUT` intake-info |
@@ -149,9 +149,9 @@ Usuario -> Caddy (VPS/SSL) -> Tailnet -> K3s (Xeon) -> Pod social-care
 ## Qualidade
 
 - Cobertura minima: **95%** (enforced no CI)
-- **135 testes** em **38 suites** (domain + application + IO)
-- 32 arquivos de teste + 4 test doubles (InMemoryPatientRepository, InMemoryEventBus, InMemoryLookupValidator, PatientFixture)
-- Camadas testadas: Domain (value objects, agregados, analytics), Application (17 command handlers), IO (audit trail pipeline)
+- **149 testes** em **39 suites** (domain + application + IO)
+- 33 arquivos de teste + 4 test doubles (InMemoryPatientRepository, InMemoryEventBus, InMemoryLookupValidator, PatientFixture)
+- Camadas testadas: Domain (value objects, agregados, analytics), Application (17 command handlers + 1 query handler), IO (audit trail pipeline)
 - Script: `./scripts/check_coverage.sh 95`
 
 ## Seguranca

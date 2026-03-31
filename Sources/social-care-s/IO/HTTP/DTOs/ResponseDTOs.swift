@@ -513,6 +513,34 @@ struct LookupItemResponse: Content {
     let descricao: String
 }
 
+struct LookupRequestResponse: Content {
+    let id: String
+    let tableName: String
+    let codigo: String
+    let descricao: String
+    let justificativa: String
+    let status: String
+    let requestedBy: String
+    let requestedAt: Date
+    let reviewedBy: String?
+    let reviewedAt: Date?
+    let reviewNote: String?
+
+    init(from dto: LookupRequestDTO) {
+        self.id = dto.id
+        self.tableName = dto.tableName
+        self.codigo = dto.codigo
+        self.descricao = dto.descricao
+        self.justificativa = dto.justificativa
+        self.status = dto.status
+        self.requestedBy = dto.requestedBy
+        self.requestedAt = dto.requestedAt
+        self.reviewedBy = dto.reviewedBy
+        self.reviewedAt = dto.reviewedAt
+        self.reviewNote = dto.reviewNote
+    }
+}
+
 // MARK: - Audit Trail
 
 struct AuditTrailEntryResponse: Content {

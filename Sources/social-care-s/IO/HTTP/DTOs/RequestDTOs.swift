@@ -1,5 +1,30 @@
 import Vapor
 
+// MARK: - Configuration (Lookup Admin)
+
+struct CreateLookupItemRequest: Content {
+    let codigo: String
+    let descricao: String
+    let exigeRegistroNascimento: Bool?
+    let exigeCpfFalecido: Bool?
+    let exigeDescricao: Bool?
+}
+
+struct UpdateLookupItemRequest: Content {
+    let descricao: String
+}
+
+struct CreateLookupRequestRequest: Content {
+    let tableName: String
+    let codigo: String
+    let descricao: String
+    let justificativa: String
+}
+
+struct RejectLookupRequestRequest: Content {
+    let reviewNote: String
+}
+
 // MARK: - Registry
 
 struct RegisterPatientRequest: Content {

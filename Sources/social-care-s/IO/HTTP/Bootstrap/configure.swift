@@ -33,6 +33,7 @@ func configure(_ app: Application) async throws {
         NormalizeSchema(),
         CreateAuditTrail(),
         ConvertJsonbToText(),
+        CreateLookupRequests(),
     ]
     for attempt in 1...10 {
         do {

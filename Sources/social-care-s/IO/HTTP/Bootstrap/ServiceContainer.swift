@@ -23,6 +23,13 @@ struct ServiceContainer: Sendable {
     let registerAppointment: RegisterAppointmentCommandHandler
     let registerIntakeInfo: RegisterIntakeInfoCommandHandler
     let listPatients: ListPatientsQueryHandler
+    let createLookupItem: CreateLookupItemCommandHandler
+    let updateLookupItem: UpdateLookupItemCommandHandler
+    let toggleLookupItem: ToggleLookupItemCommandHandler
+    let createLookupRequest: CreateLookupRequestCommandHandler
+    let approveLookupRequest: ApproveLookupRequestCommandHandler
+    let rejectLookupRequest: RejectLookupRequestCommandHandler
+    let listLookupRequests: ListLookupRequestsQueryHandler
     let patientRepository: any PatientRepository
     let lookupValidator: any LookupValidating
 
@@ -87,6 +94,18 @@ struct ServiceContainer: Sendable {
             repository: repository, eventBus: eventBus, lookupValidator: lookup
         )
         self.listPatients = ListPatientsQueryHandler(repository: repository)
+
+        let lookupAdmin = SQLKitLookupAdminRepository(db: db)
+        let lookupRequests = SQLKitLookupRequestRepository(db: db)
+        self.createLookupItem = CreateLookupItemCommandHandler(repository: lookupAdmin)
+        self.updateLookupItem = UpdateLookupItemCommandHandler(repository: lookupAdmin)
+        self.toggleLookupItem = ToggleLookupItemCommandHandler(repository: lookupAdmin)
+        self.createLookupRequest = CreateLookupRequestCommandHandler(repository: lookupRequests)
+        self.approveLookupRequest = ApproveLookupRequestCommandHandler(
+            requestRepository: lookupRequests, lookupRepository: lookupAdmin
+        )
+        self.rejectLookupRequest = RejectLookupRequestCommandHandler(repository: lookupRequests)
+        self.listLookupRequests = ListLookupRequestsQueryHandler(repository: lookupRequests)
     }
 }
 

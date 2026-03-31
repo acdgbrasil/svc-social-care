@@ -25,10 +25,14 @@ struct PatientModel: Codable {
     let rg_issuing_state: String?
     let rg_issuing_agency: String?
     let rg_issue_date: Date?
+    let cns_number: String?
+    let cns_cpf: String?
+    let cns_qr_code: String?
 
     // address
     let address_cep: String?
     let address_is_shelter: Bool?
+    let address_is_homeless: Bool?
     let address_location: String?
     let address_street: String?
     let address_neighborhood: String?

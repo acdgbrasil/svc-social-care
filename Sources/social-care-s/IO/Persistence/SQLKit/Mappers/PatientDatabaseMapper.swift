@@ -289,9 +289,13 @@ private extension PatientDatabaseMapper {
             rg_issuing_state: patient.civilDocuments?.rgDocument?.issuingState,
             rg_issuing_agency: patient.civilDocuments?.rgDocument?.issuingAgency,
             rg_issue_date: patient.civilDocuments?.rgDocument?.issueDate.date,
+            cns_number: patient.civilDocuments?.cns?.number,
+            cns_cpf: patient.civilDocuments?.cns?.cpf.value,
+            cns_qr_code: patient.civilDocuments?.cns?.qrCode,
             // address
             address_cep: patient.address?.cep?.value,
             address_is_shelter: patient.address?.isShelter,
+            address_is_homeless: patient.address?.isHomeless,
             address_location: patient.address?.residenceLocation.rawValue,
             address_street: patient.address?.street,
             address_neighborhood: patient.address?.neighborhood,
@@ -512,7 +516,8 @@ private extension PatientDatabaseMapper {
         let hasCpf = p.cpf != nil
         let hasNis = p.nis != nil
         let hasRg = p.rg_number != nil
-        guard hasCpf || hasNis || hasRg else { return nil }
+        let hasCns = p.cns_number != nil
+        guard hasCpf || hasNis || hasRg || hasCns else { return nil }
 
         let cpf = try p.cpf.map { try CPF($0) }
         let nis = try p.nis.map { try NIS($0) }
@@ -523,8 +528,13 @@ private extension PatientDatabaseMapper {
                   let date = p.rg_issue_date else { return nil }
             return try RGDocument(number: number, issuingState: state, issuingAgency: agency, issueDate: try TimeStamp(date))
         }()
+        let cns: CNS? = try {
+            guard let number = p.cns_number,
+                  let cnsCpfValue = p.cns_cpf else { return nil }
+            return try CNS(number: number, cpf: try CPF(cnsCpfValue), qrCode: p.cns_qr_code)
+        }()
 
-        return try CivilDocuments(cpf: cpf, nis: nis, rgDocument: rg)
+        return try CivilDocuments(cpf: cpf, nis: nis, rgDocument: rg, cns: cns)
     }
 
     static func reconstructAddress(from p: PatientModel) throws -> Address? {
@@ -537,6 +547,7 @@ private extension PatientDatabaseMapper {
         return try Address(
             cep: p.address_cep,
             isShelter: isShelter,
+            isHomeless: p.address_is_homeless ?? false,
             residenceLocation: location,
             street: p.address_street,
             neighborhood: p.address_neighborhood,

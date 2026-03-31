@@ -34,6 +34,7 @@ func configure(_ app: Application) async throws {
         CreateAuditTrail(),
         ConvertJsonbToText(),
         CreateLookupRequests(),
+        AddCNSAndHomeless(),
     ]
     for attempt in 1...10 {
         do {

@@ -57,6 +57,7 @@ struct RegisterPatientRequest: Content {
         let cpf: String?
         let nis: String?
         let rgDocument: RGDocumentDraftDTO?
+        let cns: CNSDraftDTO?
 
         struct RGDocumentDraftDTO: Content {
             let number: String
@@ -64,11 +65,18 @@ struct RegisterPatientRequest: Content {
             let issuingAgency: String
             let issueDate: Date
         }
+
+        struct CNSDraftDTO: Content {
+            let number: String
+            let cpf: String
+            let qrCode: String?
+        }
     }
 
     struct AddressDraftDTO: Content {
         let cep: String?
         let isShelter: Bool
+        let isHomeless: Bool?
         let residenceLocation: String
         let street: String?
         let neighborhood: String?
@@ -99,10 +107,14 @@ struct RegisterPatientRequest: Content {
                       rgDocument: $0.rgDocument.map {
                           .init(number: $0.number, issuingState: $0.issuingState,
                                 issuingAgency: $0.issuingAgency, issueDate: $0.issueDate)
+                      },
+                      cns: $0.cns.map {
+                          .init(number: $0.number, cpf: $0.cpf, qrCode: $0.qrCode)
                       })
             },
             address: address.map {
-                .init(cep: $0.cep, isShelter: $0.isShelter, residenceLocation: $0.residenceLocation,
+                .init(cep: $0.cep, isShelter: $0.isShelter, isHomeless: $0.isHomeless ?? false,
+                      residenceLocation: $0.residenceLocation,
                       street: $0.street, neighborhood: $0.neighborhood, number: $0.number,
                       complement: $0.complement, state: $0.state, city: $0.city)
             },

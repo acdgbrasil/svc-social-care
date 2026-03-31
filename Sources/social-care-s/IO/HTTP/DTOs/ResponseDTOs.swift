@@ -244,9 +244,20 @@ struct PersonalDataResponse: Content {
 struct CivilDocumentsResponse: Content {
     let cpf, nis: String?
     let rgDocument: RGDocumentResponse?
+    let cns: CNSResponse?
     init(from d: CivilDocuments) {
         cpf = d.cpf?.formatted; nis = d.nis?.value
         rgDocument = d.rgDocument.map { RGDocumentResponse(from: $0) }
+        cns = d.cns.map { CNSResponse(from: $0) }
+    }
+}
+
+struct CNSResponse: Content {
+    let number: String
+    let cpf: String
+    let qrCode: String?
+    init(from d: CNS) {
+        number = d.formatted; cpf = d.cpf.formatted; qrCode = d.qrCode
     }
 }
 
@@ -262,11 +273,12 @@ struct RGDocumentResponse: Content {
 struct AddressResponse: Content {
     let cep: String?
     let isShelter: Bool
+    let isHomeless: Bool
     let residenceLocation: String
     let street, neighborhood, number, complement: String?
     let state, city: String
     init(from d: Address) {
-        cep = d.cep?.formatted; isShelter = d.isShelter
+        cep = d.cep?.formatted; isShelter = d.isShelter; isHomeless = d.isHomeless
         residenceLocation = d.residenceLocation.rawValue
         street = d.street; neighborhood = d.neighborhood; number = d.number
         complement = d.complement; state = d.state; city = d.city

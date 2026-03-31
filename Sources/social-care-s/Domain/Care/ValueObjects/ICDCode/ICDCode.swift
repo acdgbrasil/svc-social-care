@@ -49,4 +49,10 @@ public struct ICDCode: Codable, Equatable, Hashable, Sendable {
     public func isEquivalent(to other: ICDCode) -> Bool {
         return self.normalized == other.normalized
     }
+
+    // MARK: - Well-Known Codes
+
+    /// CID Z03.9 — Observacao por suspeita de doenca ou afeccao nao especificada.
+    /// Utilizado quando o diagnostico ainda esta em investigacao.
+    public static let underInvestigation = try! ICDCode("Z03.9")
 }

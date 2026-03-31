@@ -52,21 +52,36 @@ public struct RegisterPatientCommand: ResultCommand {
         }
     }
 
+    public struct CNSDraft: Sendable {
+        public let number: String
+        public let cpf: String
+        public let qrCode: String?
+
+        public init(number: String, cpf: String, qrCode: String?) {
+            self.number = number
+            self.cpf = cpf
+            self.qrCode = qrCode
+        }
+    }
+
     public struct CivilDocumentsDraft: Sendable {
         public let cpf: String?
         public let nis: String?
         public let rgDocument: RGDocumentDraft?
-        
-        public init(cpf: String?, nis: String?, rgDocument: RGDocumentDraft?) {
+        public let cns: CNSDraft?
+
+        public init(cpf: String?, nis: String?, rgDocument: RGDocumentDraft?, cns: CNSDraft? = nil) {
             self.cpf = cpf
             self.nis = nis
             self.rgDocument = rgDocument
+            self.cns = cns
         }
     }
 
     public struct AddressDraft: Sendable {
         public let cep: String?
         public let isShelter: Bool
+        public let isHomeless: Bool
         public let residenceLocation: String
         public let street: String?
         public let neighborhood: String?
@@ -74,10 +89,11 @@ public struct RegisterPatientCommand: ResultCommand {
         public let complement: String?
         public let state: String
         public let city: String
-        
-        public init(cep: String?, isShelter: Bool, residenceLocation: String, street: String?, neighborhood: String?, number: String?, complement: String?, state: String, city: String) {
+
+        public init(cep: String?, isShelter: Bool, isHomeless: Bool = false, residenceLocation: String, street: String?, neighborhood: String?, number: String?, complement: String?, state: String, city: String) {
             self.cep = cep
             self.isShelter = isShelter
+            self.isHomeless = isHomeless
             self.residenceLocation = residenceLocation
             self.street = street
             self.neighborhood = neighborhood

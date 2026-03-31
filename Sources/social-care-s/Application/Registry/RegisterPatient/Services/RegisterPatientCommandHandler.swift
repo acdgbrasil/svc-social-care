@@ -51,7 +51,14 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
                         issueDate: try TimeStamp(rg.issueDate)
                     )
                 }
-                return try CivilDocuments(cpf: cpf, nis: nis, rgDocument: rg)
+                let cns: CNS? = try draft.cns.map { cnsDraft in
+                    try CNS(
+                        number: cnsDraft.number,
+                        cpf: try CPF(cnsDraft.cpf),
+                        qrCode: cnsDraft.qrCode
+                    )
+                }
+                return try CivilDocuments(cpf: cpf, nis: nis, rgDocument: rg, cns: cns)
             }
 
             // 4. Parse — endereço (opcional)
@@ -62,6 +69,7 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
                 return try Address(
                     cep: draft.cep,
                     isShelter: draft.isShelter,
+                    isHomeless: draft.isHomeless,
                     residenceLocation: location,
                     street: draft.street,
                     neighborhood: draft.neighborhood,

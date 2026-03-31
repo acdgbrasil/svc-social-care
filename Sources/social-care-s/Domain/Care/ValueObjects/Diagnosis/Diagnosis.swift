@@ -52,4 +52,17 @@ public struct Diagnosis: Codable, Equatable, Hashable, Sendable {
         self.date = date
         self.description = trimmedDescription
     }
+
+    // MARK: - Factory Methods
+
+    /// Cria um diagnostico padrao para casos em que o diagnostico ainda esta em investigacao.
+    /// Utiliza o CID Z03.9 (Observacao por suspeita de doenca ou afeccao nao especificada).
+    public static func underInvestigation(date: TimeStamp, now: TimeStamp) throws -> Diagnosis {
+        try Diagnosis(
+            id: .underInvestigation,
+            date: date,
+            description: "Diagnostico em investigacao",
+            now: now
+        )
+    }
 }

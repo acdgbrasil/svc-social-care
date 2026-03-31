@@ -80,9 +80,20 @@ extension RegisterPatientCommandHandler {
             }
         }
 
+        if let e = error as? CNSError {
+            switch e {
+            case .empty: return .invalidCNS("EMPTY")
+            case .invalidLength(let v, _): return .invalidCNS(v)
+            case .invalidFirstDigit(let v, _): return .invalidCNS(v)
+            case .invalidNumber(let v): return .invalidCNS(v)
+            case .invalidCheckDigit(let v): return .invalidCNS(v)
+            }
+        }
+
         if let e = error as? CivilDocumentsError {
             switch e {
             case .atLeastOneDocumentRequired: return .atLeastOneDocumentRequired
+            case .cpfMismatchWithCNS: return .cpfMismatchWithCNS
             }
         }
 

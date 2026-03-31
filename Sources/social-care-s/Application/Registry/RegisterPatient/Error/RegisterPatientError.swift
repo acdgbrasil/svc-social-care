@@ -21,6 +21,8 @@ public enum RegisterPatientError: Error, Sendable, Equatable {
     case invalidCPF(String)
     case invalidNIS(String)
     case invalidRGDocument(String)
+    case invalidCNS(String)
+    case cpfMismatchWithCNS
     case atLeastOneDocumentRequired
     // Endereço
     case invalidResidenceLocation(String)
@@ -73,6 +75,10 @@ extension RegisterPatientError: AppErrorConvertible {
             return appFailure("016", kind: "InvalidNIS", "NIS inválido: \(value).", category: .domainRuleViolation, severity: .warning, http: 422)
         case .invalidRGDocument(let value):
             return appFailure("017", kind: "InvalidRGDocument", "RG inválido: \(value).", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .invalidCNS(let value):
+            return appFailure("027", kind: "InvalidCNS", "CNS (Cartao do SUS) invalido: \(value).", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .cpfMismatchWithCNS:
+            return appFailure("028", kind: "CpfMismatchWithCNS", "O CPF informado nao corresponde ao CPF do Cartao do SUS (CNS).", category: .domainRuleViolation, severity: .warning, http: 422)
         case .atLeastOneDocumentRequired:
             return appFailure("018", kind: "AtLeastOneDocumentRequired", "Ao menos um documento civil deve ser informado.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .invalidResidenceLocation(let value):

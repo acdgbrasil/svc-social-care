@@ -5,6 +5,7 @@ public struct PersonalData: Codable, Equatable, Hashable, Sendable {
     public enum Sex: String, Codable, Equatable, Hashable, Sendable {
         case masculino
         case feminino
+        case outro
     }
 
     public let firstName: String

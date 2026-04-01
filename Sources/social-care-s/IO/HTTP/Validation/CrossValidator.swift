@@ -12,16 +12,16 @@ struct CrossValidator: Sendable {
 
     // MARK: - Health × Sex (Gestating Members)
 
-    /// Valida que membros listados como gestantes sao do sexo feminino.
+    /// Valida que membros listados como gestantes nao sao do sexo masculino.
     /// So e possivel validar o PR (pessoa de referencia) pois dados de sexo
     /// de outros membros residem no people-context (outro bounded context).
     func validateGestatingMembers(_ gestatingMemberIds: [String]) throws {
         for memberId in gestatingMemberIds {
             if memberId == patient.personId.description {
-                guard patient.personalData?.sex == .feminino else {
+                guard patient.personalData?.sex != .masculino else {
                     throw Abort(
                         .unprocessableEntity,
-                        reason: "Member '\(memberId)' cannot be registered as gestating: sex is not 'feminino'."
+                        reason: "Member '\(memberId)' cannot be registered as gestating: sex is 'masculino'."
                     )
                 }
             }

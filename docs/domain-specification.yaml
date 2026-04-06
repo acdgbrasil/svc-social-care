@@ -1,0 +1,2169 @@
+# =============================================================================
+# ACDG Social Care — Domain Specification (1:1)
+# Gerado a partir do código Swift 6.2 para garantir compatibilidade total
+# em reimplementações em outras linguagens.
+# =============================================================================
+
+meta:
+  service: social-care
+  bounded_context: SOCIAL
+  architecture: "Clean Architecture + DDD + CQRS + Event Sourcing"
+  concurrency_model: "Strict — aggregates são value types imutáveis, use cases são actors"
+  serialization: JSON (Codable)
+  error_contract: AppError (estruturado, com código, severidade, observabilidade)
+
+# =============================================================================
+# SHARED — Protocolos e Infraestrutura Cross-Cutting
+# =============================================================================
+
+shared:
+  protocols:
+    DomainEvent:
+      description: "Fato ocorrido no passado. Todo evento implementa este protocolo."
+      properties:
+        id: { type: UUID, required: true }
+        occurredAt: { type: Date, required: true }
+
+    EventBus:
+      description: "Barramento para propagação assíncrona de eventos."
+      methods:
+        publish:
+          params: { events: "DomainEvent[]" }
+          async: true
+          throws: true
+
+    Command:
+      description: "Intenção de mudança de estado. Struct imutável."
+
+    ResultCommand:
+      extends: Command
+      description: "Comando que produz resultado (ex: UUID do recurso criado)."
+      associated_types:
+        Result: Sendable
+
+    CommandHandling:
+      description: "Actor que processa Commands."
+      generic: C (Command)
+      methods:
+        handle:
+          params: { command: C }
+          async: true
+          throws: true
+
+    ResultCommandHandling:
+      description: "Actor que processa ResultCommands e retorna resultado."
+      generic: C (ResultCommand)
+      methods:
+        handle:
+          params: { command: C }
+          returns: C.Result
+          async: true
+          throws: true
+
+    Query:
+      description: "Intenção de leitura. Sem efeitos colaterais."
+      associated_types:
+        Result: Sendable
+
+    QueryHandling:
+      description: "Handler para queries. Struct pura sem estado mutável."
+      generic: Q (Query)
+      methods:
+        handle:
+          params: { query: Q }
+          returns: Q.Result
+          async: true
+          throws: true
+
+    EventSourcedAggregate:
+      description: "Agregado com Event Sourcing / Outbox Pattern."
+      associated_types:
+        ID: "Sendable & Equatable"
+      properties:
+        id: { type: ID }
+        version: { type: Int }
+        uncommittedEvents: { type: "DomainEvent[]" }
+      default_methods:
+        recordEvent:
+          params: { event: DomainEvent }
+          description: "Registra evento e incrementa versão."
+
+    EventSourcedAggregateInternal:
+      description: "Protocolo interno para mutação controlada via PoP."
+      methods:
+        addEvent:
+          params: { event: DomainEvent }
+          mutating: true
+
+    AppErrorConvertible:
+      description: "Todo erro de domínio deve ser traduzido para AppError."
+      properties:
+        asAppError: { type: AppError }
+
+    LookupValidating:
+      description: "Valida LookupId contra tabelas de metadados (dominio_*)."
+      methods:
+        exists:
+          params:
+            id: LookupId
+            table: String
+          returns: Bool
+          async: true
+          throws: true
+
+  app_error:
+    description: "Erro padronizado do Bounded Context."
+    properties:
+      id: { type: String, default: "UUID()" }
+      code: { type: String, description: "Código estável (ex: PAT-001)" }
+      message: { type: String, description: "Mensagem para o usuário" }
+      bc: { type: String, description: "Bounded Context de origem" }
+      module: { type: String, description: "Módulo ou subdomínio" }
+      kind: { type: String, description: "Tipo específico de erro" }
+      context: { type: "Map<String, Any>", description: "Dados brutos" }
+      safeContext: { type: "Map<String, Any>", description: "Dados sanitizados para logs" }
+      observability: { type: Observability }
+      http: { type: "Int?", description: "Status HTTP sugerido" }
+      stackTrace: { type: "String?" }
+      cause: { type: "Error?" }
+    equality: "Por id OU (code + bc + module)"
+
+    observability:
+      properties:
+        category: { type: Category }
+        severity: { type: Severity }
+        fingerprint: { type: "String[]" }
+        tags: { type: "Map<String, String>" }
+
+    category_enum:
+      values:
+        - DOMAIN_RULE_VIOLATION
+        - EXTERNAL_API_FAILURE
+        - EXTERNAL_CONTRACT_MISMATCH
+        - CROSS_LAYER_COMMUNICATION_FAILURE
+        - DATA_CONSISTENCY_INCIDENT
+        - SECURITY_BOUNDARY_VIOLATION
+        - INFRASTRUCTURE_DEPENDENCY_FAILURE
+        - OBSERVABILITY_PIPELINE_FAILURE
+        - UNEXPECTED_SYSTEM_STATE
+        - CONFLICT
+
+    severity_enum:
+      values: [DEBUG, INFO, WARNING, ERROR, CRITICAL]
+
+  domain_event_registry:
+    description: "Registro centralizado para decodificação de eventos heterogêneos. Singleton thread-safe (Actor)."
+    methods:
+      register:
+        generic: "T: DomainEvent & Decodable"
+        params: { eventType: "T.Type" }
+      decode:
+        params:
+          typeName: String
+          data: "byte[]"
+        returns: DomainEvent
+        throws: true
+    errors:
+      DomainEventError:
+        cases:
+          unregisteredEventType: { params: [typeName: String] }
+
+# =============================================================================
+# KERNEL — Value Objects Cross-Cutting (9 VOs)
+# =============================================================================
+
+kernel:
+  value_objects:
+
+    # ─── PersonId ───────────────────────────────────────────────────────
+    PersonId:
+      brand: "PERSON_ID"
+      conformances: [Codable, Sendable, Hashable, Equatable, CustomStringConvertible]
+      properties:
+        value: { type: String, visibility: private, description: "UUID lowercased" }
+      computed:
+        description: { type: String, returns: value }
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic:
+            - "Trim whitespace"
+            - "Lowercase"
+            - "Validar formato UUID (UUID(uuidString:) != nil)"
+            - "Se inválido → throw PIDError.invalidFormat(sanitized)"
+        generate:
+          params: {}
+          logic: "UUID().uuidString.lowercased()"
+      errors:
+        PIDError:
+          module: "social-care/person-id"
+          cases:
+            invalidFormat:
+              params: [value: String]
+              code: "PID-001"
+              message: "O valor fornecido ('{value}') não é um UUID válido."
+              http: 422
+              severity: error
+              category: domainRuleViolation
+
+    # ─── ProfessionalId ────────────────────────────────────────────────
+    ProfessionalId:
+      brand: "PROFESSIONAL_ID"
+      conformances: [Codable, Sendable, Hashable, Equatable, CustomStringConvertible]
+      properties:
+        value: { type: String, visibility: private, description: "UUID lowercased" }
+      computed:
+        description: { type: String, returns: value }
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic:
+            - "Trim whitespace"
+            - "Lowercase"
+            - "Validar formato UUID"
+            - "Se inválido → throw ProfessionalIdError.invalidFormat(sanitized)"
+        generate:
+          params: {}
+          logic: "UUID().uuidString.lowercased()"
+      errors:
+        ProfessionalIdError:
+          module: "social-care/professional-id"
+          cases:
+            invalidFormat:
+              params: [value: String]
+              code: "PRI-001"
+              message: "O valor fornecido ('{value}') não é um identificador de profissional válido."
+              http: 422
+              severity: error
+              category: domainRuleViolation
+
+    # ─── PatientId ─────────────────────────────────────────────────────
+    PatientId:
+      brand: "PatientId"
+      conformances: [Codable, Sendable, Hashable, Equatable, CustomStringConvertible]
+      properties:
+        value: { type: String, visibility: private, description: "UUID lowercased" }
+      computed:
+        description: { type: String, returns: value }
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic:
+            - "Trim whitespace"
+            - "Lowercase"
+            - "Validar formato UUID"
+            - "Se inválido → throw PatientIdError.invalidFormat(sanitized)"
+        generate:
+          params: {}
+          logic: "UUID().uuidString.lowercased()"
+      errors:
+        PatientIdError:
+          module: "social-care/patient-id"
+          cases:
+            invalidFormat:
+              params: [value: String]
+              code: "PAI-001"
+              message: "O valor fornecido ('{value}') não é um identificador de prontuário válido."
+              http: 422
+              severity: error
+              category: domainRuleViolation
+
+    # ─── LookupId ──────────────────────────────────────────────────────
+    LookupId:
+      conformances: [Codable, Sendable, Hashable, Equatable, CustomStringConvertible]
+      properties:
+        value: { type: String, visibility: private, description: "UUID lowercased" }
+      computed:
+        description: { type: String, returns: value }
+      constructors:
+        from_string:
+          params: { id: String }
+          throws: true
+          logic:
+            - "Trim whitespace"
+            - "Lowercase"
+            - "Validar formato UUID"
+            - "Se inválido → throw LookupIdError.invalidFormat(sanitized)"
+      codable:
+        encode: "Single value container (value)"
+        decode: "Single value container → init(decoded)"
+      errors:
+        LookupIdError:
+          cases:
+            invalidFormat:
+              params: [value: String]
+
+    # ─── CPF ────────────────────────────────────────────────────────────
+    CPF:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        value: { type: String, description: "11 dígitos numéricos" }
+      computed:
+        baseNumber: { type: String, description: "Primeiros 8 dígitos" }
+        fiscalRegionDigit: { type: Int, description: "Dígito na posição 8 (0-indexed)" }
+        fiscalRegion: { type: FiscalRegion }
+        firstVerifierDigit: { type: Int, description: "Dígito na posição 9" }
+        secondVerifierDigit: { type: Int, description: "Dígito na posição 10" }
+        formatted: { type: String, format: "XXX.XXX.XXX-XX" }
+      enums:
+        FiscalRegion:
+          type: Int
+          cases:
+            region10: { value: 0, states: ["RS"] }
+            region1: { value: 1, states: ["DF", "GO", "MS", "MT", "TO"] }
+            region2: { value: 2, states: ["AC", "AM", "AP", "PA", "RO", "RR"] }
+            region3: { value: 3, states: ["CE", "MA", "PI"] }
+            region4: { value: 4, states: ["AL", "PB", "PE", "RN"] }
+            region5: { value: 5, states: ["BA", "SE"] }
+            region6: { value: 6, states: ["MG"] }
+            region7: { value: 7, states: ["ES", "RJ"] }
+            region8: { value: 8, states: ["SP"] }
+            region9: { value: 9, states: ["PR", "SC"] }
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic:
+            - "Trim whitespace"
+            - "Validar caracteres permitidos: dígitos, whitespace, '.', '-'"
+            - "Se inválido → throw CPFError.invalidCharacters"
+            - "Filtrar apenas dígitos"
+            - "Se vazio → throw CPFError.empty"
+            - "Se != 11 dígitos → throw CPFError.invalidLength"
+            - "Se todos dígitos iguais (Set.count <= 1) → throw CPFError.repeatedDigits"
+            - "Calcular dígitos verificadores e comparar"
+            - "Se falhar → throw CPFError.invalidCheckDigits"
+      check_digit_algorithm:
+        first_verifier:
+          weights: [10, 9, 8, 7, 6, 5, 4, 3]
+          applied_to: "dígitos 0-7 (primeiros 8)"
+          formula: "remainder = sum % 11; result = remainder < 2 ? 0 : 11 - remainder"
+        second_verifier:
+          weights: [10, 9, 8, 7, 6, 5, 4, 3]
+          applied_to: "dígitos 1-7 + primeiro verificador (8 elementos)"
+          formula: "remainder = sum % 11; result = remainder < 2 ? 0 : 11 - remainder"
+      errors:
+        CPFError:
+          module: "social-care/cpf"
+          cases:
+            empty:
+              code: "CPF-001"
+              message: "O CPF não pode ser vazio."
+              severity: warning
+              http: 422
+            invalidLength:
+              params: [value: String, expected: Int]
+              code: "CPF-002"
+              message: "O CPF '{value}' possui {length} dígitos. Esperado: {expected}."
+              severity: warning
+              http: 422
+            repeatedDigits:
+              params: [value: String]
+              code: "CPF-003"
+              message: "O CPF '{value}' possui todos os dígitos iguais."
+              severity: warning
+              http: 422
+            invalidCheckDigits:
+              params: [value: String]
+              code: "CPF-004"
+              message: "O CPF '{value}' possui dígitos verificadores inválidos."
+              severity: error
+              http: 422
+            invalidCharacters:
+              params: [value: String]
+              code: "CPF-005"
+              message: "O CPF '{value}' contém caracteres inválidos."
+              severity: warning
+              http: 422
+
+    # ─── NIS ────────────────────────────────────────────────────────────
+    NIS:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        value: { type: String, description: "11 dígitos numéricos" }
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic:
+            - "Trim whitespace"
+            - "Filtrar apenas dígitos"
+            - "Se vazio → throw NISError.empty"
+            - "Se != 11 dígitos → throw NISError.invalidLength"
+      errors:
+        NISError:
+          module: "social-care/nis"
+          cases:
+            empty:
+              code: "NIS-001"
+              message: "O NIS não pode ser vazio."
+              severity: warning
+              http: 422
+            invalidLength:
+              params: [value: String, expected: Int]
+              code: "NIS-002"
+              message: "O NIS '{value}' possui {length} dígitos. Esperado: {expected}."
+              severity: warning
+              http: 422
+
+    # ─── CEP ────────────────────────────────────────────────────────────
+    CEP:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        value: { type: String, description: "8 dígitos numéricos" }
+      computed:
+        formatted: { type: String, format: "XXXXX-XXX" }
+        prefix: { type: String, description: "Primeiros 5 caracteres" }
+        suffix: { type: String, description: "Últimos 3 caracteres" }
+        regionDigit: { type: Int, description: "Primeiro dígito" }
+        region: { type: PostalRegion }
+        distributionKind: { type: DistributionKind }
+      enums:
+        PostalRegion:
+          type: Int
+          cases: [region0, region1, region2, region3, region4, region5, region6, region7, region8, region9]
+        DistributionKind:
+          type: String
+          cases:
+            streetRange:
+              value: "STREET_RANGE"
+              suffix_range: "000-899"
+            specialCodes:
+              value: "SPECIAL_CODES"
+              suffix_range: "900-959"
+            promotional:
+              value: "PROMOTIONAL"
+              suffix_range: "960-969"
+            postOfficeUnits:
+              value: "POST_OFFICE_UNITS"
+              suffix_range: "970-989 e 999"
+            other:
+              value: "OTHER"
+      state_cep_ranges:
+        SP: [1000000, 19999999]
+        RJ: [20000000, 28999999]
+        ES: [29000000, 29999999]
+        MG: [30000000, 39999999]
+        BA: [40000000, 48999999]
+        SE: [49000000, 49999999]
+        PE: [50000000, 56999999]
+        AL: [57000000, 57999999]
+        PB: [58000000, 58999999]
+        RN: [59000000, 59999999]
+        CE: [60000000, 63999999]
+        PI: [64000000, 64999999]
+        MA: [65000000, 65999999]
+        PA: [66000000, 68899999]
+        AP: [68900000, 68999999]
+        AM:
+          - [69000000, 69299999]
+          - [69400000, 69899999]
+        RR: [69300000, 69389999]
+        AC: [69900000, 69999999]
+        DF: [70000000, 73699999]
+        GO: [72800000, 76799999]
+        TO: [77000000, 77995999]
+        MT: [78000000, 78899999]
+        RO: [78900000, 78999999]
+        MS: [79000000, 79999999]
+        PR: [80000000, 87999999]
+        SC: [88000000, 89999999]
+        RS: [90000000, 99999999]
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic:
+            - "Trim whitespace"
+            - "Validar caracteres permitidos: dígitos, whitespace, '-'"
+            - "Se inválido → throw CEPError.invalidCharacters"
+            - "Filtrar apenas dígitos"
+            - "Se vazio → throw CEPError.empty"
+            - "Se != 8 dígitos → throw CEPError.invalidLength"
+            - "Converter para inteiro e verificar se está dentro dos ranges conhecidos"
+            - "Se fora → throw CEPError.outOfKnownPostalRange"
+      errors:
+        CEPError:
+          module: "social-care/cep"
+          cases:
+            empty:
+              code: "CEP-001"
+              severity: warning
+              http: 422
+            invalidCharacters:
+              params: [value: String]
+              code: "CEP-002"
+              severity: warning
+              http: 422
+            invalidLength:
+              params: [value: String, expected: Int]
+              code: "CEP-003"
+              severity: warning
+              http: 422
+            outOfKnownPostalRange:
+              params: [value: String]
+              code: "CEP-004"
+              severity: warning
+              http: 422
+
+    # ─── RGDocument ─────────────────────────────────────────────────────
+    RGDocument:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        number: { type: String, description: "9 caracteres compactados (8 dígitos + 1 dígito ou X)" }
+        issuingState: { type: String, description: "UF 2 letras uppercase" }
+        issuingAgency: { type: String, description: "Nome normalizado da agência" }
+        issueDate: { type: TimeStamp }
+      computed:
+        formattedNumber: { type: String, format: "XXXXXXXX-X" }
+      valid_states: ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
+      constructors:
+        from_values:
+          params:
+            number: String
+            issuingState: String
+            issuingAgency: String
+            issueDate: TimeStamp
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          logic:
+            - "Number: trim + uppercase"
+            - "Se vazio → throw RGDocumentError.emptyNumber"
+            - "Remover '.', '-', ' '"
+            - "Regex match: ^[0-9]{8}[0-9X]$"
+            - "Se não match → throw RGDocumentError.invalidNumberFormat"
+            - "Calcular dígito verificador e comparar"
+            - "Se inválido → throw RGDocumentError.invalidCheckDigit"
+            - "IssuingState: deve estar em valid_states"
+            - "Se inválido → throw RGDocumentError.invalidIssuingState"
+            - "IssuingAgency: não pode ser vazio"
+            - "Se vazio → throw RGDocumentError.emptyIssuingAgency"
+            - "Normalizar: regex \\s+ → ' ' + uppercase"
+            - "IssueDate: não pode ser no futuro (comparar com now)"
+            - "Se futuro → throw RGDocumentError.issueDateInFuture"
+      check_digit_algorithm:
+        weights: [2, 3, 4, 5, 6, 7, 8, 9]
+        applied_to: "primeiros 8 dígitos"
+        formula: |
+          remainder = sum % 11
+          if remainder == 10 → "X"
+          if remainder == 11 → "0"
+          else → String(11 - remainder)
+      errors:
+        RGDocumentError:
+          module: "social-care/rg-document"
+          cases:
+            emptyNumber:
+              code: "RGD-001"
+              severity: warning
+              http: 422
+            invalidNumberFormat:
+              params: [value: String]
+              code: "RGD-005"
+              severity: warning
+              http: 422
+            invalidCheckDigit:
+              params: [value: String, expected: String, provided: String]
+              code: "RGD-006"
+              severity: warning
+              http: 422
+            invalidIssuingState:
+              params: [value: String]
+              code: "RGD-002"
+              severity: warning
+              http: 422
+            emptyIssuingAgency:
+              code: "RGD-003"
+              severity: warning
+              http: 422
+            issueDateInFuture:
+              params: [date: String, now: String]
+              code: "RGD-004"
+              severity: warning
+              http: 422
+
+    # ─── Address ────────────────────────────────────────────────────────
+    Address:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        cep: { type: "CEP?", optional: true }
+        isShelter: { type: Bool, description: "Indica unidade de acolhimento" }
+        residenceLocation: { type: ResidenceLocation }
+        street: { type: "String?", optional: true }
+        neighborhood: { type: "String?", optional: true }
+        number: { type: "String?", optional: true }
+        complement: { type: "String?", optional: true }
+        state: { type: String, description: "UF 2 letras uppercase, obrigatório" }
+        city: { type: String, description: "Nome da cidade, obrigatório" }
+      enums:
+        ResidenceLocation:
+          type: String
+          cases:
+            urbano: { value: "URBANO" }
+            rural: { value: "RURAL" }
+      valid_states: ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
+      constructors:
+        from_values:
+          throws: true
+          logic:
+            - "CEP: opcional, se fornecido deve ser CEP válido"
+            - "State: obrigatório, deve estar em valid_states"
+            - "Se ausente → throw AddressError.stateRequired"
+            - "Se inválido → throw AddressError.invalidState"
+            - "City: obrigatória, não pode ser vazia"
+            - "Se vazio → throw AddressError.cityRequired"
+            - "Normalizar todos os campos string: trim + regex \\s+ → ' '"
+      errors:
+        AddressError:
+          module: "social-care/address"
+          cases:
+            invalidCep:
+              params: [value: String]
+              code: "ADR-001"
+              severity: warning
+              http: 422
+            stateRequired:
+              code: "ADR-002"
+              severity: warning
+              http: 422
+            invalidState:
+              params: [value: String]
+              code: "ADR-003"
+              severity: warning
+              http: 422
+            cityRequired:
+              code: "ADR-004"
+              severity: warning
+              http: 422
+
+    # ─── TimeStamp ──────────────────────────────────────────────────────
+    TimeStamp:
+      conformances: [Codable, Equatable, Hashable, Sendable, Comparable]
+      properties:
+        date: { type: Date }
+      static:
+        now: { type: TimeStamp, description: "Instante atual (try!)" }
+      constructors:
+        from_date:
+          params: { date: "Date?" }
+          throws: true
+          logic: "Se nil → throw TimeStampError.invalidDate"
+        from_iso:
+          params: { iso: String }
+          throws: true
+          logic: "Parse ISO8601 → Date. Se falhar → throw TimeStampError.invalidDate"
+      methods:
+        isSameDay:
+          params: { other: TimeStamp }
+          returns: Bool
+          description: "Comparação no calendário UTC"
+        toISOString:
+          returns: String
+          format: "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        years:
+          params: { referenceDate: { type: TimeStamp, default: ".now" } }
+          returns: Int
+          description: "Anos completos entre this.date e referenceDate"
+      computed_utc_accessors:
+        year: Int
+        month: { type: Int, range: "1-12" }
+        day: Int
+        hour: { type: Int, range: "0-23" }
+        minute: Int
+        seconds: Int
+      internal:
+        utcCalendar: "Calendar Gregorian com timezone UTC (0 seconds offset)"
+      comparison:
+        less_than: "lhs.date < rhs.date"
+        equals: "lhs.date == rhs.date"
+      errors:
+        TimeStampError:
+          module: "social-care/timestamp"
+          cases:
+            invalidDate:
+              params: [value: String]
+              code: "TS-001"
+              severity: error
+              http: 422
+
+# =============================================================================
+# REGISTRY — Bounded Context (Cadastro de Pacientes)
+# =============================================================================
+
+registry:
+  aggregate:
+    Patient:
+      implements: [EventSourcedAggregate, EventSourcedAggregateInternal]
+      type: struct (value type)
+      description: "Agregado raiz — prontuário do paciente com família e intervenções."
+
+      properties:
+        # Identidade
+        id: { type: PatientId }
+        version: { type: Int, description: "Controle de concorrência otimista" }
+        uncommittedEvents: { type: "DomainEvent[]" }
+        personId: { type: PersonId, description: "Identificador global da pessoa" }
+
+        # Dados civis
+        personalData: { type: "PersonalData?", optional: true }
+        civilDocuments: { type: "CivilDocuments?", optional: true }
+        address: { type: "Address?", optional: true }
+
+        # Família
+        familyMembers: { type: "FamilyMember[]", default: "[]" }
+
+        # Identidade social
+        socialIdentity: { type: "SocialIdentity?", optional: true }
+
+        # Assessments
+        housingCondition: { type: "HousingCondition?", optional: true }
+        socioeconomicSituation: { type: "SocioEconomicSituation?", optional: true }
+        workAndIncome: { type: "WorkAndIncome?", optional: true }
+        educationalStatus: { type: "EducationalStatus?", optional: true }
+        healthStatus: { type: "HealthStatus?", optional: true }
+        communitySupportNetwork: { type: "CommunitySupportNetwork?", optional: true }
+        socialHealthSummary: { type: "SocialHealthSummary?", optional: true }
+
+        # Intervenções
+        appointments: { type: "SocialCareAppointment[]", default: "[]" }
+        referrals: { type: "Referral[]", default: "[]" }
+        violationReports: { type: "RightsViolationReport[]", default: "[]" }
+        placementHistory: { type: "PlacementHistory?", optional: true }
+        intakeInfo: { type: "IngressInfo?", optional: true }
+        diagnoses: { type: "Diagnosis[]" }
+
+      computed_methods:
+        countMembers:
+          params: { inAgeRange: "Range", at: TimeStamp }
+          returns: Int
+        hasAnyMember:
+          params: { inAgeRange: "Range", at: TimeStamp }
+          returns: Bool
+        containsPerson:
+          params: { targetId: PersonId }
+          returns: Bool
+          description: "Verifica se é o titular ou membro da família"
+
+      # ── Lifecycle ──
+      lifecycle:
+        constructor:
+          params:
+            id: PatientId
+            personId: PersonId
+            personalData: { type: "PersonalData?", default: null }
+            civilDocuments: { type: "CivilDocuments?", default: null }
+            address: { type: "Address?", default: null }
+            diagnoses: "Diagnosis[]"
+            familyMembers: { type: "FamilyMember[]", default: "[]" }
+            prRelationshipId: LookupId
+            actorId: String
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "diagnoses não pode ser vazio"
+              error: PatientError.initialDiagnosesCantBeEmpty
+            - rule: "Exatamente um Primary Reference (PR) deve existir na família"
+              error: PatientError.mustHaveExactlyOnePrimaryReference
+            - rule: "Não pode haver múltiplos PRs"
+              error: PatientError.multiplePrimaryReferencesNotAllowed
+          emits: PatientCreatedEvent
+
+        reconstitute:
+          description: "Hidratação a partir da persistência (sem validações, sem eventos)"
+          params:
+            id: PatientId
+            version: Int
+            personId: PersonId
+            personalData: "PersonalData?"
+            civilDocuments: "CivilDocuments?"
+            address: "Address?"
+            diagnoses: "Diagnosis[]"
+            familyMembers: { type: "FamilyMember[]", default: "[]" }
+            appointments: { type: "SocialCareAppointment[]", default: "[]" }
+            referrals: { type: "Referral[]", default: "[]" }
+            violationReports: { type: "RightsViolationReport[]", default: "[]" }
+            housingCondition: { type: "HousingCondition?", default: null }
+            socioeconomicSituation: { type: "SocioEconomicSituation?", default: null }
+            workAndIncome: { type: "WorkAndIncome?", default: null }
+            educationalStatus: { type: "EducationalStatus?", default: null }
+            healthStatus: { type: "HealthStatus?", default: null }
+            communitySupportNetwork: { type: "CommunitySupportNetwork?", default: null }
+            socialHealthSummary: { type: "SocialHealthSummary?", default: null }
+            socialIdentity: { type: "SocialIdentity?", default: null }
+            placementHistory: { type: "PlacementHistory?", default: null }
+            intakeInfo: { type: "IngressInfo?", default: null }
+          returns: Patient
+
+      # ── Family Management ──
+      family:
+        addMember:
+          mutating: true
+          params:
+            member: FamilyMember
+            actorId: String
+            at: { type: TimeStamp, default: ".now" }
+            primaryReferenceId: LookupId
+          throws: true
+          validations:
+            - rule: "Pessoa não pode já existir na família"
+              error: PatientError.familyMemberAlreadyExists(memberId)
+            - rule: "Não pode haver PRs duplicados"
+              error: PatientError.multiplePrimaryReferencesNotAllowed
+          emits: FamilyMemberAddedEvent
+
+        removeMember:
+          mutating: true
+          params:
+            personId: PersonId
+            actorId: String
+            at: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "Pessoa deve existir na família"
+              error: PatientError.familyMemberNotFound(personId)
+          emits: FamilyMemberRemovedEvent
+
+        assignPrimaryCaregiver:
+          mutating: true
+          params:
+            personId: PersonId
+            actorId: String
+            at: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "Pessoa deve existir na família"
+              error: PatientError.familyMemberNotFound(personId)
+          logic: "Revoga status de todos, atribui ao selecionado"
+          emits: PrimaryCaregiverAssignedEvent
+
+      # ── Assessments ──
+      assessments:
+        updateHousingCondition:
+          mutating: true
+          params: { condition: "HousingCondition?", actorId: String, at: TimeStamp }
+          emits: HousingConditionUpdatedEvent
+        updateSocioEconomicSituation:
+          mutating: true
+          params: { situation: "SocioEconomicSituation?", actorId: String, at: TimeStamp }
+          emits: SocioEconomicSituationUpdatedEvent
+        updateWorkAndIncome:
+          mutating: true
+          params: { data: "WorkAndIncome?", actorId: String, at: TimeStamp }
+          emits: WorkAndIncomeUpdatedEvent
+        updateEducationalStatus:
+          mutating: true
+          params: { status: "EducationalStatus?", actorId: String, at: TimeStamp }
+          emits: EducationalStatusUpdatedEvent
+        updateHealthStatus:
+          mutating: true
+          params: { status: "HealthStatus?", actorId: String, at: TimeStamp }
+          emits: HealthStatusUpdatedEvent
+        updateCommunitySupportNetwork:
+          mutating: true
+          params: { network: "CommunitySupportNetwork?", actorId: String, at: TimeStamp }
+          emits: CommunitySupportNetworkUpdatedEvent
+        updateSocialHealthSummary:
+          mutating: true
+          params: { summary: "SocialHealthSummary?", actorId: String, at: TimeStamp }
+          emits: SocialHealthSummaryUpdatedEvent
+        updateSocialIdentity:
+          mutating: true
+          params: { identity: "SocialIdentity?", actorId: String, at: TimeStamp }
+          emits: SocialIdentityUpdatedEvent
+        updatePlacementHistory:
+          mutating: true
+          params: { history: "PlacementHistory?", actorId: String, at: TimeStamp }
+          emits: PlacementHistoryUpdatedEvent
+        updateIntakeInfo:
+          mutating: true
+          params: { info: "IngressInfo?", actorId: String, at: TimeStamp }
+          emits: IntakeInfoUpdatedEvent
+
+        validatePlacementCompatibility:
+          params: { history: PlacementHistory, now: { type: TimeStamp, default: ".now" } }
+          throws: true
+          validations:
+            - rule: "Se adolescente em internação → família deve ter adolescente (12-17)"
+              error: PatientError.incompatiblePlacementSituation
+            - rule: "Se guarda por terceiros → família deve ter menor (0-17)"
+              error: PatientError.incompatibleGuardianshipSituation
+
+      # ── Interventions ──
+      interventions:
+        addAppointment:
+          mutating: true
+          params:
+            id: AppointmentId
+            date: TimeStamp
+            professionalInChargeId: ProfessionalId
+            type: "SocialCareAppointment.AppointmentType"
+            summary: String
+            actionPlan: String
+            actorId: String
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          emits: SocialCareAppointmentRegisteredEvent
+
+        addReferral:
+          mutating: true
+          params:
+            id: ReferralId
+            date: TimeStamp
+            requestingProfessionalId: ProfessionalId
+            referredPersonId: PersonId
+            destinationService: "Referral.DestinationService"
+            reason: String
+            actorId: String
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "Pessoa referenciada deve estar no boundary do agregado (titular ou família)"
+              error: PatientError.referralTargetOutsideBoundary(targetId)
+          emits: ReferralCreatedEvent
+
+        addRightsViolationReport:
+          mutating: true
+          params:
+            id: ViolationReportId
+            reportDate: TimeStamp
+            incidentDate: "TimeStamp?"
+            victimId: PersonId
+            violationType: "RightsViolationReport.ViolationType"
+            descriptionOfFact: String
+            actionsTaken: String
+            actorId: String
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "Vítima deve estar no boundary do agregado"
+              error: PatientError.violationTargetOutsideBoundary(targetId)
+          emits: RightsViolationReportedEvent
+
+      # ── Events ──
+      events:
+        PatientCreatedEvent:
+          properties:
+            id: UUID
+            patientId: String
+            personId: String
+            actorId: String
+            occurredAt: Date
+
+        FamilyMemberAddedEvent:
+          properties:
+            id: UUID
+            patientId: String
+            memberId: String
+            relationship: String
+            actorId: String
+            occurredAt: Date
+
+        FamilyMemberRemovedEvent:
+          properties:
+            id: UUID
+            patientId: String
+            memberId: String
+            actorId: String
+            occurredAt: Date
+
+        PrimaryCaregiverAssignedEvent:
+          properties:
+            id: UUID
+            patientId: String
+            caregiverId: String
+            actorId: String
+            occurredAt: Date
+
+        SocialCareAppointmentRegisteredEvent:
+          properties:
+            id: UUID
+            patientId: String
+            appointmentId: String
+            professionalInChargeId: String
+            type: String
+            actorId: String
+            occurredAt: Date
+
+        ReferralCreatedEvent:
+          properties:
+            id: UUID
+            patientId: String
+            referralId: String
+            referredPersonId: String
+            destinationService: String
+            status: String
+            actorId: String
+            occurredAt: Date
+
+        RightsViolationReportedEvent:
+          properties:
+            id: UUID
+            patientId: String
+            reportId: String
+            victimId: String
+            violationType: String
+            actorId: String
+            occurredAt: Date
+
+        # Assessment update events — todos seguem o padrão before/after diff
+        HousingConditionUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "HousingCondition?", after: "HousingCondition?", occurredAt: Date }
+        SocioEconomicSituationUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "SocioEconomicSituation?", after: "SocioEconomicSituation?", occurredAt: Date }
+        WorkAndIncomeUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "WorkAndIncome?", after: "WorkAndIncome?", occurredAt: Date }
+        EducationalStatusUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "EducationalStatus?", after: "EducationalStatus?", occurredAt: Date }
+        HealthStatusUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "HealthStatus?", after: "HealthStatus?", occurredAt: Date }
+        CommunitySupportNetworkUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "CommunitySupportNetwork?", after: "CommunitySupportNetwork?", occurredAt: Date }
+        SocialHealthSummaryUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "SocialHealthSummary?", after: "SocialHealthSummary?", occurredAt: Date }
+        SocialIdentityUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "SocialIdentity?", after: "SocialIdentity?", occurredAt: Date }
+        PlacementHistoryUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "PlacementHistory?", after: "PlacementHistory?", occurredAt: Date }
+        IntakeInfoUpdatedEvent:
+          properties: { id: UUID, patientId: String, actorId: String, before: "IngressInfo?", after: "IngressInfo?", occurredAt: Date }
+
+      # ── Errors ──
+      errors:
+        PatientError:
+          module: "social-care/patient"
+          category: domainRuleViolation
+          http: 422
+          cases:
+            initialIdIsRequired:
+              code: "PAT-001"
+              severity: warning
+            initialPersonIdIsRequired:
+              code: "PAT-002"
+              severity: warning
+            initialDiagnosesCantBeEmpty:
+              code: "PAT-003"
+              severity: warning
+              message: "Ao menos um diagnóstico (CID) é obrigatório para abertura de prontuário."
+            familyMemberAlreadyExists:
+              params: [memberId: String]
+              code: "PAT-004"
+              severity: warning
+              message: "O membro com id '{memberId}' já faz parte da composição familiar."
+            familyMemberNotFound:
+              params: [personId: String]
+              code: "PAT-005"
+              severity: warning
+              message: "Nenhum membro com personId '{personId}' foi encontrado na composição familiar."
+            referralTargetOutsideBoundary:
+              params: [targetId: String]
+              code: "PAT-006"
+              severity: warning
+              message: "A pessoa referenciada ('{targetId}') não faz parte deste prontuário."
+            violationTargetOutsideBoundary:
+              params: [targetId: String]
+              code: "PAT-007"
+              severity: warning
+              message: "A vítima ('{targetId}') não faz parte deste prontuário."
+            mustHaveExactlyOnePrimaryReference:
+              code: "PAT-008"
+              severity: warning
+              message: "É necessário exatamente uma Pessoa de Referência (PR) na composição familiar."
+            multiplePrimaryReferencesNotAllowed:
+              code: "PAT-009"
+              severity: warning
+              message: "Não é permitido mais de uma Pessoa de Referência (PR)."
+            incompatiblePlacementSituation:
+              code: "PAT-010"
+              severity: warning
+              message: "Situação de acolhimento incompatível com a composição familiar."
+            incompatibleGuardianshipSituation:
+              code: "PAT-011"
+              severity: warning
+              message: "Situação de guarda incompatível com a composição familiar."
+
+  # ── Entities ──
+  entities:
+    FamilyMember:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        personId: { type: PersonId, description: "Identificador global da pessoa" }
+        relationshipId: { type: LookupId, description: "FK para dominio_parentesco" }
+        isPrimaryCaregiver: { type: Bool, visibility: "private(set)", mutable: true }
+        residesWithPatient: { type: Bool, description: "Coabitação" }
+        hasDisability: { type: Bool, default: false }
+        requiredDocuments: { type: "RequiredDocument[]", default: "[]", description: "Sem duplicatas, ordenados" }
+        birthDate: { type: TimeStamp }
+      constructors:
+        from_values:
+          logic:
+            - "Deduplicar e ordenar requiredDocuments"
+      mutators:
+        assignAsPrimaryCaregiver:
+          logic: "isPrimaryCaregiver = true"
+        revokePrimaryCaregiver:
+          logic: "isPrimaryCaregiver = false"
+      equality: "Por personId apenas"
+      errors:
+        FamilyMemberError:
+          module: "social-care/family-member"
+          cases:
+            missingPerson:
+              code: "FM-001"
+              severity: error
+              http: 422
+            invalidRelationship:
+              code: "FM-002"
+              severity: warning
+              http: 422
+
+    RequiredDocument:
+      type: enum
+      raw_type: String
+      conformances: [Codable, Equatable, Hashable, Sendable, CaseIterable]
+      cases:
+        birthCertificate: { value: "CN" }
+        rg: { value: "RG" }
+        workCard: { value: "CTPS" }
+        cpf: { value: "CPF" }
+        voterRegistration: { value: "TE" }
+
+  # ── Value Objects ──
+  value_objects:
+    PersonalData:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        firstName: { type: String }
+        lastName: { type: String }
+        motherName: { type: String }
+        nationality: { type: String }
+        sex: { type: Sex }
+        socialName: { type: "String?", optional: true }
+        birthDate: { type: TimeStamp }
+        phone: { type: "String?", optional: true }
+      enums:
+        Sex:
+          type: String
+          cases:
+            masculino: { value: "masculino" }
+            feminino: { value: "feminino" }
+      constructors:
+        from_values:
+          params:
+            firstName: String
+            lastName: String
+            motherName: String
+            nationality: String
+            sex: Sex
+            socialName: "String?"
+            birthDate: TimeStamp
+            phone: { type: "String?", default: null }
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "firstName não pode ser vazio (após normalização)"
+              error: PersonalDataError.firstNameEmpty
+            - rule: "lastName não pode ser vazio"
+              error: PersonalDataError.lastNameEmpty
+            - rule: "motherName não pode ser vazio"
+              error: PersonalDataError.motherNameEmpty
+            - rule: "nationality não pode ser vazio"
+              error: PersonalDataError.nationalityEmpty
+            - rule: "birthDate não pode ser no futuro"
+              error: PersonalDataError.birthDateInFuture
+          normalization:
+            - "Nomes: trim + collapse múltiplos espaços para um"
+            - "socialName: se vazio após normalização → nil"
+            - "phone: se vazio após trim → nil"
+      errors:
+        PersonalDataError:
+          module: "social-care/personal-data"
+          cases:
+            firstNameEmpty: { code: "PDT-001", severity: warning, http: 422 }
+            lastNameEmpty: { code: "PDT-002", severity: warning, http: 422 }
+            motherNameEmpty: { code: "PDT-003", severity: warning, http: 422 }
+            birthDateInFuture:
+              params: [date: String, now: String]
+              code: "PDT-004"
+              severity: warning
+              http: 422
+            nationalityEmpty: { code: "PDT-005", severity: warning, http: 422 }
+
+    CivilDocuments:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        cpf: { type: "CPF?", optional: true }
+        nis: { type: "NIS?", optional: true }
+        rgDocument: { type: "RGDocument?", optional: true }
+      constructors:
+        from_values:
+          throws: true
+          validations:
+            - rule: "Pelo menos um de cpf, nis ou rgDocument deve ser não-nulo"
+              error: CivilDocumentsError.atLeastOneDocumentRequired
+      errors:
+        CivilDocumentsError:
+          module: "social-care/civil-documents"
+          cases:
+            atLeastOneDocumentRequired:
+              code: "CVD-001"
+              severity: warning
+              http: 422
+
+    SocialIdentity:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        typeId: { type: LookupId }
+        otherDescription: { type: "String?", optional: true }
+      constructors:
+        from_values:
+          params:
+            typeId: LookupId
+            otherDescription: "String?"
+            isOtherType: { type: Bool, default: false }
+          throws: true
+          validations:
+            - rule: "Se isOtherType == true, otherDescription não pode ser nil/vazio"
+              error: SocialIdentityError.descriptionRequiredForOtherType
+          normalization: "otherDescription trimmed; vazio → nil"
+      errors:
+        SocialIdentityError:
+          module: "social-care/social-identity"
+          cases:
+            indigenousInVillageMissingDescription:
+              code: "SID-001"
+              severity: warning
+              http: 422
+            indigenousOutsideVillageMissingDescription:
+              code: "SID-002"
+              severity: warning
+              http: 422
+            descriptionRequiredForOtherType:
+              code: "SID-003"
+              severity: warning
+              http: 422
+
+  # ── Analytics ──
+  analytics:
+    FamilyAnalytics:
+      enums:
+        AgeRange:
+          type: String
+          cases:
+            - range0to6
+            - range7to14
+            - range15to17
+            - range18to29
+            - range30to59
+            - range60to64
+            - range65to69
+            - range70Plus
+      structs:
+        AgeProfile:
+          internal_state: "Map<AgeRange, Int>"
+          methods:
+            increment: { params: { range: AgeRange } }
+            count: { params: { range: AgeRange }, returns: Int }
+      methods:
+        calculateAgeProfile:
+          static: true
+          params:
+            members: "FamilyMember[]"
+            at: TimeStamp
+          returns: AgeProfile
+          description: "Classifica cada membro por faixa etária e retorna contadores."
+
+  # ── Repository (Port) ──
+  repository:
+    PatientRepository:
+      type: protocol
+      methods:
+        save: { params: { patient: Patient }, async: true, throws: true }
+        exists_byPersonId: { params: { personId: PersonId }, returns: Bool, async: true, throws: true }
+        find_byPersonId: { params: { personId: PersonId }, returns: "Patient?", async: true, throws: true }
+        find_byId: { params: { id: PatientId }, returns: "Patient?", async: true, throws: true }
+
+# =============================================================================
+# ASSESSMENT — Bounded Context (Avaliação Social)
+# =============================================================================
+
+assessment:
+  value_objects:
+
+    # ─── HousingCondition ───────────────────────────────────────────────
+    HousingCondition:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        type: { type: ConditionType }
+        wallMaterial: { type: WallMaterial }
+        numberOfRooms: { type: Int }
+        numberOfBedrooms: { type: Int }
+        numberOfBathrooms: { type: Int }
+        waterSupply: { type: WaterSupply }
+        hasPipedWater: { type: Bool }
+        electricityAccess: { type: ElectricityAccess }
+        sewageDisposal: { type: SewageDisposal }
+        wasteCollection: { type: WasteCollection }
+        accessibilityLevel: { type: AccessibilityLevel }
+        isInGeographicRiskArea: { type: Bool }
+        hasDifficultAccess: { type: Bool }
+        isInSocialConflictArea: { type: Bool }
+        hasDiagnosticObservations: { type: Bool }
+      enums:
+        ConditionType:
+          cases: [owned, rented, ceded, squatted]
+        WallMaterial:
+          cases: [masonry, finishedWood, makeshiftMaterials]
+        WaterSupply:
+          cases: [publicNetwork, wellOrSpring, rainwaterHarvest, waterTruck, other]
+        ElectricityAccess:
+          cases: [meteredConnection, irregularConnection, noAccess]
+        SewageDisposal:
+          cases: [publicSewer, septicTank, rudimentaryPit, openSewage, noBathroom]
+        WasteCollection:
+          cases: [directCollection, indirectCollection, noCollection]
+        AccessibilityLevel:
+          cases: [fullyAccessible, partiallyAccessible, notAccessible]
+      validations:
+        - rule: "numberOfRooms >= 0"
+          error: HousingConditionError.negativeRooms
+        - rule: "numberOfBedrooms >= 0"
+          error: HousingConditionError.negativeBedrooms
+        - rule: "numberOfBathrooms >= 0"
+          error: HousingConditionError.negativeBathrooms
+        - rule: "numberOfBedrooms <= numberOfRooms"
+          error: HousingConditionError.bedroomsExceedRooms
+      errors:
+        HousingConditionError:
+          module: "social-care/housing-condition"
+          cases:
+            negativeRooms: { code: "HC-001", severity: warning, http: 422 }
+            negativeBedrooms: { code: "HC-002", severity: warning, http: 422 }
+            negativeBathrooms: { code: "HC-003", severity: warning, http: 422 }
+            bedroomsExceedRooms: { code: "HC-004", severity: warning, http: 422 }
+            bathroomsExceedRooms: { code: "HC-005", severity: warning, http: 422 }
+
+    # ─── HealthStatus ───────────────────────────────────────────────────
+    HealthStatus:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        familyId: { type: PatientId }
+        deficiencies: { type: "MemberDeficiency[]" }
+        gestatingMembers: { type: "PregnantMember[]" }
+        constantCareNeeds: { type: "PersonId[]" }
+        foodInsecurity: { type: Bool }
+      nested_structs:
+        MemberDeficiency:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            memberId: { type: PersonId }
+            deficiencyTypeId: { type: LookupId, fk: "dominio_deficiencia" }
+            needsConstantCare: { type: Bool }
+            responsibleCaregiverName: { type: "String?", optional: true }
+        PregnantMember:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            memberId: { type: PersonId }
+            monthsGestation: { type: Int }
+            startedPrenatalCare: { type: Bool }
+
+    # ─── EducationalStatus ──────────────────────────────────────────────
+    EducationalStatus:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        familyId: { type: PatientId }
+        memberProfiles: { type: "MemberEducationalProfile[]" }
+        programOccurrences: { type: "ProgramOccurrence[]" }
+      nested_structs:
+        MemberEducationalProfile:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            memberId: { type: PersonId }
+            canReadWrite: { type: Bool }
+            attendsSchool: { type: Bool }
+            educationLevelId: { type: LookupId, fk: "dominio_escolaridade" }
+        ProgramOccurrence:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            memberId: { type: PersonId }
+            date: { type: TimeStamp }
+            effectId: { type: LookupId, fk: "dominio_efeito_condicionalidade" }
+            isSuspensionRequested: { type: Bool }
+
+    # ─── SocioEconomicSituation ─────────────────────────────────────────
+    SocioEconomicSituation:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        totalFamilyIncome: { type: Double }
+        incomePerCapita: { type: Double }
+        receivesSocialBenefit: { type: Bool }
+        socialBenefits: { type: SocialBenefitsCollection }
+        mainSourceOfIncome: { type: String }
+        hasUnemployed: { type: Bool }
+      validations:
+        - rule: "Se receivesSocialBenefit == false → socialBenefits deve ser vazio"
+          error: SocioEconomicSituationError.inconsistentSocialBenefit
+        - rule: "Se receivesSocialBenefit == true → socialBenefits não pode ser vazio"
+          error: SocioEconomicSituationError.missingSocialBenefits
+        - rule: "totalFamilyIncome >= 0"
+          error: SocioEconomicSituationError.negativeFamilyIncome
+        - rule: "incomePerCapita >= 0"
+          error: SocioEconomicSituationError.negativeIncomePerCapita
+        - rule: "incomePerCapita <= totalFamilyIncome"
+          error: SocioEconomicSituationError.inconsistentIncomePerCapita
+        - rule: "mainSourceOfIncome não pode ser vazio/whitespace"
+          error: SocioEconomicSituationError.emptyMainSourceOfIncome
+      errors:
+        SocioEconomicSituationError:
+          module: "social-care/socio-economic"
+          cases:
+            inconsistentSocialBenefit: { code: "SES-001", severity: warning, http: 422 }
+            missingSocialBenefits: { code: "SES-002", severity: warning, http: 422 }
+            negativeFamilyIncome:
+              params: [amount: Double]
+              code: "SES-003"
+              severity: warning
+              http: 422
+            negativeIncomePerCapita:
+              params: [amount: Double]
+              code: "SES-004"
+              severity: warning
+              http: 422
+            emptyMainSourceOfIncome: { code: "SES-005", severity: warning, http: 422 }
+            inconsistentIncomePerCapita:
+              params: [perCapita: Double, total: Double]
+              code: "SES-006"
+              severity: warning
+              http: 422
+
+    # ─── SocialBenefit ──────────────────────────────────────────────────
+    SocialBenefit:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        benefitName: { type: String, description: "Normalizado: trim + collapse whitespace" }
+        amount: { type: Double }
+        beneficiaryId: { type: PersonId }
+      validations:
+        - rule: "benefitName não pode ser vazio (após normalização)"
+          error: SocialBenefitError.benefitNameEmpty
+        - rule: "amount > 0"
+          error: SocialBenefitError.amountInvalid
+      errors:
+        SocialBenefitError:
+          module: "social-care/social-benefit"
+          cases:
+            benefitNameEmpty: { code: "SB-001", severity: warning, http: 422 }
+            amountInvalid:
+              params: [amount: Double]
+              code: "SB-002"
+              severity: warning
+              http: 422
+
+    # ─── SocialBenefitsCollection ───────────────────────────────────────
+    SocialBenefitsCollection:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        items: { type: "SocialBenefit[]", immutable: true }
+      computed:
+        isEmpty: { type: Bool }
+        count: { type: Int }
+        totalAmount: { type: Double, description: "Soma de todos os amounts" }
+      validations:
+        - rule: "Nomes de benefícios não podem ser duplicados"
+          error: SocialBenefitsCollectionError.duplicateBenefitNotAllowed
+      errors:
+        SocialBenefitsCollectionError:
+          module: "social-care/social-benefits-collection"
+          cases:
+            benefitsArrayNullOrUndefined: { code: "SBC-001", severity: warning, http: 422 }
+            duplicateBenefitNotAllowed:
+              params: [name: String]
+              code: "SBC-002"
+              severity: warning
+              http: 422
+
+    # ─── WorkAndIncome ──────────────────────────────────────────────────
+    WorkAndIncome:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        familyId: { type: PatientId }
+        individualIncomes: { type: "WorkIncomeVO[]" }
+        socialBenefits: { type: "SocialBenefit[]" }
+        hasRetiredMembers: { type: Bool }
+      nested_structs:
+        WorkIncomeVO:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            memberId: { type: PersonId }
+            occupationId: { type: LookupId, fk: "dominio_condicao_ocupacao" }
+            hasWorkCard: { type: Bool }
+            monthlyAmount: { type: Double }
+          validations:
+            - rule: "monthlyAmount >= 0"
+              error: WorkIncomeError.negativeMonthlyAmount
+          errors:
+            WorkIncomeError:
+              cases:
+                negativeMonthlyAmount: { code: "WI-001", severity: warning, http: 422 }
+
+    # ─── CommunitySupportNetwork ────────────────────────────────────────
+    CommunitySupportNetwork:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        hasRelativeSupport: { type: Bool }
+        hasNeighborSupport: { type: Bool }
+        familyConflicts: { type: String }
+        patientParticipatesInGroups: { type: Bool }
+        familyParticipatesInGroups: { type: Bool }
+        patientHasAccessToLeisure: { type: Bool }
+        facesDiscrimination: { type: Bool }
+      constants:
+        maxFamilyConflictsLength: 300
+      validations:
+        - rule: "familyConflicts não pode ser apenas whitespace (se fornecido)"
+          error: CommunitySupportNetworkError.familyConflictsWhitespace
+        - rule: "familyConflicts.count <= 300"
+          error: CommunitySupportNetworkError.familyConflictsTooLong
+      errors:
+        CommunitySupportNetworkError:
+          module: "social-care/community-support"
+          cases:
+            familyConflictsWhitespace: { code: "CSN-001", severity: warning, http: 422 }
+            familyConflictsTooLong:
+              params: [limit: Int]
+              code: "CSN-002"
+              severity: warning
+              http: 422
+
+    # ─── SocialHealthSummary ────────────────────────────────────────────
+    SocialHealthSummary:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        requiresConstantCare: { type: Bool }
+        hasMobilityImpairment: { type: Bool }
+        functionalDependencies: { type: "String[]", description: "Normalizados e deduplicados" }
+        hasRelevantDrugTherapy: { type: Bool }
+      validations:
+        - rule: "functionalDependencies não pode conter strings vazias (após trim)"
+          error: SocialHealthSummaryError.functionalDependenciesEmpty
+      normalization:
+        - "Trim cada item"
+        - "Remover duplicatas"
+      errors:
+        SocialHealthSummaryError:
+          module: "social-care/social-health-summary"
+          cases:
+            functionalDependenciesEmpty: { code: "SHS-001", severity: warning, http: 422 }
+
+  # ── Analytics Services ──
+  analytics:
+    EducationAnalyticsService:
+      enums:
+        AgeRange:
+          cases:
+            range0to5: { description: "Creche/Pré-escola" }
+            range6to14: { description: "Ensino Fundamental I e II" }
+            range15to17: { description: "Ensino Médio" }
+            range10to17: { description: "Adolescência e Juventude — alfabetização" }
+            range18to59: { description: "Vida adulta" }
+            range60Plus: { description: "Idosos" }
+        VulnerabilityType:
+          cases:
+            notInSchool: { description: "Pessoa em idade escolar não frequenta rede de ensino" }
+            illiteracy: { description: "Pessoa não sabe ler ou escrever" }
+      structs:
+        VulnerabilityReport:
+          internal_state: "Map<String, Int>"
+          key_format: "{vulnerability}_{ageRange}"
+          methods:
+            increment: { params: { vulnerability: VulnerabilityType, ageRange: AgeRange } }
+            count: { params: { vulnerability: VulnerabilityType, ageRange: AgeRange }, returns: Int }
+      methods:
+        calculateVulnerabilities:
+          static: true
+          params:
+            members: "EducationalMember[]"
+            at: TimeStamp
+          returns: VulnerabilityReport
+          logic:
+            - "Para cada membro, calcular idade a partir de birthDate"
+            - "notInSchool: se !attendsSchool, incrementar faixa (0-5, 6-14, ou 15-17)"
+            - "illiteracy: se !canReadWrite, incrementar faixa (10-17, 18-59, ou 60+)"
+
+    FinancialAnalyticsService:
+      structs:
+        Indicators:
+          properties:
+            totalWorkIncome: { type: Double, alias: "RTF_S — Renda Total Familiar" }
+            perCapitaWorkIncome: { type: Double, alias: "RPC_S — Renda Per Capita Trabalho" }
+            totalGlobalIncome: { type: Double, alias: "RTG — Trabalho + Benefícios" }
+            perCapitaGlobalIncome: { type: Double, alias: "RPC_G — Per Capita Global" }
+      methods:
+        calculate:
+          static: true
+          params:
+            workIncomes: "WorkIncome[]"
+            socialBenefits: "SocialBenefit[]"
+            memberCount: Int
+          returns: Indicators
+          logic:
+            - "totalWorkIncome = sum(workIncomes[].monthlyAmount)"
+            - "totalBenefits = sum(socialBenefits[].amount)"
+            - "divisor = max(memberCount, 1)"
+            - "perCapitaWorkIncome = totalWorkIncome / divisor"
+            - "totalGlobalIncome = totalWorkIncome + totalBenefits"
+            - "perCapitaGlobalIncome = totalGlobalIncome / divisor"
+
+    HousingAnalyticsService:
+      methods:
+        density:
+          static: true
+          params: { members: Int, bedrooms: Int }
+          returns: Double
+          logic: "max(members, 1) / max(bedrooms, 1)"
+        isOvercrowded:
+          static: true
+          params: { members: Int, bedrooms: Int }
+          returns: Bool
+          logic: "density(members, bedrooms) > 3.0"
+
+  # ── Analytics Models ──
+  analytics_models:
+    EducationalMember:
+      conformances: [Sendable]
+      properties:
+        personId: { type: PersonId }
+        birthDate: { type: TimeStamp }
+        attendsSchool: { type: Bool }
+        canReadWrite: { type: Bool }
+
+    WorkIncome:
+      conformances: [Sendable]
+      properties:
+        memberId: { type: PersonId }
+        monthlyAmount: { type: Double }
+
+# =============================================================================
+# CARE — Bounded Context (Atendimento)
+# =============================================================================
+
+care:
+  aggregates:
+    SocialCareAppointment:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        id: { type: AppointmentId }
+        date: { type: TimeStamp }
+        professionalInChargeId: { type: ProfessionalId }
+        type: { type: AppointmentType }
+        summary: { type: String, max_length: 500 }
+        actionPlan: { type: String, max_length: 2000 }
+      enums:
+        AppointmentType:
+          type: String
+          cases:
+            homeVisit: { value: "HOME_VISIT" }
+            officeAppointment: { value: "OFFICE_APPOINTMENT" }
+            phoneCall: { value: "PHONE_CALL" }
+            multidisciplinary: { value: "MULTIDISCIPLINARY" }
+            other: { value: "OTHER" }
+      constructors:
+        from_values:
+          params:
+            id: AppointmentId
+            date: TimeStamp
+            professionalInChargeId: ProfessionalId
+            type: AppointmentType
+            summary: String
+            actionPlan: String
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "date não pode ser no futuro (date <= now)"
+              error: SocialCareAppointmentError.dateInFuture
+            - rule: "Pelo menos um de summary ou actionPlan deve ser não-vazio (após trim)"
+              error: SocialCareAppointmentError.missingNarrative
+            - rule: "summary.count <= 500"
+              error: SocialCareAppointmentError.summaryTooLong(limit: 500)
+            - rule: "actionPlan.count <= 2000"
+              error: SocialCareAppointmentError.actionPlanTooLong(limit: 2000)
+      equality: "Por id apenas"
+      errors:
+        SocialCareAppointmentError:
+          module: "social-care/appointment"
+          code_prefix: "SCA"
+          cases:
+            dateInFuture: { code: "SCA-001", severity: warning, http: 422 }
+            invalidType:
+              params: [received: String, expected: String]
+              code: "SCA-002"
+              severity: error
+              http: 422
+            missingNarrative: { code: "SCA-003", severity: warning, http: 422 }
+            summaryTooLong:
+              params: [limit: Int]
+              code: "SCA-004"
+              severity: warning
+              http: 422
+            actionPlanTooLong:
+              params: [limit: Int]
+              code: "SCA-005"
+              severity: warning
+              http: 422
+
+  value_objects:
+    AppointmentId:
+      brand: "AppointmentId"
+      conformances: [Codable, Sendable, Hashable, Equatable, CustomStringConvertible]
+      properties:
+        value: { type: String, visibility: private, description: "UUID lowercased" }
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic: "Trim + lowercase + validar UUID"
+        generate:
+          logic: "UUID().uuidString.lowercased()"
+      errors:
+        AppointmentIdError:
+          module: "social-care/appointment-id"
+          cases:
+            invalidFormat:
+              params: [value: String]
+              code: "AI-001"
+              severity: error
+              http: 422
+
+    Diagnosis:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        id: { type: ICDCode }
+        date: { type: TimeStamp }
+        description: { type: String }
+      constructors:
+        from_values:
+          params:
+            id: ICDCode
+            date: TimeStamp
+            description: String
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "date não pode ser no futuro"
+              error: DiagnosisError.dateInFuture
+            - rule: "date.year >= 0"
+              error: DiagnosisError.dateBeforeYearZero
+            - rule: "description não pode ser vazio (após trim)"
+              error: DiagnosisError.descriptionEmpty
+      errors:
+        DiagnosisError:
+          module: "social-care/diagnosis"
+          cases:
+            dateInFuture:
+              params: [date: String, now: String]
+              code: "DIA-001"
+              severity: warning
+              http: 422
+            dateBeforeYearZero:
+              params: [year: Int]
+              code: "DIA-002"
+              severity: error
+              http: 422
+            descriptionEmpty: { code: "DIA-003", severity: warning, http: 422 }
+
+    ICDCode:
+      conformances: [Codable, Equatable, Hashable, Sendable]
+      properties:
+        value: { type: String, description: "Código ICD normalizado (ex: B20.1)" }
+      constructors:
+        from_string:
+          params:
+            rawValue: String
+            requiresDot: { type: Bool, default: false }
+            autoDot: { type: Bool, default: true }
+          throws: true
+          logic:
+            - "Se vazio → throw ICDCodeError.emptyCidCode"
+            - "Uppercase + trim"
+            - "Se requiresDot && sem ponto → throw ICDCodeError.invalidCidNumber"
+            - "Se autoDot && length >= 3 && sem ponto → inserir ponto antes do último caractere"
+      computed:
+        normalized: { type: String, description: "Código sem pontos" }
+      methods:
+        isEquivalent:
+          params: { other: ICDCode }
+          returns: Bool
+          description: "Compara formas normalizadas (sem ponto)"
+      errors:
+        ICDCodeError:
+          module: "social-care/icd-code"
+          cases:
+            emptyCidCode: { code: "ICD-001", severity: warning, http: 422 }
+            invalidCidNumber:
+              params: [value: String, pattern: { type: String, default: "LNN.N" }]
+              code: "ICD-002"
+              severity: error
+              http: 422
+
+    IngressInfo:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        ingressTypeId: { type: LookupId, fk: "dominio_tipo_ingresso" }
+        originName: { type: "String?", optional: true }
+        originContact: { type: "String?", optional: true }
+        serviceReason: { type: String, description: "Motivo do atendimento, obrigatório" }
+        linkedSocialPrograms: { type: "ProgramLink[]" }
+      nested_structs:
+        ProgramLink:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            programId: { type: LookupId, description: "Referência a programa social" }
+            observation: { type: "String?", optional: true }
+      validations:
+        - rule: "serviceReason não pode ser vazio (após trim)"
+          error: IngressInfoError.emptyServiceReason
+      errors:
+        IngressInfoError:
+          module: "social-care/ingress-info"
+          cases:
+            emptyServiceReason: { code: "ING-001", severity: warning, http: 422 }
+
+# =============================================================================
+# PROTECTION — Bounded Context (Proteção e Direitos)
+# =============================================================================
+
+protection:
+  aggregates:
+    Referral:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        id: { type: ReferralId }
+        date: { type: TimeStamp }
+        requestingProfessionalId: { type: ProfessionalId }
+        referredPersonId: { type: PersonId }
+        destinationService: { type: DestinationService }
+        reason: { type: String }
+        status: { type: Status, visibility: "private(set)", default: "pending" }
+      enums:
+        Status:
+          type: String
+          cases:
+            pending: { value: "PENDING" }
+            completed: { value: "COMPLETED" }
+            cancelled: { value: "CANCELLED" }
+        DestinationService:
+          type: String
+          conformances: [CaseIterable]
+          cases:
+            cras: { value: "CRAS" }
+            creas: { value: "CREAS" }
+            healthCare: { value: "HEALTH_CARE" }
+            education: { value: "EDUCATION" }
+            legal: { value: "LEGAL" }
+            other: { value: "OTHER" }
+      constructors:
+        from_values:
+          params:
+            id: ReferralId
+            date: TimeStamp
+            requestingProfessionalId: ProfessionalId
+            referredPersonId: PersonId
+            destinationService: DestinationService
+            reason: String
+            status: { type: Status, default: "pending" }
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "date <= now"
+              error: ReferralError.dateInFuture
+            - rule: "reason não pode ser vazio"
+              error: ReferralError.reasonMissing
+      mutators:
+        complete:
+          throws: true
+          logic: "Transição para .completed (apenas de .pending)"
+          error: ReferralError.invalidStatusTransition
+        cancel:
+          throws: true
+          logic: "Transição para .cancelled (apenas de .pending)"
+          error: ReferralError.invalidStatusTransition
+      state_machine:
+        transitions:
+          - from: pending, to: completed
+          - from: pending, to: cancelled
+        guard: "status == .pending"
+      equality: "Por id apenas"
+      errors:
+        ReferralError:
+          module: "social-care/referral"
+          cases:
+            dateInFuture: { code: "REF-001", severity: warning, http: 422 }
+            reasonMissing: { code: "REF-002", severity: warning, http: 422 }
+            invalidStatusTransition:
+              params: [from: String, to: String]
+              code: "REF-003"
+              severity: error
+              http: 422
+
+    RightsViolationReport:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        id: { type: ViolationReportId }
+        reportDate: { type: TimeStamp }
+        incidentDate: { type: "TimeStamp?", optional: true }
+        victimId: { type: PersonId }
+        violationType: { type: ViolationType }
+        descriptionOfFact: { type: String }
+        actionsTaken: { type: String, visibility: "private(set)" }
+      enums:
+        ViolationType:
+          type: String
+          conformances: [CaseIterable]
+          cases:
+            neglect: { value: "NEGLECT" }
+            psychologicalViolence: { value: "PSYCHOLOGICAL_VIOLENCE" }
+            physicalViolence: { value: "PHYSICAL_VIOLENCE" }
+            sexualAbuse: { value: "SEXUAL_ABUSE" }
+            sexualExploitation: { value: "SEXUAL_EXPLOITATION" }
+            childLabor: { value: "CHILD_LABOR" }
+            financialExploitation: { value: "FINANCIAL_EXPLOITATION" }
+            discrimination: { value: "DISCRIMINATION" }
+            other: { value: "OTHER" }
+      constructors:
+        from_values:
+          params:
+            id: ViolationReportId
+            reportDate: TimeStamp
+            incidentDate: "TimeStamp?"
+            victimId: PersonId
+            violationType: ViolationType
+            descriptionOfFact: String
+            actionsTaken: String
+            now: { type: TimeStamp, default: ".now" }
+          throws: true
+          validations:
+            - rule: "reportDate <= now"
+              error: RightsViolationReportError.reportDateInFuture
+            - rule: "Se incidentDate != nil → incidentDate <= reportDate"
+              error: RightsViolationReportError.incidentAfterReport
+            - rule: "descriptionOfFact não pode ser vazio"
+              error: RightsViolationReportError.emptyDescription
+      mutators:
+        updateActions:
+          params: { newActions: String }
+          logic: "Trim e atualiza actionsTaken"
+      equality: "Por id apenas"
+      errors:
+        RightsViolationReportError:
+          module: "social-care/rights-violation"
+          cases:
+            reportDateInFuture: { code: "RVR-001", severity: warning, http: 422 }
+            incidentAfterReport: { code: "RVR-002", severity: warning, http: 422 }
+            emptyDescription: { code: "RVR-003", severity: warning, http: 422 }
+
+  entities:
+    PlacementHistory:
+      conformances: [Codable, Equatable, Sendable]
+      properties:
+        familyId: { type: PatientId }
+        individualPlacements: { type: "PlacementRegistry[]" }
+        collectiveSituations: { type: CollectiveSituations }
+        separationChecklist: { type: SeparationChecklist }
+      nested_structs:
+        PlacementRegistry:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            id: { type: UUID, default: "UUID()" }
+            memberId: { type: PersonId }
+            startDate: { type: TimeStamp }
+            endDate: { type: "TimeStamp?", optional: true }
+            reason: { type: String }
+          validations:
+            - rule: "Se endDate != nil → endDate >= startDate"
+              error: PlacementError.invalidDateRange
+        CollectiveSituations:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            homeLossReport: { type: "String?", optional: true }
+            thirdPartyGuardReport: { type: "String?", optional: true }
+        SeparationChecklist:
+          conformances: [Codable, Equatable, Sendable]
+          properties:
+            adultInPrison: { type: Bool }
+            adolescentInInternment: { type: Bool }
+      errors:
+        PlacementError:
+          module: "social-care/placement"
+          cases:
+            invalidDateRange:
+              code: "PLC-001"
+              severity: warning
+              http: 422
+              message: "A data de fim do acolhimento não pode ser anterior à data de início."
+
+  value_objects:
+    ReferralId:
+      brand: "ReferralId"
+      conformances: [Codable, Sendable, Hashable, Equatable, CustomStringConvertible]
+      properties:
+        value: { type: String, visibility: private, description: "UUID lowercased" }
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic: "Trim + lowercase + validar UUID"
+        generate:
+          logic: "UUID().uuidString.lowercased()"
+      errors:
+        ReferralIdError:
+          module: "social-care/referral-id"
+          cases:
+            invalidFormat:
+              params: [value: String]
+              code: "RI-001"
+              severity: error
+              http: 422
+
+    ViolationReportId:
+      brand: "ViolationReportId"
+      conformances: [Codable, Sendable, Hashable, Equatable, CustomStringConvertible]
+      properties:
+        value: { type: String, visibility: private, description: "UUID lowercased" }
+      constructors:
+        from_string:
+          params: { rawValue: String }
+          throws: true
+          logic: "Trim + lowercase + validar UUID"
+        generate:
+          logic: "UUID().uuidString.lowercased()"
+      errors:
+        ViolationReportIdError:
+          module: "social-care/violation-report-id"
+          cases:
+            invalidFormat:
+              params: [value: String]
+              code: "VRI-001"
+              severity: error
+              http: 422
+
+# =============================================================================
+# LOOKUP TABLES REFERENCIADAS (FK)
+# =============================================================================
+
+lookup_tables:
+  - name: dominio_parentesco
+    referenced_by: "FamilyMember.relationshipId"
+  - name: dominio_deficiencia
+    referenced_by: "HealthStatus.MemberDeficiency.deficiencyTypeId"
+  - name: dominio_escolaridade
+    referenced_by: "EducationalStatus.MemberEducationalProfile.educationLevelId"
+  - name: dominio_efeito_condicionalidade
+    referenced_by: "EducationalStatus.ProgramOccurrence.effectId"
+  - name: dominio_condicao_ocupacao
+    referenced_by: "WorkAndIncome.WorkIncomeVO.occupationId"
+  - name: dominio_tipo_ingresso
+    referenced_by: "IngressInfo.ingressTypeId"
+
+# =============================================================================
+# ERROR CODE REGISTRY (Todos os códigos)
+# =============================================================================
+
+error_code_registry:
+  # Kernel
+  PID-001: { vo: PersonId, error: invalidFormat }
+  PRI-001: { vo: ProfessionalId, error: invalidFormat }
+  PAI-001: { vo: PatientId, error: invalidFormat }
+  CPF-001: { vo: CPF, error: empty }
+  CPF-002: { vo: CPF, error: invalidLength }
+  CPF-003: { vo: CPF, error: repeatedDigits }
+  CPF-004: { vo: CPF, error: invalidCheckDigits }
+  CPF-005: { vo: CPF, error: invalidCharacters }
+  NIS-001: { vo: NIS, error: empty }
+  NIS-002: { vo: NIS, error: invalidLength }
+  CEP-001: { vo: CEP, error: empty }
+  CEP-002: { vo: CEP, error: invalidCharacters }
+  CEP-003: { vo: CEP, error: invalidLength }
+  CEP-004: { vo: CEP, error: outOfKnownPostalRange }
+  RGD-001: { vo: RGDocument, error: emptyNumber }
+  RGD-002: { vo: RGDocument, error: invalidIssuingState }
+  RGD-003: { vo: RGDocument, error: emptyIssuingAgency }
+  RGD-004: { vo: RGDocument, error: issueDateInFuture }
+  RGD-005: { vo: RGDocument, error: invalidNumberFormat }
+  RGD-006: { vo: RGDocument, error: invalidCheckDigit }
+  ADR-001: { vo: Address, error: invalidCep }
+  ADR-002: { vo: Address, error: stateRequired }
+  ADR-003: { vo: Address, error: invalidState }
+  ADR-004: { vo: Address, error: cityRequired }
+  TS-001: { vo: TimeStamp, error: invalidDate }
+
+  # Registry
+  PAT-001: { aggregate: Patient, error: initialIdIsRequired }
+  PAT-002: { aggregate: Patient, error: initialPersonIdIsRequired }
+  PAT-003: { aggregate: Patient, error: initialDiagnosesCantBeEmpty }
+  PAT-004: { aggregate: Patient, error: familyMemberAlreadyExists }
+  PAT-005: { aggregate: Patient, error: familyMemberNotFound }
+  PAT-006: { aggregate: Patient, error: referralTargetOutsideBoundary }
+  PAT-007: { aggregate: Patient, error: violationTargetOutsideBoundary }
+  PAT-008: { aggregate: Patient, error: mustHaveExactlyOnePrimaryReference }
+  PAT-009: { aggregate: Patient, error: multiplePrimaryReferencesNotAllowed }
+  PAT-010: { aggregate: Patient, error: incompatiblePlacementSituation }
+  PAT-011: { aggregate: Patient, error: incompatibleGuardianshipSituation }
+  FM-001: { entity: FamilyMember, error: missingPerson }
+  FM-002: { entity: FamilyMember, error: invalidRelationship }
+  PDT-001: { vo: PersonalData, error: firstNameEmpty }
+  PDT-002: { vo: PersonalData, error: lastNameEmpty }
+  PDT-003: { vo: PersonalData, error: motherNameEmpty }
+  PDT-004: { vo: PersonalData, error: birthDateInFuture }
+  PDT-005: { vo: PersonalData, error: nationalityEmpty }
+  CVD-001: { vo: CivilDocuments, error: atLeastOneDocumentRequired }
+  SID-001: { vo: SocialIdentity, error: indigenousInVillageMissingDescription }
+  SID-002: { vo: SocialIdentity, error: indigenousOutsideVillageMissingDescription }
+  SID-003: { vo: SocialIdentity, error: descriptionRequiredForOtherType }
+
+  # Assessment
+  HC-001: { vo: HousingCondition, error: negativeRooms }
+  HC-002: { vo: HousingCondition, error: negativeBedrooms }
+  HC-003: { vo: HousingCondition, error: negativeBathrooms }
+  HC-004: { vo: HousingCondition, error: bedroomsExceedRooms }
+  HC-005: { vo: HousingCondition, error: bathroomsExceedRooms }
+  SES-001: { vo: SocioEconomicSituation, error: inconsistentSocialBenefit }
+  SES-002: { vo: SocioEconomicSituation, error: missingSocialBenefits }
+  SES-003: { vo: SocioEconomicSituation, error: negativeFamilyIncome }
+  SES-004: { vo: SocioEconomicSituation, error: negativeIncomePerCapita }
+  SES-005: { vo: SocioEconomicSituation, error: emptyMainSourceOfIncome }
+  SES-006: { vo: SocioEconomicSituation, error: inconsistentIncomePerCapita }
+  SB-001: { vo: SocialBenefit, error: benefitNameEmpty }
+  SB-002: { vo: SocialBenefit, error: amountInvalid }
+  SBC-001: { vo: SocialBenefitsCollection, error: benefitsArrayNullOrUndefined }
+  SBC-002: { vo: SocialBenefitsCollection, error: duplicateBenefitNotAllowed }
+  WI-001: { vo: WorkIncomeVO, error: negativeMonthlyAmount }
+  CSN-001: { vo: CommunitySupportNetwork, error: familyConflictsWhitespace }
+  CSN-002: { vo: CommunitySupportNetwork, error: familyConflictsTooLong }
+  SHS-001: { vo: SocialHealthSummary, error: functionalDependenciesEmpty }
+
+  # Care
+  SCA-001: { aggregate: SocialCareAppointment, error: dateInFuture }
+  SCA-002: { aggregate: SocialCareAppointment, error: invalidType }
+  SCA-003: { aggregate: SocialCareAppointment, error: missingNarrative }
+  SCA-004: { aggregate: SocialCareAppointment, error: summaryTooLong }
+  SCA-005: { aggregate: SocialCareAppointment, error: actionPlanTooLong }
+  AI-001: { vo: AppointmentId, error: invalidFormat }
+  DIA-001: { vo: Diagnosis, error: dateInFuture }
+  DIA-002: { vo: Diagnosis, error: dateBeforeYearZero }
+  DIA-003: { vo: Diagnosis, error: descriptionEmpty }
+  ICD-001: { vo: ICDCode, error: emptyCidCode }
+  ICD-002: { vo: ICDCode, error: invalidCidNumber }
+  ING-001: { vo: IngressInfo, error: emptyServiceReason }
+
+  # Protection
+  REF-001: { aggregate: Referral, error: dateInFuture }
+  REF-002: { aggregate: Referral, error: reasonMissing }
+  REF-003: { aggregate: Referral, error: invalidStatusTransition }
+  RVR-001: { aggregate: RightsViolationReport, error: reportDateInFuture }
+  RVR-002: { aggregate: RightsViolationReport, error: incidentAfterReport }
+  RVR-003: { aggregate: RightsViolationReport, error: emptyDescription }
+  RI-001: { vo: ReferralId, error: invalidFormat }
+  VRI-001: { vo: ViolationReportId, error: invalidFormat }
+  PLC-001: { entity: PlacementHistory, error: invalidDateRange }

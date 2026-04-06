@@ -53,11 +53,40 @@ func configure(_ app: Application) async throws {
 
     // MARK: - Outbox Relay + NATS
 
-    let natsPublisher: NATSEventPublisher? = Environment.get("NATS_URL").map {
+    let natsUrl = Environment.get("NATS_URL")
+
+    let natsPublisher: NATSEventPublisher? = natsUrl.map {
         NATSEventPublisher(url: $0)
     }
     let relay = SQLKitOutboxRelay(db: sqlDb, natsPublisher: natsPublisher)
     Task { await relay.startContinuousPolling() }
+
+    // MARK: - NATS Subscriber (people-context events)
+
+    if let natsUrl {
+        let patientRepo = SQLKitPatientRepository(db: sqlDb)
+        let linkPersonId = LinkPersonIdCommandHandler(patientRepository: patientRepo)
+        let subscriber = NATSEventSubscriber(url: natsUrl)
+
+        Task {
+            await subscriber.subscribe(subject: "people.person.registered") { data in
+                do {
+                    let event = try JSONDecoder().decode(PersonRegisteredEvent.self, from: data)
+                    guard let cpf = event.data.cpf else { return }
+                    try await linkPersonId.handle(
+                        LinkPersonIdCommand(
+                            personId: event.data.personId,
+                            cpf: cpf,
+                            actorId: event.actorId
+                        )
+                    )
+                } catch {
+                    app.logger.error("Failed to process person.registered event: \(error)")
+                }
+            }
+            await subscriber.start()
+        }
+    }
 
     // MARK: - Service Container
 

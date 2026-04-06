@@ -187,6 +187,25 @@ struct SQLKitPatientRepository: PatientRepository {
         )
     }
 
+    func find(byCpf cpf: CPF) async throws -> Patient? {
+        guard let patientModel = try await db.select()
+            .column("*")
+            .from("patients")
+            .where("cpf", .equal, cpf.value)
+            .first(decoding: PatientModel.self) else { return nil }
+
+        return try await loadAggregate(patientModel)
+    }
+
+    func updatePersonId(patientId: PatientId, newPersonId: PersonId) async throws {
+        let patientUUID = UUID(uuidString: patientId.description)!
+        let personUUID = UUID(uuidString: newPersonId.description)!
+        try await db.update("patients")
+            .set("person_id", to: personUUID)
+            .where("id", .equal, patientUUID)
+            .run()
+    }
+
     func exists(byPersonId personId: PersonId) async throws -> Bool {
         let personUUID = UUID(uuidString: personId.description)!
         let count = try await db.select()

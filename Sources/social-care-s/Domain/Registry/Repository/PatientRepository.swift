@@ -22,6 +22,12 @@ public protocol PatientRepository: Sendable {
     /// Recupera o agregado completo pelo ID interno.
     func find(byId id: PatientId) async throws -> Patient?
 
+    /// Busca paciente pelo CPF nos documentos civis.
+    func find(byCpf cpf: CPF) async throws -> Patient?
+
+    /// Atualiza o person_id de um paciente existente (reconciliação com people-context).
+    func updatePersonId(patientId: PatientId, newPersonId: PersonId) async throws
+
     /// Lista pacientes com paginação cursor-based e busca opcional.
     func list(search: String?, cursor: PatientId?, limit: Int) async throws -> PatientListResult
 }

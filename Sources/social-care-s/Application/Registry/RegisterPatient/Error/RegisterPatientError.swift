@@ -5,6 +5,7 @@ public enum RegisterPatientError: Error, Sendable, Equatable {
     // PersonId
     case personIdAlreadyExists
     case invalidPersonIdFormat(String)
+    case personIdNotFoundInPeopleContext(String)
     // Diagnósticos
     case invalidIcdCode(String)
     case invalidDiagnosisDate(date: String, now: String)
@@ -49,6 +50,8 @@ extension RegisterPatientError: AppErrorConvertible {
             return appFailure("001", kind: "PersonIdAlreadyExists", "O paciente com este PersonId já está registrado.", category: .conflict, severity: .warning, http: 409)
         case .invalidPersonIdFormat(let value):
             return appFailure("002", kind: "InvalidPersonIdFormat", "ID de pessoa inválido: \(value)", category: .dataConsistencyIncident, severity: .error, http: 400)
+        case .personIdNotFoundInPeopleContext(let value):
+            return appFailure("029", kind: "PersonIdNotFoundInPeopleContext", "PersonId \(value) não encontrado no people-context. Registre a pessoa antes de criar o prontuário.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .invalidIcdCode(let value):
             return appFailure("003", kind: "InvalidIcdCode", "Código CID inválido: \(value)", category: .domainRuleViolation, severity: .error, http: 400)
         case .invalidDiagnosisDate(let date, let now):

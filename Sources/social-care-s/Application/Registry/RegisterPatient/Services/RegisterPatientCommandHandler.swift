@@ -5,11 +5,18 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
     private let repository: any PatientRepository
     private let eventBus: any EventBus
     private let lookupValidator: any LookupValidating
+    private let personValidator: (any PersonExistenceValidating)?
 
-    public init(repository: any PatientRepository, eventBus: any EventBus, lookupValidator: any LookupValidating) {
+    public init(
+        repository: any PatientRepository,
+        eventBus: any EventBus,
+        lookupValidator: any LookupValidating,
+        personValidator: (any PersonExistenceValidating)? = nil
+    ) {
         self.repository = repository
         self.eventBus = eventBus
         self.lookupValidator = lookupValidator
+        self.personValidator = personValidator
     }
 
     public func handle(_ command: RegisterPatientCommand) async throws -> String {
@@ -88,7 +95,15 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
                 )
             }
 
-            // 6. Lookup Validation
+            // 6. PersonId Validation (people-context)
+            if let validator = personValidator {
+                let personExists = try await validator.exists(personId: personId)
+                if !personExists {
+                    throw RegisterPatientError.personIdNotFoundInPeopleContext(command.personId)
+                }
+            }
+
+            // 7. Lookup Validation
             let prId = try LookupId(command.prRelationshipId)
             guard try await lookupValidator.exists(id: prId, in: "dominio_parentesco") else {
                 throw RegisterPatientError.invalidLookupId(table: "dominio_parentesco", id: prId.description)

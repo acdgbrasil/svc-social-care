@@ -33,7 +33,7 @@ struct ServiceContainer: Sendable {
     let patientRepository: any PatientRepository
     let lookupValidator: any LookupValidating
 
-    init(db: any SQLDatabase) {
+    init(db: any SQLDatabase, personValidator: (any PersonExistenceValidating)? = nil) {
         self.db = db
         let repository = SQLKitPatientRepository(db: db)
         let eventBus = OutboxEventBus()
@@ -43,7 +43,8 @@ struct ServiceContainer: Sendable {
         self.lookupValidator = lookup
 
         self.registerPatient = RegisterPatientCommandHandler(
-            repository: repository, eventBus: eventBus, lookupValidator: lookup
+            repository: repository, eventBus: eventBus, lookupValidator: lookup,
+            personValidator: personValidator
         )
         self.addFamilyMember = AddFamilyMemberCommandHandler(
             patientRepository: repository, eventBus: eventBus, lookupValidator: lookup

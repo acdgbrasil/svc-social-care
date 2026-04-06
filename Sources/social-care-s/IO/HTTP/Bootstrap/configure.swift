@@ -90,7 +90,10 @@ func configure(_ app: Application) async throws {
 
     // MARK: - Service Container
 
-    app.services = ServiceContainer(db: sqlDb)
+    let personValidator: (any PersonExistenceValidating)? = Environment.get("PEOPLE_API_URL").map {
+        PeopleContextPersonValidator(baseURL: $0)
+    }
+    app.services = ServiceContainer(db: sqlDb, personValidator: personValidator)
 
     // MARK: - Server
 

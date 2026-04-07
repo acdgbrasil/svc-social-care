@@ -87,8 +87,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/sql-kit.git",
       "state" : {
-        "revision" : "c0ea243ffeb8b5ff9e20a281e44003c6abb8896f",
-        "version" : "3.34.0"
+        "revision" : "46d1a644846c6c42890a06988eb85cd975c3afc6",
+        "version" : "3.35.0"
       }
     },
     {

@@ -36,3 +36,12 @@ jobs:
 
       - name: Run tests
         run: swift test
+
+  kodus-review:
+    name: Kodus AI Review
+    if: github.event_name == 'pull_request'
+    uses: acdgbrasil/.github/.github/workflows/reusable-kodus-review.yml@main
+    with:
+      fail_on: critical
+    secrets:
+      KODUS_TEAM_KEY: ${{ secrets.KODUS_TEAM_KEY }}

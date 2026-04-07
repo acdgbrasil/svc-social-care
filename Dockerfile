@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM swift:6.2-jammy AS build
+FROM swift:6.3-jammy AS build
 
 WORKDIR /build
 
@@ -14,7 +14,7 @@ COPY Sources ./Sources
 COPY Tests ./Tests
 RUN swift build -c release --product social-care-s
 
-FROM swift:6.2-jammy-slim
+FROM swift:6.3-jammy-slim
 
 WORKDIR /app
 COPY --from=build /build/.build/release/social-care-s /app/social-care-s

@@ -114,9 +114,16 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
                 }
             }
 
-            // 7. Existence Check
+            // 7. Existence Check — PersonId
             if try await repository.exists(byPersonId: personId) {
                 throw RegisterPatientError.personIdAlreadyExists
+            }
+
+            // 7b. Existence Check — CPF
+            if let cpf = civilDocuments?.cpf {
+                if try await repository.find(byCpf: cpf) != nil {
+                    throw RegisterPatientError.cpfAlreadyExists(cpf.value)
+                }
             }
 
             // 8. Domain Logic

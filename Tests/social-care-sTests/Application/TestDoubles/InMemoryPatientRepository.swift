@@ -22,6 +22,38 @@ actor InMemoryPatientRepository: PatientRepository {
         storage[id]
     }
 
+    func find(byCpf cpf: CPF) async throws -> Patient? {
+        storage.values.first { $0.civilDocuments?.cpf == cpf }
+    }
+
+    func updatePersonId(patientId: PatientId, newPersonId: PersonId) async throws {
+        guard let existing = storage[patientId] else { return }
+        let updated = Patient.reconstitute(
+            id: existing.id,
+            version: existing.version,
+            personId: newPersonId,
+            personalData: existing.personalData,
+            civilDocuments: existing.civilDocuments,
+            address: existing.address,
+            diagnoses: existing.diagnoses,
+            familyMembers: existing.familyMembers,
+            appointments: existing.appointments,
+            referrals: existing.referrals,
+            violationReports: existing.violationReports,
+            housingCondition: existing.housingCondition,
+            socioeconomicSituation: existing.socioeconomicSituation,
+            workAndIncome: existing.workAndIncome,
+            educationalStatus: existing.educationalStatus,
+            healthStatus: existing.healthStatus,
+            communitySupportNetwork: existing.communitySupportNetwork,
+            socialHealthSummary: existing.socialHealthSummary,
+            socialIdentity: existing.socialIdentity,
+            placementHistory: existing.placementHistory,
+            intakeInfo: existing.intakeInfo
+        )
+        storage[patientId] = updated
+    }
+
     func list(search: String?, cursor: PatientId?, limit: Int) async throws -> PatientListResult {
         var patients = Array(storage.values)
 

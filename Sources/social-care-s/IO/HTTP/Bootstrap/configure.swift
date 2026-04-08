@@ -35,6 +35,7 @@ func configure(_ app: Application) async throws {
         ConvertJsonbToText(),
         CreateLookupRequests(),
         AddCNSAndHomeless(),
+        AddUniqueCpfConstraint(),
     ]
     for attempt in 1...10 {
         do {

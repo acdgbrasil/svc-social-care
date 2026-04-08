@@ -116,6 +116,49 @@ struct RegisterPatientTests {
         }
     }
 
+    @Test("Deve falhar quando CPF ja existe em outro paciente")
+    func duplicateCpf() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let handler = RegisterPatientCommandHandler(
+            repository: repo, eventBus: bus, lookupValidator: AllowAllLookupValidator()
+        )
+
+        let cpf = "12345678909"
+        let civilDocs = RegisterPatientCommand.CivilDocumentsDraft(cpf: cpf, nis: nil, rgDocument: nil)
+
+        // Primeiro registro com CPF — deve funcionar
+        let pid1 = UUID().uuidString
+        _ = try await handler.handle(Self.makeCommand(personId: pid1, civilDocuments: civilDocs))
+
+        // Segundo registro com mesmo CPF, personId diferente — deve falhar
+        let pid2 = UUID().uuidString
+        await #expect(throws: RegisterPatientError.cpfAlreadyExists(cpf)) {
+            try await handler.handle(Self.makeCommand(personId: pid2, civilDocuments: civilDocs))
+        }
+
+        let patients = await repo.allPatients
+        #expect(patients.count == 1)
+    }
+
+    @Test("Deve permitir registros sem CPF (CPF eh opcional)")
+    func multiplePatientsWithoutCpf() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let handler = RegisterPatientCommandHandler(
+            repository: repo, eventBus: bus, lookupValidator: AllowAllLookupValidator()
+        )
+
+        let pid1 = UUID().uuidString
+        let pid2 = UUID().uuidString
+
+        _ = try await handler.handle(Self.makeCommand(personId: pid1))
+        _ = try await handler.handle(Self.makeCommand(personId: pid2))
+
+        let patients = await repo.allPatients
+        #expect(patients.count == 2)
+    }
+
     @Test("Actor isolation: registros concorrentes de pacientes distintos")
     func concurrentRegistrations() async throws {
         let repo = InMemoryPatientRepository()

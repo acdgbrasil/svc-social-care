@@ -121,7 +121,7 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
 
             // 7b. Existence Check — CPF
             if let cpf = civilDocuments?.cpf {
-                if try await repository.find(byCpf: cpf) != nil {
+                if try await repository.exists(byCpf: cpf) {
                     throw RegisterPatientError.cpfAlreadyExists(cpf.value)
                 }
             }

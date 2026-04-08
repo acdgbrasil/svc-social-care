@@ -26,11 +26,15 @@ actor InMemoryPatientRepository: PatientRepository {
         storage.values.first { $0.civilDocuments?.cpf == cpf }
     }
 
+    func exists(byCpf cpf: CPF) async throws -> Bool {
+        storage.values.contains { $0.civilDocuments?.cpf == cpf }
+    }
+
     func updatePersonId(patientId: PatientId, newPersonId: PersonId) async throws {
         guard let existing = storage[patientId] else { return }
         let updated = Patient.reconstitute(
             id: existing.id,
-            version: existing.version,
+            version: existing.version + 1,
             personId: newPersonId,
             personalData: existing.personalData,
             civilDocuments: existing.civilDocuments,

@@ -105,6 +105,17 @@ extension RegisterPatientCommandHandler {
             }
         }
 
+        if let e = error as? PersistenceConflictError {
+            switch e {
+            case .uniqueViolation(let constraint, _) where constraint == "idx_patients_cpf_unique":
+                return .cpfAlreadyExists("***")
+            case .uniqueViolation(let constraint, _) where constraint == "idx_patients_person_id":
+                return .personIdAlreadyExists
+            default:
+                break
+            }
+        }
+
         return .persistenceMappingFailure(issues: [String(describing: error)])
     }
 }

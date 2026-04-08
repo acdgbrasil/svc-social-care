@@ -1,4 +1,5 @@
 import Foundation
+import PostgresNIO
 import SQLKit
 
 struct SQLKitPatientRepository: PatientRepository {
@@ -9,39 +10,50 @@ struct SQLKitPatientRepository: PatientRepository {
     }
 
     func save(_ patient: Patient) async throws {
-        try await db.transaction { tx in
-            let data = try PatientDatabaseMapper.toDatabase(patient)
-            let outboxMessages = try PatientDatabaseMapper.toOutbox(patient.uncommittedEvents)
+        do {
+            try await db.transaction { tx in
+                let data = try PatientDatabaseMapper.toDatabase(patient)
+                let outboxMessages = try PatientDatabaseMapper.toOutbox(patient.uncommittedEvents)
 
-            // 1. Upsert do Agregado Root
-            try await tx.insert(into: "patients")
-                .model(data.patient)
-                .onConflict(with: "id") { try $0.set(excludedContentOf: data.patient) }
-                .run()
+                // 1. Upsert do Agregado Root
+                try await tx.insert(into: "patients")
+                    .model(data.patient)
+                    .onConflict(with: "id") { try $0.set(excludedContentOf: data.patient) }
+                    .run()
 
-            let patientId = data.patient.id
+                let patientId = data.patient.id
 
-            // 2. Tabelas filhas existentes (Delete-and-Insert)
-            try await deleteAndInsert(tx, table: "patient_diagnoses", patientId: patientId, models: data.diagnoses)
-            try await deleteAndInsert(tx, table: "family_members", patientId: patientId, models: data.familyMembers)
-            try await deleteAndInsert(tx, table: "social_care_appointments", patientId: patientId, models: data.appointments)
-            try await deleteAndInsert(tx, table: "referrals", patientId: patientId, models: data.referrals)
-            try await deleteAndInsert(tx, table: "rights_violation_reports", patientId: patientId, models: data.reports)
+                // 2. Tabelas filhas existentes (Delete-and-Insert)
+                try await deleteAndInsert(tx, table: "patient_diagnoses", patientId: patientId, models: data.diagnoses)
+                try await deleteAndInsert(tx, table: "family_members", patientId: patientId, models: data.familyMembers)
+                try await deleteAndInsert(tx, table: "social_care_appointments", patientId: patientId, models: data.appointments)
+                try await deleteAndInsert(tx, table: "referrals", patientId: patientId, models: data.referrals)
+                try await deleteAndInsert(tx, table: "rights_violation_reports", patientId: patientId, models: data.reports)
 
-            // 3. Novas tabelas filhas normalizadas (Delete-and-Insert)
-            try await deleteAndInsert(tx, table: "member_incomes", patientId: patientId, models: data.memberIncomes)
-            try await deleteAndInsert(tx, table: "social_benefits", patientId: patientId, models: data.socialBenefits)
-            try await deleteAndInsert(tx, table: "member_educational_profiles", patientId: patientId, models: data.educationalProfiles)
-            try await deleteAndInsert(tx, table: "program_occurrences", patientId: patientId, models: data.programOccurrences)
-            try await deleteAndInsert(tx, table: "member_deficiencies", patientId: patientId, models: data.memberDeficiencies)
-            try await deleteAndInsert(tx, table: "gestating_members", patientId: patientId, models: data.gestatingMembers)
-            try await deleteAndInsert(tx, table: "placement_registries", patientId: patientId, models: data.placementRegistries)
-            try await deleteAndInsert(tx, table: "ingress_linked_programs", patientId: patientId, models: data.ingressLinkedPrograms)
+                // 3. Novas tabelas filhas normalizadas (Delete-and-Insert)
+                try await deleteAndInsert(tx, table: "member_incomes", patientId: patientId, models: data.memberIncomes)
+                try await deleteAndInsert(tx, table: "social_benefits", patientId: patientId, models: data.socialBenefits)
+                try await deleteAndInsert(tx, table: "member_educational_profiles", patientId: patientId, models: data.educationalProfiles)
+                try await deleteAndInsert(tx, table: "program_occurrences", patientId: patientId, models: data.programOccurrences)
+                try await deleteAndInsert(tx, table: "member_deficiencies", patientId: patientId, models: data.memberDeficiencies)
+                try await deleteAndInsert(tx, table: "gestating_members", patientId: patientId, models: data.gestatingMembers)
+                try await deleteAndInsert(tx, table: "placement_registries", patientId: patientId, models: data.placementRegistries)
+                try await deleteAndInsert(tx, table: "ingress_linked_programs", patientId: patientId, models: data.ingressLinkedPrograms)
 
-            // 4. Outbox
-            for message in outboxMessages {
-                try await tx.insert(into: "outbox_messages").model(message).run()
+                // 4. Outbox
+                for message in outboxMessages {
+                    try await tx.insert(into: "outbox_messages").model(message).run()
+                }
             }
+        } catch let error as PSQLError where error.code == .server {
+            if let sqlState = error.serverInfo?[.sqlState], sqlState == "23505",
+               let constraint = error.serverInfo?[.constraintName] {
+                throw PersistenceConflictError.uniqueViolation(
+                    constraint: constraint,
+                    detail: error.serverInfo?[.detail]
+                )
+            }
+            throw error
         }
     }
 
@@ -195,6 +207,16 @@ struct SQLKitPatientRepository: PatientRepository {
             .first(decoding: PatientModel.self) else { return nil }
 
         return try await loadAggregate(patientModel)
+    }
+
+    func exists(byCpf cpf: CPF) async throws -> Bool {
+        let count = try await db.select()
+            .column(SQLFunction("COUNT", args: SQLLiteral.all))
+            .from("patients")
+            .where("cpf", .equal, cpf.value)
+            .first()
+            .map { try $0.decode(column: "count", as: Int.self) } ?? 0
+        return count > 0
     }
 
     func updatePersonId(patientId: PatientId, newPersonId: PersonId) async throws {

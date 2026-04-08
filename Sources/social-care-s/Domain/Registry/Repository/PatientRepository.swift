@@ -25,6 +25,9 @@ public protocol PatientRepository: Sendable {
     /// Busca paciente pelo CPF nos documentos civis.
     func find(byCpf cpf: CPF) async throws -> Patient?
 
+    /// Verifica se já existe um paciente com o CPF informado (query leve, sem carregar agregado).
+    func exists(byCpf cpf: CPF) async throws -> Bool
+
     /// Atualiza o person_id de um paciente existente (reconciliação com people-context).
     func updatePersonId(patientId: PatientId, newPersonId: PersonId) async throws
 

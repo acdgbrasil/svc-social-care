@@ -1,5 +1,6 @@
 import Foundation
 import SQLKit
+import Logging
 
 /// Um Actor que gerencia a leitura e distribuição de eventos do Outbox.
 /// Garante que apenas um processo de polling ocorra por vez e distribui
@@ -9,6 +10,7 @@ public actor SQLKitOutboxRelay: Sendable {
     private var isPolling = false
     private let pollInterval: Duration
     private let natsPublisher: (any NATSPublishing)?
+    private let logger: Logger
 
     // Armazena as continuações dos streams ativos
     private var continuations: [UUID: AsyncStream<any DomainEvent>.Continuation] = [:]
@@ -17,6 +19,7 @@ public actor SQLKitOutboxRelay: Sendable {
         self.db = db
         self.natsPublisher = natsPublisher
         self.pollInterval = pollInterval
+        self.logger = Logger(label: "outbox-relay")
     }
     
     /// Cria um novo stream de eventos do Outbox.
@@ -59,7 +62,7 @@ public actor SQLKitOutboxRelay: Sendable {
             do {
                 try await pollAndDistribute()
             } catch {
-                print("❌ Outbox Relay Error: \(error.localizedDescription)")
+                logger.error("Outbox relay poll failed", metadata: ["error": "\(error)"])
             }
 
             try? await Task.sleep(for: pollInterval)
@@ -76,7 +79,7 @@ public actor SQLKitOutboxRelay: Sendable {
             do {
                 try await pollAndDistribute()
             } catch {
-                print("❌ Outbox Relay Error: \(error.localizedDescription)")
+                logger.error("Outbox relay poll failed", metadata: ["error": "\(error)"])
             }
 
             try? await Task.sleep(for: pollInterval)
@@ -135,7 +138,11 @@ public actor SQLKitOutboxRelay: Sendable {
 
                 processedIds.append(message.id)
             } catch {
-                print("⚠️ Failed to process outbox event \(message.id): \(error)")
+                logger.warning("Failed to process outbox event", metadata: [
+                    "eventId": "\(message.id)",
+                    "eventType": .string(message.event_type),
+                    "error": "\(error)"
+                ])
                 // Só marca como processed se foi erro de decode (não de NATS)
                 if (error as? DomainEventError) != nil {
                     processedIds.append(message.id)

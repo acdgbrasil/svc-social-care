@@ -114,12 +114,19 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
                 }
             }
 
-            // 7. Existence Check
+            // 8. Existence Check — PersonId
             if try await repository.exists(byPersonId: personId) {
                 throw RegisterPatientError.personIdAlreadyExists
             }
 
-            // 8. Domain Logic
+            // 9. Existence Check — CPF
+            if let cpf = civilDocuments?.cpf {
+                if try await repository.exists(byCpf: cpf) {
+                    throw RegisterPatientError.cpfAlreadyExists("***")
+                }
+            }
+
+            // 10. Domain Logic
             // O titular do prontuário é automaticamente inserido como o primeiro membro da família (a PR)
             let holderAsMember = try FamilyMember(
                 personId: personId,
@@ -145,7 +152,7 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
                 patient.updateSocialIdentity(identity, actorId: command.actorId)
             }
 
-            // 9. Persistence & Events
+            // 11. Persistence & Events
             try await repository.save(patient)
             try await eventBus.publish(patient.uncommittedEvents)
 

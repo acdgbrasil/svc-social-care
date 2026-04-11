@@ -24,7 +24,14 @@ struct SQLKitLookupAdminRepository: LookupRepository {
         "dominio_unidade_realizacao": [],
     ]
 
+    private func guardTable(_ table: String) throws {
+        guard AllowedLookupTables.all.contains(table) else {
+            throw LookupAdminError.tableNotAllowed(table)
+        }
+    }
+
     func codigoExists(in table: String, codigo: String) async throws -> Bool {
+        try guardTable(table)
         let count = try await db.select()
             .column(SQLFunction("COUNT", args: SQLLiteral.all), as: "count")
             .from(table)
@@ -35,6 +42,7 @@ struct SQLKitLookupAdminRepository: LookupRepository {
     }
 
     func itemExists(in table: String, id: UUID) async throws -> Bool {
+        try guardTable(table)
         let count = try await db.select()
             .column(SQLFunction("COUNT", args: SQLLiteral.all), as: "count")
             .from(table)
@@ -45,6 +53,7 @@ struct SQLKitLookupAdminRepository: LookupRepository {
     }
 
     func isItemReferenced(in table: String, id: UUID) async throws -> Bool {
+        try guardTable(table)
         guard let refs = Self.referenceMap[table] else { return false }
 
         for ref in refs {
@@ -63,6 +72,7 @@ struct SQLKitLookupAdminRepository: LookupRepository {
 
     func createItem(in table: String, id: UUID, codigo: String, descricao: String,
                     metadata: LookupItemMetadata?) async throws {
+        try guardTable(table)
         if table == "dominio_tipo_beneficio" {
             try await db.insert(into: table)
                 .columns("id", "codigo", "descricao", "exige_registro_nascimento", "exige_cpf_falecido")
@@ -89,6 +99,7 @@ struct SQLKitLookupAdminRepository: LookupRepository {
     }
 
     func updateDescription(in table: String, id: UUID, descricao: String) async throws {
+        try guardTable(table)
         try await db.update(table)
             .set("descricao", to: descricao)
             .where("id", .equal, id)
@@ -96,8 +107,9 @@ struct SQLKitLookupAdminRepository: LookupRepository {
     }
 
     func toggleActive(in table: String, id: UUID) async throws {
+        try guardTable(table)
         try await db.raw("""
-            UPDATE \(unsafeRaw: table) SET ativo = NOT ativo WHERE id = \(bind: id)
+            UPDATE \(ident: table) SET ativo = NOT ativo WHERE id = \(bind: id)
             """).run()
     }
 }

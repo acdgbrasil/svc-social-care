@@ -50,8 +50,8 @@ extension RegisterPatientError: AppErrorConvertible {
         switch self {
         case .personIdAlreadyExists:
             return appFailure("001", kind: "PersonIdAlreadyExists", "O paciente com este PersonId já está registrado.", category: .conflict, severity: .warning, http: 409)
-        case .cpfAlreadyExists(let value):
-            return appFailure("030", kind: "CpfAlreadyExists", "Já existe um paciente registrado com o CPF informado.", category: .conflict, severity: .warning, http: 409, context: ["cpf": value])
+        case .cpfAlreadyExists:
+            return appFailure("030", kind: "CpfAlreadyExists", "Já existe um paciente registrado com o CPF informado.", category: .conflict, severity: .warning, http: 409)
         case .invalidPersonIdFormat(let value):
             return appFailure("002", kind: "InvalidPersonIdFormat", "ID de pessoa inválido: \(value)", category: .dataConsistencyIncident, severity: .error, http: 400)
         case .personIdNotFoundInPeopleContext(let value):

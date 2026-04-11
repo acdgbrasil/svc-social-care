@@ -133,7 +133,7 @@ struct RegisterPatientTests {
 
         // Segundo registro com mesmo CPF, personId diferente — deve falhar
         let pid2 = UUID().uuidString
-        await #expect(throws: RegisterPatientError.cpfAlreadyExists(cpf)) {
+        await #expect(throws: RegisterPatientError.cpfAlreadyExists("***")) {
             try await handler.handle(Self.makeCommand(personId: pid2, civilDocuments: civilDocs))
         }
 

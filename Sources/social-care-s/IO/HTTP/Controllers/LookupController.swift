@@ -39,7 +39,7 @@ struct LookupController: RouteCollection {
         let tableName = try req.parameters.require("tableName")
 
         guard Self.allowedTables.contains(tableName) else {
-            throw Abort(.notFound, reason: "Dominio '\(tableName)' not found.")
+            throw Abort(.notFound, reason: "Requested domain table not found.")
         }
 
         let db = req.services.db

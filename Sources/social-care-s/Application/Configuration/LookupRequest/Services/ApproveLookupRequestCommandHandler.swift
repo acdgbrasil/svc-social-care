@@ -23,6 +23,10 @@ public actor ApproveLookupRequestCommandHandler: CommandHandling {
             throw LookupRequestError.requestAlreadyReviewed(command.requestId)
         }
 
+        guard AllowedLookupTables.all.contains(request.tableName) else {
+            throw LookupRequestError.invalidTableName(request.tableName)
+        }
+
         if try await lookupRepository.codigoExists(in: request.tableName, codigo: request.codigo) {
             throw LookupRequestError.codigoAlreadyExists(table: request.tableName, codigo: request.codigo)
         }

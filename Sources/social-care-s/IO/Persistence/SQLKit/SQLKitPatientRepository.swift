@@ -164,12 +164,13 @@ struct SQLKitPatientRepository: PatientRepository {
                 let cnt: Int
             }
 
-            let countRows = try await db.raw("""
-                SELECT patient_id, COUNT(*)::int AS cnt
-                FROM family_members
-                WHERE patient_id IN (\(unsafeRaw: patientIds.map { "'\($0.uuidString)'" }.joined(separator: ",")))
-                GROUP BY patient_id
-                """).all(decoding: CountRow.self)
+            let countRows = try await db.select()
+                .column("patient_id")
+                .column(SQLFunction("COUNT", args: SQLLiteral.all), as: "cnt")
+                .from("family_members")
+                .where("patient_id", .in, patientIds)
+                .groupBy("patient_id")
+                .all(decoding: CountRow.self)
 
             for row in countRows {
                 memberCountMap[row.patient_id] = row.cnt

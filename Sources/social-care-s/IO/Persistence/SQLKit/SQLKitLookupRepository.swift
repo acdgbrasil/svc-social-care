@@ -13,6 +13,10 @@ struct SQLKitLookupRepository: LookupValidating {
     }
 
     func exists(id: LookupId, in table: String) async throws -> Bool {
+        guard AllowedLookupTables.all.contains(table) else {
+            throw LookupAdminError.tableNotAllowed(table)
+        }
+
         guard let uuid = UUID(uuidString: id.description) else {
             return false
         }

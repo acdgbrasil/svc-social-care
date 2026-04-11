@@ -142,6 +142,8 @@ struct PatientController: RouteCollection {
         }
 
         let eventType = req.query[String.self, at: "eventType"]
+        let limit = min(req.query[Int.self, at: "limit"] ?? 50, 200)
+        let offset = max(req.query[Int.self, at: "offset"] ?? 0, 0)
 
         let db = req.services.db
         var query = db.select()
@@ -155,6 +157,8 @@ struct PatientController: RouteCollection {
 
         let rows = try await query
             .orderBy("occurred_at", .descending)
+            .limit(limit)
+            .offset(offset)
             .all(decoding: AuditTrailModel.self)
 
         let entries = rows.map { AuditTrailEntryResponse(from: $0) }

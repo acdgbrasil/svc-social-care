@@ -30,7 +30,7 @@ public actor NATSEventPublisher: NATSPublishing {
     private let port: Int
     private let encoder: JSONEncoder
     private let logger: Logger
-    private nonisolated(unsafe) var channel: Channel?
+    private var channel: Channel?
 
     public init(url: String = "nats://nats:4222") {
         let parsed = Self.parseURL(url)
@@ -80,7 +80,8 @@ public actor NATSEventPublisher: NATSPublishing {
             throw NATSError.notConnected
         }
 
-        let subject = "social-care.events.\(typeName)"
+        let sanitizedName = typeName.filter { $0.isLetter || $0.isNumber || $0 == "." || $0 == "-" || $0 == "_" }
+        let subject = "social-care.events.\(sanitizedName)"
 
         let payload: Data
         if let encodable = event as? any (DomainEvent & Encodable) {

@@ -5,13 +5,24 @@ import JWT
 func configure(_ app: Application) async throws {
     // MARK: - Database
 
+    let isProduction = Environment.get("ENVIRONMENT") == "production"
+
+    if isProduction {
+        guard Environment.get("DB_HOST") != nil,
+              Environment.get("DB_USER") != nil,
+              Environment.get("DB_PASSWORD") != nil,
+              Environment.get("DB_NAME") != nil else {
+            fatalError("Required DB_HOST, DB_USER, DB_PASSWORD, DB_NAME environment variables are not set.")
+        }
+    }
+
     let postgresConfig = SQLPostgresConfiguration(
         hostname: Environment.get("DB_HOST") ?? "localhost",
         port: Environment.get("DB_PORT").flatMap(Int.init) ?? 5432,
         username: Environment.get("DB_USER") ?? "postgres",
         password: Environment.get("DB_PASSWORD") ?? "postgres",
         database: Environment.get("DB_NAME") ?? "social_care",
-        tls: .disable
+        tls: isProduction ? .prefer(try .init(configuration: .clientDefault)) : .disable
     )
 
     let source = PostgresConnectionSource(sqlConfiguration: postgresConfig)
@@ -176,6 +187,8 @@ func configure(_ app: Application) async throws {
 
 // MARK: - Pool Lifecycle
 
+/// @unchecked Sendable justification: Vapor LifecycleHandler requires Sendable.
+/// EventLoopGroupConnectionPool is thread-safe by design (internally synchronized).
 struct PoolShutdownHandler: LifecycleHandler, @unchecked Sendable {
     let pool: EventLoopGroupConnectionPool<PostgresConnectionSource>
 
@@ -186,6 +199,8 @@ struct PoolShutdownHandler: LifecycleHandler, @unchecked Sendable {
 
 // MARK: - Graceful Shutdown
 
+/// @unchecked Sendable justification: Vapor LifecycleHandler requires Sendable.
+/// Logger is Sendable; struct has no mutable state.
 struct GracefulShutdownHandler: LifecycleHandler, @unchecked Sendable {
     let logger: Logger
 

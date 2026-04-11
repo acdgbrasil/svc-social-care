@@ -16,8 +16,17 @@ RUN swift build -c release --product social-care-s
 
 FROM swift:6.2-jammy-slim
 
-WORKDIR /app
-COPY --from=build /build/.build/release/social-care-s /app/social-care-s
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appgroup && useradd -r -g appgroup -d /app -s /sbin/nologin appuser
 
-EXPOSE 3000
+WORKDIR /app
+COPY --from=build --chown=appuser:appgroup /build/.build/release/social-care-s /app/social-care-s
+
+USER appuser
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
 CMD ["/app/social-care-s"]

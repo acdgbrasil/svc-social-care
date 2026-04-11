@@ -23,8 +23,8 @@ public actor LinkPersonIdCommandHandler: LinkPersonIdUseCase {
         do {
             cpf = try CPF(command.cpf)
         } catch {
-            logger.warning("Invalid CPF in event: \(command.cpf)")
-            throw LinkPersonIdError.invalidCpf(command.cpf)
+            logger.warning("Invalid CPF in event", metadata: ["cpf": "\(Self.maskedCpf(command.cpf))"])
+            throw LinkPersonIdError.invalidCpf(Self.maskedCpf(command.cpf))
         }
 
         let newPersonId: PersonId
@@ -37,13 +37,13 @@ public actor LinkPersonIdCommandHandler: LinkPersonIdUseCase {
 
         // 2. Find Patient by CPF
         guard let patient = try await patientRepository.find(byCpf: cpf) else {
-            logger.info("No patient found for CPF \(command.cpf) — skipping link")
+            logger.info("No patient found for CPF — skipping link", metadata: ["cpf": "\(Self.maskedCpf(command.cpf))"])
             return
         }
 
         // 3. Idempotency: already linked with same PersonId
         if patient.personId == newPersonId {
-            logger.info("Patient \(patient.id.description) already linked to PersonId \(command.personId)")
+            logger.info("Patient already linked to PersonId", metadata: ["patientId": "\(patient.id.description)", "personId": "\(command.personId)"])
             return
         }
 
@@ -53,6 +53,12 @@ public actor LinkPersonIdCommandHandler: LinkPersonIdUseCase {
             newPersonId: newPersonId
         )
 
-        logger.info("Linked Patient \(patient.id.description) to PersonId \(command.personId) via CPF")
+        logger.info("Linked Patient to PersonId via CPF", metadata: ["patientId": "\(patient.id.description)", "personId": "\(command.personId)"])
+    }
+
+    private static func maskedCpf(_ cpf: String) -> String {
+        let clean = cpf.filter(\.isNumber)
+        guard clean.count >= 4 else { return "***" }
+        return "***.\(clean.suffix(4))"
     }
 }

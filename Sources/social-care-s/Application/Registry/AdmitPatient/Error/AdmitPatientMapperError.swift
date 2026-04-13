@@ -1,27 +1,26 @@
 import Foundation
 
 extension AdmitPatientCommandHandler {
-    /// Mapeia erros genericos ou de dominio para o erro especifico do Caso de Uso.
-    public func mapError(_ error: Error, patientId: String) -> AdmitPatientError {
-        if let e = error as? AdmitPatientError {
-            return e
-        }
+    /// Mapeia erros de domínio para o erro específico do Caso de Uso.
+    /// Erros não reconhecidos são propagados sem mascaramento.
+    public func mapError(_ error: Error, patientId: String) -> any Error {
+        if error is AdmitPatientError { return error }
 
         if let e = error as? PatientError {
             switch e {
             case .alreadyActive:
-                return .alreadyActive(patientId)
+                return AdmitPatientError.alreadyActive(patientId)
             case .cannotAdmitDischarged:
-                return .cannotAdmitDischarged(patientId)
+                return AdmitPatientError.cannotAdmitDischarged(patientId)
             default:
-                return .patientNotFound(patientId)
+                return error
             }
         }
 
         if error is PatientIdError {
-            return .invalidPatientIdFormat(patientId)
+            return AdmitPatientError.invalidPatientIdFormat(patientId)
         }
 
-        return .patientNotFound(patientId)
+        return error
     }
 }

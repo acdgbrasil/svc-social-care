@@ -1,36 +1,35 @@
 import Foundation
 
 extension WithdrawFromWaitlistCommandHandler {
-    /// Mapeia erros genericos ou de dominio para o erro especifico do Caso de Uso.
-    public func mapError(_ error: Error, patientId: String) -> WithdrawFromWaitlistError {
-        if let e = error as? WithdrawFromWaitlistError {
-            return e
-        }
+    /// Mapeia erros de domínio para o erro específico do Caso de Uso.
+    /// Erros não reconhecidos são propagados sem mascaramento.
+    public func mapError(_ error: Error, patientId: String) -> any Error {
+        if error is WithdrawFromWaitlistError { return error }
 
         if let e = error as? PatientError {
             switch e {
             case .alreadyDischarged:
-                return .alreadyDischarged(patientId)
+                return WithdrawFromWaitlistError.alreadyDischarged(patientId)
             case .alreadyActive:
-                return .patientIsActive(patientId)
+                return WithdrawFromWaitlistError.patientIsActive(patientId)
             default:
-                return .patientNotFound(patientId)
+                return error
             }
         }
 
         if let e = error as? WithdrawInfoError {
             switch e {
             case .notesRequiredWhenReasonIsOther:
-                return .notesRequiredForOtherReason
+                return WithdrawFromWaitlistError.notesRequiredForOtherReason
             case .notesExceedMaxLength(let length):
-                return .notesExceedMaxLength(length)
+                return WithdrawFromWaitlistError.notesExceedMaxLength(length)
             }
         }
 
         if error is PatientIdError {
-            return .invalidPatientIdFormat(patientId)
+            return WithdrawFromWaitlistError.invalidPatientIdFormat(patientId)
         }
 
-        return .patientNotFound(patientId)
+        return error
     }
 }

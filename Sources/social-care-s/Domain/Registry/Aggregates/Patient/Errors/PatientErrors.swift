@@ -24,7 +24,6 @@ public enum PatientError: Error, Sendable, Equatable {
     case cannotAdmitDischarged
     case cannotDischargeWaitlisted
     case cannotReadmitWaitlisted
-    case alreadyWaitlisted
     case patientIsWaitlisted
 }
 
@@ -131,19 +130,6 @@ extension PatientError: AppErrorConvertible {
                 observability: .init(
                     category: .conflict, severity: .warning,
                     fingerprint: ["\(Self.codePrefix)-017"],
-                    tags: ["aggregate": "patient"]
-                ),
-                http: 409
-            )
-        case .alreadyWaitlisted:
-            return AppError(
-                code: "\(Self.codePrefix)-018",
-                message: "O paciente já está na lista de espera.",
-                bc: Self.bc, module: Self.module, kind: "AlreadyWaitlisted",
-                context: [:], safeContext: [:],
-                observability: .init(
-                    category: .conflict, severity: .warning,
-                    fingerprint: ["\(Self.codePrefix)-018"],
                     tags: ["aggregate": "patient"]
                 ),
                 http: 409

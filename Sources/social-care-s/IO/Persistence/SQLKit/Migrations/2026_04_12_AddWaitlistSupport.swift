@@ -5,7 +5,10 @@ struct AddWaitlistSupport: Migration {
     let name = "2026_04_12_AddWaitlistSupport"
 
     func prepare(on db: any SQLDatabase) async throws {
-        // Change DEFAULT for status from 'active' to 'waitlisted'
+        // Change DEFAULT for status from 'active' to 'waitlisted' for new INSERTs.
+        // Existing rows already have an explicit 'active' or 'discharged' value
+        // stored in the status column (set by AddPatientDischarge migration with
+        // DEFAULT 'active'), so this change does NOT affect existing data.
         try await db.raw("ALTER TABLE patients ALTER COLUMN status SET DEFAULT 'waitlisted'").run()
 
         // Add withdraw info columns

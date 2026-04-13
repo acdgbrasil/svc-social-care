@@ -1,34 +1,37 @@
 import Foundation
 
 extension DischargePatientCommandHandler {
-    /// Mapeia erros genéricos ou de domínio para o erro específico do Caso de Uso.
-    public func mapError(_ error: Error, patientId: String) -> DischargePatientError {
-        if let e = error as? DischargePatientError {
-            return e
-        }
+    /// Mapeia erros de domínio para o erro específico do Caso de Uso.
+    /// Erros não reconhecidos são propagados sem mascaramento.
+    public func mapError(_ error: Error, patientId: String) -> any Error {
+        if error is DischargePatientError { return error }
 
         if let e = error as? PatientError {
             switch e {
             case .alreadyDischarged:
-                return .alreadyDischarged(patientId)
+                return DischargePatientError.alreadyDischarged(patientId)
+            case .cannotDischargeWaitlisted:
+                return DischargePatientError.alreadyDischarged(patientId)
+            case .patientIsDischarged, .patientIsWaitlisted:
+                return DischargePatientError.patientNotFound(patientId)
             default:
-                return .patientNotFound(patientId)
+                return error
             }
         }
 
         if let e = error as? DischargeInfoError {
             switch e {
             case .notesRequiredWhenReasonIsOther:
-                return .notesRequiredForOtherReason
+                return DischargePatientError.notesRequiredForOtherReason
             case .notesExceedMaxLength(let length):
-                return .notesExceedMaxLength(length)
+                return DischargePatientError.notesExceedMaxLength(length)
             }
         }
 
         if error is PatientIdError {
-            return .invalidPatientIdFormat(patientId)
+            return DischargePatientError.invalidPatientIdFormat(patientId)
         }
 
-        return .patientNotFound(patientId)
+        return error
     }
 }

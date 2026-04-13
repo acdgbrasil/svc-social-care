@@ -24,7 +24,7 @@ public actor UpdateSocialHealthSummaryCommandHandler: UpdateSocialHealthSummaryU
                 throw UpdateSocialHealthSummaryError.patientNotFound
             }
 
-            patient.updateSocialHealthSummary(summary, actorId: command.actorId)
+            try patient.updateSocialHealthSummary(summary, actorId: command.actorId)
 
             try await repository.save(patient)
             try await eventBus.publish(patient.uncommittedEvents)

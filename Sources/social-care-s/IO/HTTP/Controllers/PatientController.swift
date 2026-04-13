@@ -17,6 +17,10 @@ struct PatientController: RouteCollection {
         write.delete(":patientId", "family-members", ":memberId", use: removeFamilyMember)
         write.put(":patientId", "primary-caregiver", use: assignPrimaryCaregiver)
         write.put(":patientId", "social-identity", use: updateSocialIdentity)
+
+        let lifecycle = patients.grouped(RoleGuardMiddleware("social_worker", "admin"))
+        lifecycle.post(":patientId", "discharge", use: discharge)
+        lifecycle.post(":patientId", "readmit", use: readmit)
     }
 
     // MARK: - Patient List
@@ -24,10 +28,11 @@ struct PatientController: RouteCollection {
     @Sendable
     private func list(req: Request) async throws -> PaginatedResponse<[PatientSummaryResponse]> {
         let search: String? = req.query[String.self, at: "search"]
+        let status: String? = req.query[String.self, at: "status"]
         let cursor: String? = req.query[String.self, at: "cursor"]
-        let limit = req.query[Int.self, at: "limit"] ?? 20
+        let limit = min(max(req.query[Int.self, at: "limit"] ?? 20, 1), 100)
 
-        let query = ListPatientsQuery(search: search, cursor: cursor, limit: limit)
+        let query = ListPatientsQuery(search: search, status: status, cursor: cursor, limit: limit)
         let result = try await req.services.listPatients.handle(query)
 
         let items = result.items.map { PatientSummaryResponse(from: $0) }
@@ -129,6 +134,37 @@ struct PatientController: RouteCollection {
             patientId: patientId, typeId: body.typeId, description: body.description, actorId: actorId
         )
         try await req.services.updateSocialIdentity.handle(command)
+        return .noContent
+    }
+
+    // MARK: - Patient Lifecycle (Discharge / Readmit)
+
+    @Sendable
+    private func discharge(req: Request) async throws -> HTTPStatus {
+        let actorId = try req.extractActorId()
+        let patientId = try req.parameters.require("patientId")
+        let body = try req.content.decode(DischargePatientRequest.self)
+        let command = DischargePatientCommand(
+            patientId: patientId,
+            reason: body.reason,
+            notes: body.notes,
+            actorId: actorId
+        )
+        try await req.services.dischargePatient.handle(command)
+        return .noContent
+    }
+
+    @Sendable
+    private func readmit(req: Request) async throws -> HTTPStatus {
+        let actorId = try req.extractActorId()
+        let patientId = try req.parameters.require("patientId")
+        let body = try req.content.decode(ReadmitPatientRequest.self)
+        let command = ReadmitPatientCommand(
+            patientId: patientId,
+            notes: body.notes,
+            actorId: actorId
+        )
+        try await req.services.readmitPatient.handle(command)
         return .noContent
     }
 

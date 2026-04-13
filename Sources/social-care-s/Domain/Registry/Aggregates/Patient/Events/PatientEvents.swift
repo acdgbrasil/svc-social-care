@@ -249,3 +249,35 @@ public struct IntakeInfoUpdatedEvent: DomainEvent, Codable {
         self.before = before; self.after = after; self.occurredAt = occurredAt
     }
 }
+
+// MARK: - Discharge Events
+
+public struct PatientDischargedEvent: DomainEvent, Codable {
+    public let id: UUID
+    public let patientId: String
+    public let personId: String
+    public let actorId: String
+    public let reason: String
+    public let notes: String?
+    public let occurredAt: Date
+
+    public init(patientId: String, personId: String, actorId: String, reason: String, notes: String?, occurredAt: Date) {
+        self.id = UUID(); self.patientId = patientId; self.personId = personId
+        self.actorId = actorId; self.reason = reason; self.notes = notes; self.occurredAt = occurredAt
+    }
+}
+
+public struct PatientReadmittedEvent: DomainEvent, Codable {
+    public let id: UUID
+    public let patientId: String
+    public let personId: String
+    public let actorId: String
+    public let notes: String?
+    public let occurredAt: Date
+
+    public init(patientId: String, personId: String, actorId: String, notes: String?, occurredAt: Date) {
+        self.id = UUID(); self.patientId = patientId; self.personId = personId
+        self.actorId = actorId; self.notes = notes; self.occurredAt = occurredAt
+    }
+}
+

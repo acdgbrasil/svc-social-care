@@ -14,6 +14,12 @@ public enum PatientError: Error, Sendable, Equatable {
     case multiplePrimaryReferencesNotAllowed
     case incompatiblePlacementSituation
     case incompatibleGuardianshipSituation
+
+    // Versão 2.1 - Desligamento e Readmissão
+    case alreadyDischarged
+    case alreadyActive
+    case patientIsDischarged
+
 }
 
 extension PatientError: AppErrorConvertible {
@@ -45,6 +51,45 @@ extension PatientError: AppErrorConvertible {
             return appFailure("010", "A situacao de afastamento informada e incompativel com a composicao etaria da familia.")
         case .incompatibleGuardianshipSituation:
             return appFailure("011", "O relato de guarda de terceiros e incompativel com a composicao etaria da familia.")
+        case .alreadyDischarged:
+            return AppError(
+                code: "\(Self.codePrefix)-012",
+                message: "O paciente já está desligado.",
+                bc: Self.bc, module: Self.module, kind: "AlreadyDischarged",
+                context: [:], safeContext: [:],
+                observability: .init(
+                    category: .conflict, severity: .warning,
+                    fingerprint: ["\(Self.codePrefix)-012"],
+                    tags: ["aggregate": "patient"]
+                ),
+                http: 409
+            )
+        case .alreadyActive:
+            return AppError(
+                code: "\(Self.codePrefix)-013",
+                message: "O paciente já está ativo.",
+                bc: Self.bc, module: Self.module, kind: "AlreadyActive",
+                context: [:], safeContext: [:],
+                observability: .init(
+                    category: .conflict, severity: .warning,
+                    fingerprint: ["\(Self.codePrefix)-013"],
+                    tags: ["aggregate": "patient"]
+                ),
+                http: 409
+            )
+        case .patientIsDischarged:
+            return AppError(
+                code: "\(Self.codePrefix)-014",
+                message: "Operação não permitida: o paciente está desligado. Readmita o paciente antes de realizar alterações.",
+                bc: Self.bc, module: Self.module, kind: "PatientIsDischarged",
+                context: [:], safeContext: [:],
+                observability: .init(
+                    category: .conflict, severity: .warning,
+                    fingerprint: ["\(Self.codePrefix)-014"],
+                    tags: ["aggregate": "patient"]
+                ),
+                http: 409
+            )
         }
     }
 

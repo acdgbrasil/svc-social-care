@@ -81,7 +81,15 @@ public struct Patient: EventSourcedAggregate, EventSourcedAggregateInternal {
     
     /// Novo módulo v2.0: Informações de ingresso e atendimento inicial.
     public internal(set) var intakeInfo: IngressInfo?
-    
+
+    // MARK: - Lifecycle Status
+
+    /// Status do paciente no sistema (ativo ou desligado).
+    public internal(set) var status: PatientStatus = .active
+
+    /// Informações do desligamento, preenchidas apenas quando status == .discharged.
+    public internal(set) var dischargeInfo: DischargeInfo?
+
     // MARK: - Clinical Data
     
     /// Lista de diagnósticos clínicos (CIDs) do titular do prontuário.
@@ -109,6 +117,15 @@ public struct Patient: EventSourcedAggregate, EventSourcedAggregateInternal {
     public func containsPerson(_ targetId: PersonId) -> Bool {
         if self.personId == targetId { return true }
         return familyMembers.contains { $0.personId == targetId }
+    }
+
+    // MARK: - Lifecycle Guard
+
+    /// Verifica se o paciente está ativo. Lança erro se estiver desligado.
+    public func requireActive() throws {
+        guard status == .active else {
+            throw PatientError.patientIsDischarged
+        }
     }
 
     // MARK: - Internal Mutation (Outbox Pattern)

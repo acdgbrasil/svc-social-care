@@ -149,7 +149,7 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
             )
 
             if let identity = socialIdentity {
-                patient.updateSocialIdentity(identity, actorId: command.actorId)
+                try patient.updateSocialIdentity(identity, actorId: command.actorId)
             }
 
             // 11. Persistence & Events

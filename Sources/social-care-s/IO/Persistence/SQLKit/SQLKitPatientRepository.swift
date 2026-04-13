@@ -79,11 +79,15 @@ struct SQLKitPatientRepository: PatientRepository {
         return try await loadAggregate(patientModel)
     }
 
-    func list(search: String?, cursor: PatientId?, limit: Int) async throws -> PatientListResult {
-        // 1. Total count (com filtro de busca se aplicável)
+    func list(search: String?, status: PatientStatus?, cursor: PatientId?, limit: Int) async throws -> PatientListResult {
+        // 1. Total count (com filtro de busca e status se aplicável)
         var countQuery = db.select()
             .column(SQLFunction("COUNT", args: SQLLiteral.all), as: "count")
             .from("patients")
+
+        if let status {
+            countQuery = countQuery.where("status", .equal, status.rawValue)
+        }
 
         if let search, !search.isEmpty {
             let pattern = "%\(search)%"
@@ -104,7 +108,12 @@ struct SQLKitPatientRepository: PatientRepository {
             .column(SQLColumn("person_id", table: "patients"))
             .column(SQLColumn("first_name", table: "patients"))
             .column(SQLColumn("last_name", table: "patients"))
+            .column(SQLColumn("status", table: "patients"))
             .from("patients")
+
+        if let status {
+            query = query.where("status", .equal, status.rawValue)
+        }
 
         if let search, !search.isEmpty {
             let pattern = "%\(search)%"
@@ -128,6 +137,7 @@ struct SQLKitPatientRepository: PatientRepository {
             let person_id: UUID
             let first_name: String?
             let last_name: String?
+            let status: String
         }
 
         let rows = try await query.all(decoding: PatientListRow.self)
@@ -186,7 +196,8 @@ struct SQLKitPatientRepository: PatientRepository {
                 firstName: row.first_name,
                 lastName: row.last_name,
                 primaryDiagnosis: diagnosisMap[row.id],
-                memberCount: memberCountMap[row.id] ?? 0
+                memberCount: memberCountMap[row.id] ?? 0,
+                status: PatientStatus(rawValue: row.status) ?? .active
             )
         }
 

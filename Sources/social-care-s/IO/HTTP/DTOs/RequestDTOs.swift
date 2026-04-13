@@ -306,6 +306,17 @@ struct CreateReferralRequest: Content {
     let date: Date?
 }
 
+// MARK: - Patient Lifecycle
+
+struct DischargePatientRequest: Content {
+    let reason: String
+    let notes: String?
+}
+
+struct ReadmitPatientRequest: Content {
+    let notes: String?
+}
+
 // MARK: - Care
 
 struct RegisterAppointmentRequest: Content {

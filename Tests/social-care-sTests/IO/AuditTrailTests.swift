@@ -71,11 +71,11 @@ struct AuditTrailTests {
 
     @Test("toOutbox deve preservar event_type para cada tipo de evento")
     func toOutboxPreservesEventTypes() throws {
-        let patient = try PatientFixture.createWithAdditionalMember()
+        var patient = try PatientFixture.createWithAdditionalMember()
 
         var mutated = patient
-        mutated.updateHousingCondition(
-            try HousingCondition(
+        try mutated.updateHousingCondition(
+            HousingCondition(
                 type: .owned, wallMaterial: .masonry,
                 numberOfRooms: 3, numberOfBedrooms: 1, numberOfBathrooms: 1,
                 waterSupply: .publicNetwork, hasPipedWater: true,
@@ -161,11 +161,11 @@ struct AuditTrailTests {
         let registry = DomainEventRegistry.shared
         await registry.bootstrap()
 
-        let patient = try PatientFixture.createWithAdditionalMember()
+        var patient = try PatientFixture.createWithAdditionalMember()
         var mutated = patient
 
-        mutated.updateCommunitySupportNetwork(
-            try CommunitySupportNetwork(
+        try mutated.updateCommunitySupportNetwork(
+            CommunitySupportNetwork(
                 hasRelativeSupport: true, hasNeighborSupport: false,
                 familyConflicts: "", patientParticipatesInGroups: false,
                 familyParticipatesInGroups: false, patientHasAccessToLeisure: true,

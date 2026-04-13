@@ -102,6 +102,14 @@ struct PatientModel: Codable {
     let ii_origin_name: String?
     let ii_origin_contact: String?
     let ii_service_reason: String?
+
+    // discharge
+    let status: String
+    let discharge_reason: String?
+    let discharge_notes: String?
+    let discharged_at: Date?
+    let discharged_by: String?
+
 }
 
 // MARK: - Existing Child Tables

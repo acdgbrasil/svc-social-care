@@ -55,7 +55,7 @@ public actor UpdateWorkAndIncomeCommandHandler: UpdateWorkAndIncomeUseCase {
             )
 
             // 5. Domain Logic
-            patient.updateWorkAndIncome(workAndIncome, actorId: command.actorId)
+            try patient.updateWorkAndIncome(workAndIncome, actorId: command.actorId)
 
             // 6. Persistence & Events
             try await repository.save(patient)

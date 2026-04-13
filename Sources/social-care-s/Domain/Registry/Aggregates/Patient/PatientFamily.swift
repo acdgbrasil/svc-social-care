@@ -13,6 +13,7 @@ extension Patient {
     ///   - primaryReferenceId: O ID que identifica a Pessoa de Referência para validação.
     /// - Throws: `PatientError.familyMemberAlreadyExists` se a pessoa já estiver registrada na família.
     public mutating func addMember(_ member: FamilyMember, actorId: String, at date: TimeStamp = .now, primaryReferenceId: LookupId) throws {
+        try requireActive()
         let exists = familyMembers.contains { $0.personId == member.personId }
 
         guard !exists else {
@@ -44,6 +45,7 @@ extension Patient {
     ///   - date: O instante da operação.
     /// - Throws: `PatientError.familyMemberNotFound` se o membro não pertencer à família.
     public mutating func removeMember(identifiedBy personId: PersonId, actorId: String, at date: TimeStamp = .now) throws {
+        try requireActive()
         guard let index = familyMembers.firstIndex(where: { $0.personId == personId }) else {
             throw PatientError.familyMemberNotFound(personId: personId.description)
         }
@@ -66,6 +68,7 @@ extension Patient {
     ///   - date: O instante da operação.
     /// - Throws: `PatientError.familyMemberNotFound` se a pessoa não pertencer à família.
     public mutating func assignPrimaryCaregiver(identifiedBy personId: PersonId, actorId: String, at date: TimeStamp = .now) throws {
+        try requireActive()
         guard familyMembers.contains(where: { $0.personId == personId }) else {
             throw PatientError.familyMemberNotFound(personId: personId.description)
         }

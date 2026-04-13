@@ -27,7 +27,7 @@ public actor UpdateCommunitySupportNetworkCommandHandler: UpdateCommunitySupport
                 throw UpdateCommunitySupportNetworkError.patientNotFound
             }
 
-            patient.updateCommunitySupportNetwork(network, actorId: command.actorId)
+            try patient.updateCommunitySupportNetwork(network, actorId: command.actorId)
 
             try await repository.save(patient)
             try await eventBus.publish(patient.uncommittedEvents)

@@ -41,7 +41,7 @@ public actor UpdateSocioEconomicSituationCommandHandler: UpdateSocioEconomicSitu
             }
             
             // 3. Domain Logic
-            patient.updateSocioEconomicSituation(situation, actorId: command.actorId)
+            try patient.updateSocioEconomicSituation(situation, actorId: command.actorId)
             
             // 4. Persistence & Events
             try await repository.save(patient)

@@ -28,7 +28,10 @@ extension UpdatePlacementHistoryError: AppErrorConvertible {
         case .incompatibleSeparationSituation:
             return appFailure("005", kind: "IncompatibleSeparation", "The separation situation is incompatible with the family age composition.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .patientNotActive(let reason):
-            return appFailure("007", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
+            let message = reason == "PATIENT_IS_WAITLISTED"
+                ? "Operation not allowed: patient is waitlisted. Admit the patient before making changes."
+                : "Operation not allowed: patient is discharged. Readmit the patient before making changes."
+            return appFailure("007", kind: "PatientNotActive", message, category: .conflict, severity: .warning, http: 409, context: ["reason": reason])
         case .persistenceMappingFailure(let issues):
             return appFailure("006", kind: "PersistenceMappingFailure", "Infrastructure failure while saving placement history.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

@@ -12,11 +12,11 @@ extension RemoveFamilyMemberCommandHandler {
             case .familyMemberNotFound(let personId):
                 return .familyMemberNotFound(personId: personId)
             case .patientIsWaitlisted:
-                return .patientNotActive(reason: "o paciente está na lista de espera. Admita o paciente antes de realizar alterações.")
+                return .patientNotActive(reason: "PATIENT_IS_WAITLISTED")
             case .patientIsDischarged:
-                return .patientNotActive(reason: "o paciente está desligado. Readmita o paciente antes de realizar alterações.")
+                return .patientNotActive(reason: "PATIENT_IS_DISCHARGED")
             default:
-                break
+                return .persistenceMappingFailure(issues: [String(describing: e)])
             }
         }
         

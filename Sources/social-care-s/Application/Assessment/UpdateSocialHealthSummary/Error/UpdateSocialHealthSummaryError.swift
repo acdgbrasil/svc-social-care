@@ -22,7 +22,10 @@ extension UpdateSocialHealthSummaryError: AppErrorConvertible {
         case .functionalDependenciesEmpty:
             return appFailure("003", kind: "FunctionalDependenciesEmpty", "A lista de dependências funcionais contém itens vazios.", http: 422)
         case .patientNotActive(let reason):
-            return appFailure("004", kind: "PatientNotActive", "Operação não permitida: \(reason)", http: 409)
+            let message = reason == "PATIENT_IS_WAITLISTED"
+                ? "Operação não permitida: o paciente está na lista de espera. Admita o paciente antes de realizar alterações."
+                : "Operação não permitida: o paciente está desligado. Readmita o paciente antes de realizar alterações."
+            return appFailure("004", kind: "PatientNotActive", message, http: 409)
         case .unexpectedFailure(let detail):
             return appFailure("999", kind: "UnexpectedFailure", "Falha inesperada: \(detail)", http: 500)
         }

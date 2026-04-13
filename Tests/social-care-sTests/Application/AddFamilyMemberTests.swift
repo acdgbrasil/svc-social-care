@@ -106,32 +106,19 @@ struct AddFamilyMemberTests {
 
         let prRelId = patient.familyMembers.first!.relationshipId.description
 
-        let thrown: AddFamilyMemberError? = await {
-            do {
-                try await handler.handle(AddFamilyMemberCommand(
-                    patientId: patient.id.description,
-                    memberPersonId: Self.newMemberId,
-                    relationship: UUID().uuidString,
-                    isResiding: true,
-                    isCaregiver: false,
-                    hasDisability: false,
-                    requiredDocuments: [],
-                    birthDate: Date(timeIntervalSince1970: 1_000_000_000),
-                    prRelationshipId: prRelId,
-                    actorId: "actor-1"
-                ))
-                return nil
-            } catch let e as AddFamilyMemberError {
-                return e
-            } catch {
-                return nil
-            }
-        }()
-
-        if case .patientNotActive = thrown {
-            // expected
-        } else {
-            Issue.record("Expected .patientNotActive but got \(String(describing: thrown))")
+        await #expect(throws: AddFamilyMemberError.patientNotActive(reason: "PATIENT_IS_WAITLISTED")) {
+            try await handler.handle(AddFamilyMemberCommand(
+                patientId: patient.id.description,
+                memberPersonId: Self.newMemberId,
+                relationship: UUID().uuidString,
+                isResiding: true,
+                isCaregiver: false,
+                hasDisability: false,
+                requiredDocuments: [],
+                birthDate: Date(timeIntervalSince1970: 1_000_000_000),
+                prRelationshipId: prRelId,
+                actorId: "actor-1"
+            ))
         }
     }
 

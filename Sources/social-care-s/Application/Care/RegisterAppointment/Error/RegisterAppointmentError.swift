@@ -41,7 +41,10 @@ extension RegisterAppointmentError: AppErrorConvertible {
         case .dateInFuture:
             return appFailure("009", kind: "DateInFuture", "A data do atendimento não pode estar no futuro.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .patientNotActive(let reason):
-            return appFailure("011", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
+            let message = reason == "PATIENT_IS_WAITLISTED"
+                ? "Operação não permitida: o paciente está na lista de espera. Admita o paciente antes de realizar alterações."
+                : "Operação não permitida: o paciente está desligado. Readmita o paciente antes de realizar alterações."
+            return appFailure("011", kind: "PatientNotActive", message, category: .conflict, severity: .warning, http: 409, context: ["reason": reason])
         case .persistenceMappingFailure(let issues):
             return appFailure("010", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar o atendimento.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

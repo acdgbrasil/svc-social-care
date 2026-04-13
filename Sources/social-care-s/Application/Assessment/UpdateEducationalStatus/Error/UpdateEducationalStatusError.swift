@@ -22,7 +22,10 @@ extension UpdateEducationalStatusError: AppErrorConvertible {
         case .invalidLookupId(let table, let id):
             return appFailure("003", kind: "InvalidLookupId", "ID '\(id)' nao encontrado na tabela '\(table)'.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .patientNotActive(let reason):
-            return appFailure("005", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
+            let message = reason == "PATIENT_IS_WAITLISTED"
+                ? "Operação não permitida: o paciente está na lista de espera. Admita o paciente antes de realizar alterações."
+                : "Operação não permitida: o paciente está desligado. Readmita o paciente antes de realizar alterações."
+            return appFailure("005", kind: "PatientNotActive", message, category: .conflict, severity: .warning, http: 409, context: ["reason": reason])
         case .persistenceMappingFailure(let issues):
             return appFailure("004", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar status educacional.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

@@ -12,6 +12,7 @@ public enum CreateReferralError: Error, Sendable, Equatable {
     case dateInFuture
     case reasonMissing
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension CreateReferralError: AppErrorConvertible {
@@ -39,6 +40,11 @@ extension CreateReferralError: AppErrorConvertible {
             return appFailure("008", kind: "DateInFuture", "A data do encaminhamento não pode estar no futuro.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .reasonMissing:
             return appFailure("009", kind: "ReasonMissing", "O motivo do encaminhamento é obrigatório.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            let message = reason == "PATIENT_IS_WAITLISTED"
+                ? "Operação não permitida: o paciente está na lista de espera. Admita o paciente antes de realizar alterações."
+                : "Operação não permitida: o paciente está desligado. Readmita o paciente antes de realizar alterações."
+            return appFailure("011", kind: "PatientNotActive", message, category: .conflict, severity: .warning, http: 409, context: ["reason": reason])
         case .persistenceMappingFailure(let issues):
             return appFailure("010", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar o encaminhamento.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

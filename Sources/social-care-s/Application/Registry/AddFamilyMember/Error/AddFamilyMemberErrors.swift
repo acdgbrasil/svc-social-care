@@ -11,6 +11,7 @@ public enum AddFamilyMemberError: Error, Sendable, Equatable {
     case patientNotFound
     case memberAlreadyExists(String)
     case invalidLookupId(table: String, id: String)
+    case patientNotActive(reason: String)
 }
 
 extension AddFamilyMemberError: AppErrorConvertible {
@@ -93,6 +94,11 @@ extension AddFamilyMemberError: AppErrorConvertible {
             )
         case .invalidLookupId(let table, let id):
             return appFailure("009", kind: "InvalidLookupId", "ID '\(id)' nao encontrado na tabela '\(table)'.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            let message = reason == "PATIENT_IS_WAITLISTED"
+                ? "Operação não permitida: o paciente está na lista de espera. Admita o paciente antes de realizar alterações."
+                : "Operação não permitida: o paciente está desligado. Readmita o paciente antes de realizar alterações."
+            return appFailure("010", kind: "PatientNotActive", message, category: .conflict, severity: .warning, http: 409, context: ["reason": reason])
         case .patientNotFound:
            return appFailure(
                 "007",

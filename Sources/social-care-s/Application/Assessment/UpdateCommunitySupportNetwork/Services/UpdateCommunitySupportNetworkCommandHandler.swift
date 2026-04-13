@@ -44,6 +44,16 @@ public actor UpdateCommunitySupportNetworkCommandHandler: UpdateCommunitySupport
             case .familyConflictsTooLong(let limit): return .familyConflictsTooLong(limit: limit)
             }
         }
+        if let e = error as? PatientError {
+            switch e {
+            case .patientIsWaitlisted:
+                return .patientNotActive(reason: "PATIENT_IS_WAITLISTED")
+            case .patientIsDischarged:
+                return .patientNotActive(reason: "PATIENT_IS_DISCHARGED")
+            default:
+                return .unexpectedFailure(String(describing: e))
+            }
+        }
         if let e = error as? PatientIdError {
             switch e { case .invalidFormat(let v): return .invalidPersonIdFormat(v) }
         }

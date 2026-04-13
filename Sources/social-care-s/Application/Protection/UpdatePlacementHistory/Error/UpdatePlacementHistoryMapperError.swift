@@ -8,6 +8,10 @@ extension UpdatePlacementHistoryCommandHandler {
             switch e {
             case .incompatiblePlacementSituation, .incompatibleGuardianshipSituation:
                 return .incompatibleSeparationSituation
+            case .patientIsWaitlisted:
+                return .patientNotActive(reason: "PATIENT_IS_WAITLISTED")
+            case .patientIsDischarged:
+                return .patientNotActive(reason: "PATIENT_IS_DISCHARGED")
             default:
                 return .persistenceMappingFailure(issues: [String(describing: e)])
             }

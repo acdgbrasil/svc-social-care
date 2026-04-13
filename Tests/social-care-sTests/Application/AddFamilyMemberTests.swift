@@ -93,6 +93,35 @@ struct AddFamilyMemberTests {
         }
     }
 
+    @Test("Deve falhar quando paciente esta na lista de espera")
+    func patientIsWaitlisted() async throws {
+        let repo = InMemoryPatientRepository()
+        let bus = InMemoryEventBus()
+        let patient = try PatientFixture.createMinimal() // status = waitlisted
+        await repo.seed(patient)
+
+        let handler = AddFamilyMemberCommandHandler(
+            patientRepository: repo, eventBus: bus, lookupValidator: AllowAllLookupValidator()
+        )
+
+        let prRelId = patient.familyMembers.first!.relationshipId.description
+
+        await #expect(throws: AddFamilyMemberError.patientNotActive(reason: "PATIENT_IS_WAITLISTED")) {
+            try await handler.handle(AddFamilyMemberCommand(
+                patientId: patient.id.description,
+                memberPersonId: Self.newMemberId,
+                relationship: UUID().uuidString,
+                isResiding: true,
+                isCaregiver: false,
+                hasDisability: false,
+                requiredDocuments: [],
+                birthDate: Date(timeIntervalSince1970: 1_000_000_000),
+                prRelationshipId: prRelId,
+                actorId: "actor-1"
+            ))
+        }
+    }
+
     @Test("Deve falhar com lookup de parentesco invalido")
     func invalidRelationshipLookup() async throws {
         let repo = InMemoryPatientRepository()

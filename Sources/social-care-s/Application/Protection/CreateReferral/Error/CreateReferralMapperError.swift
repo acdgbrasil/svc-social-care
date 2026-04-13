@@ -11,11 +11,15 @@ extension CreateReferralCommandHandler {
             switch e {
             case .referralTargetOutsideBoundary(let targetId):
                 return .targetOutsideBoundary(targetId)
+            case .patientIsWaitlisted:
+                return .patientNotActive(reason: "PATIENT_IS_WAITLISTED")
+            case .patientIsDischarged:
+                return .patientNotActive(reason: "PATIENT_IS_DISCHARGED")
             default:
-                break
+                return .persistenceMappingFailure(issues: [String(describing: e)])
             }
         }
-        
+
         if let e = error as? ReferralError {
             switch e {
             case .dateInFuture:

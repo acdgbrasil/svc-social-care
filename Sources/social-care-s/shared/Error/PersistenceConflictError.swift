@@ -6,3 +6,9 @@ import Foundation
 public enum PersistenceConflictError: Error, Sendable {
     case uniqueViolation(constraint: String, detail: String?)
 }
+
+/// Erro lançado por mappers quando dados persistidos estão em estado inconsistente.
+/// Indica corrupção ou evolução de schema sem migração.
+public enum PersistenceDataIntegrityError: Error, Sendable {
+    case invalidEnumValue(column: String, value: String, expected: String)
+}

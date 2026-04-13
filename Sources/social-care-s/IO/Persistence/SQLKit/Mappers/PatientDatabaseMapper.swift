@@ -219,9 +219,10 @@ struct PatientDatabaseMapper {
             intakeInfo: intakeInfo,
             status: try {
                 guard let s = PatientStatus(rawValue: patient.status) else {
-                    throw PersistenceConflictError.uniqueViolation(
-                        constraint: "status_enum",
-                        detail: "Valor de status invalido no banco: '\(patient.status)'. Esperado: waitlisted, active, discharged."
+                    throw PersistenceDataIntegrityError.invalidEnumValue(
+                        column: "status",
+                        value: patient.status,
+                        expected: "waitlisted, active, discharged"
                     )
                 }
                 return s

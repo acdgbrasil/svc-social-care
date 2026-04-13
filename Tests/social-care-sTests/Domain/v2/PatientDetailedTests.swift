@@ -31,7 +31,6 @@ private func createValidPatient() throws -> Patient {
     let prId = try LookupId(UUID().uuidString)
     let prMember = try FamilyMember(personId: pId, relationshipId: prId, isPrimaryCaregiver: true, residesWithPatient: true, birthDate: .now)
     var patient = try Patient(id: PatientId(), personId: pId, diagnoses: [try Diagnosis(id: try ICDCode("B201"), date: .now, description: "D", now: .now)], familyMembers: [prMember], prRelationshipId: prId, actorId: "test-actor")
-    try patient.admit(actorId: "setup")
     patient.clearEvents()
     return patient
 }

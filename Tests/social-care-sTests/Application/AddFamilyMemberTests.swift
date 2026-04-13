@@ -97,7 +97,7 @@ struct AddFamilyMemberTests {
     func patientIsWaitlisted() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal() // status = waitlisted
+        let patient = try PatientFixture.createMinimalWaitlisted()
         await repo.seed(patient)
 
         let handler = AddFamilyMemberCommandHandler(

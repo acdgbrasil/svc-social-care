@@ -29,24 +29,33 @@ enum PatientFixture {
         )
     }
 
-    /// Creates a minimal patient and admits it (status = .active), clearing setup events.
+    /// Creates a minimal patient with status = .waitlisted, for testing waitlist flows.
+    static func createMinimalWaitlisted(
+        personId: String = defaultPersonId,
+        actorId: String = defaultActorId
+    ) throws -> Patient {
+        var patient = try createMinimal(personId: personId, actorId: actorId)
+        patient.status = .waitlisted
+        patient.clearEvents()
+        return patient
+    }
+
+    /// Creates a minimal patient (status = .active by default), clearing setup events.
     static func createMinimalActive(
         personId: String = defaultPersonId,
         actorId: String = defaultActorId
     ) throws -> Patient {
         var patient = try createMinimal(personId: personId, actorId: actorId)
-        try patient.admit(actorId: "setup")
         patient.clearEvents()
         return patient
     }
 
-    /// Creates a patient with a female PR and admits it (status = .active), clearing setup events.
+    /// Creates a patient with a female PR (status = .active by default), clearing setup events.
     static func createWithFemalePRActive(
         personId: String = defaultPersonId,
         actorId: String = defaultActorId
     ) throws -> Patient {
         var patient = try createWithFemalePR(personId: personId, actorId: actorId)
-        try patient.admit(actorId: "setup")
         patient.clearEvents()
         return patient
     }
@@ -85,7 +94,7 @@ enum PatientFixture {
         )
     }
 
-    /// Creates a patient with an additional member and admits it (status = .active), clearing setup events.
+    /// Creates a patient with an additional member (status = .active by default), clearing setup events.
     static func createWithAdditionalMemberActive(
         personId: String = defaultPersonId,
         memberId: String = defaultMemberId,
@@ -93,7 +102,6 @@ enum PatientFixture {
         actorId: String = defaultActorId
     ) throws -> Patient {
         var patient = try createWithAdditionalMember(personId: personId, memberId: memberId, memberBirthDate: memberBirthDate, actorId: actorId)
-        try patient.admit(actorId: "setup")
         patient.clearEvents()
         return patient
     }

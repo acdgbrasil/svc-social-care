@@ -17,33 +17,29 @@ struct AdmitPatientTests {
         )
     }
 
-    /// Creates a waitlisted patient (default from createMinimal), clears events, seeds in repo.
+    /// Creates a waitlisted patient, clears events, seeds in repo.
     private static func seedWaitlistedPatient(
         repo: InMemoryPatientRepository
     ) async throws -> Patient {
-        var patient = try PatientFixture.createMinimal()
-        patient.clearEvents()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         await repo.seed(patient)
         return patient
     }
 
-    /// Creates an active patient (waitlisted + admit), clears events, seeds in repo.
+    /// Creates an active patient (default), clears events, seeds in repo.
     private static func seedActivePatient(
         repo: InMemoryPatientRepository
     ) async throws -> Patient {
-        var patient = try PatientFixture.createMinimal()
-        try patient.admit(actorId: "setup")
-        patient.clearEvents()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
         return patient
     }
 
-    /// Creates a discharged patient (waitlisted + admit + discharge), clears events, seeds in repo.
+    /// Creates a discharged patient (active + discharge), clears events, seeds in repo.
     private static func seedDischargedPatient(
         repo: InMemoryPatientRepository
     ) async throws -> Patient {
-        var patient = try PatientFixture.createMinimal()
-        try patient.admit(actorId: "setup")
+        var patient = try PatientFixture.createMinimalActive()
         try patient.discharge(
             reason: .caseObjectiveAchieved,
             notes: nil,

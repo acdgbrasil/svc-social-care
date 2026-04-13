@@ -11,7 +11,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve admitir paciente waitlisted com sucesso")
     func admitWaitlistedPatient() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         #expect(patient.status == .waitlisted)
 
         try patient.admit(actorId: Self.actorId)
@@ -21,7 +21,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve registrar PatientAdmittedEvent ao admitir")
     func admitRecordsEvent() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         let versionBefore = patient.version
         patient.clearEvents()
 
@@ -40,7 +40,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve falhar ao admitir paciente ja ativo")
     func admitAlreadyActiveThrows() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         try patient.admit(actorId: "setup")
 
         #expect(throws: PatientError.alreadyActive) {
@@ -50,7 +50,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve falhar ao admitir paciente desligado")
     func admitDischargedThrows() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         try patient.admit(actorId: "setup")
         try patient.discharge(
             reason: .caseObjectiveAchieved,
@@ -67,7 +67,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve retirar paciente waitlisted da fila")
     func withdrawWaitlistedPatient() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         #expect(patient.status == .waitlisted)
 
         try patient.withdraw(
@@ -84,7 +84,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve registrar PatientWithdrawnFromWaitlistEvent")
     func withdrawRecordsEvent() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         patient.clearEvents()
 
         try patient.withdraw(
@@ -107,7 +107,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve falhar ao retirar paciente ja ativo")
     func withdrawActiveThrows() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         try patient.admit(actorId: "setup")
 
         #expect(throws: PatientError.alreadyActive) {
@@ -123,7 +123,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve falhar ao retirar paciente ja desligado")
     func withdrawDischargedThrows() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         try patient.admit(actorId: "setup")
         try patient.discharge(
             reason: .caseObjectiveAchieved,
@@ -142,7 +142,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve falhar ao retirar com reason=other sem notes")
     func withdrawOtherReasonWithoutNotesThrows() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
 
         #expect(throws: WithdrawInfoError.notesRequiredWhenReasonIsOther) {
             try patient.withdraw(
@@ -159,7 +159,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve falhar ao desligar paciente waitlisted")
     func dischargeWaitlistedThrows() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         #expect(patient.status == .waitlisted)
 
         #expect(throws: PatientError.cannotDischargeWaitlisted) {
@@ -175,7 +175,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve falhar ao readmitir paciente waitlisted")
     func readmitWaitlistedThrows() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         #expect(patient.status == .waitlisted)
 
         #expect(throws: PatientError.cannotReadmitWaitlisted) {
@@ -187,7 +187,7 @@ struct PatientWaitlistTests {
 
     @Test("Deve bloquear mutacoes em paciente waitlisted")
     func requireActiveBlocksWaitlisted() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         #expect(patient.status == .waitlisted)
 
         #expect(throws: PatientError.patientIsWaitlisted) {
@@ -199,7 +199,7 @@ struct PatientWaitlistTests {
 
     @Test("Ciclo completo: waitlisted -> active -> discharged -> readmit -> active")
     func fullWaitlistLifecycle() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalWaitlisted()
         #expect(patient.status == .waitlisted)
 
         // Step 1: Admit from waitlist

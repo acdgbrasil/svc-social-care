@@ -85,7 +85,7 @@ public struct Patient: EventSourcedAggregate, EventSourcedAggregateInternal {
     // MARK: - Lifecycle Status
 
     /// Status do paciente no sistema (lista de espera, ativo ou desligado).
-    public internal(set) var status: PatientStatus = .waitlisted
+    public internal(set) var status: PatientStatus = .active
 
     /// Informações do desligamento, preenchidas apenas quando status == .discharged.
     public internal(set) var dischargeInfo: DischargeInfo?

@@ -19,11 +19,11 @@ extension WithdrawFromWaitlistError: AppErrorConvertible {
     public var asAppError: AppError {
         switch self {
         case .patientNotFound(let id):
-            return appFailure("001", kind: "PatientNotFound", "Paciente nao encontrado: \(id).", category: .domainRuleViolation, severity: .warning, http: 404)
+            return appFailure("001", kind: "PatientNotFound", "Paciente nao encontrado.", category: .domainRuleViolation, severity: .warning, http: 404, safeContext: ["patientId": id])
         case .alreadyDischarged(let id):
-            return appFailure("002", kind: "AlreadyDischarged", "O paciente \(id) ja esta desligado.", category: .conflict, severity: .warning, http: 409)
+            return appFailure("002", kind: "AlreadyDischarged", "O paciente ja esta desligado.", category: .conflict, severity: .warning, http: 409, safeContext: ["patientId": id])
         case .patientIsActive(let id):
-            return appFailure("003", kind: "PatientIsActive", "Paciente ativo \(id) nao pode ser retirado da fila. Use discharge.", category: .conflict, severity: .warning, http: 409)
+            return appFailure("003", kind: "PatientIsActive", "Paciente ativo nao pode ser retirado da fila. Use discharge.", category: .conflict, severity: .warning, http: 409, safeContext: ["patientId": id])
         case .invalidReason(let value):
             return appFailure("004", kind: "InvalidReason", "Motivo de retirada invalido: '\(value)'.", category: .domainRuleViolation, severity: .warning, http: 400)
         case .notesRequiredForOtherReason:
@@ -35,13 +35,13 @@ extension WithdrawFromWaitlistError: AppErrorConvertible {
         }
     }
 
-    private func appFailure(_ subCode: String, kind: String, _ message: String, category: AppError.Category, severity: AppError.Severity, http: Int, context: [String: Any] = [:]) -> AppError {
+    private func appFailure(_ subCode: String, kind: String, _ message: String, category: AppError.Category, severity: AppError.Severity, http: Int, safeContext: [String: Any] = [:]) -> AppError {
         AppError(
             code: "\(Self.codePrefix)-\(subCode)",
             message: message,
             bc: Self.bc, module: Self.module, kind: kind,
-            context: context.mapValues { AnySendable($0) },
-            safeContext: [:],
+            context: [:],
+            safeContext: safeContext.mapValues { AnySendable($0) },
             observability: .init(category: category, severity: severity, fingerprint: ["\(Self.codePrefix)-\(subCode)"], tags: ["use_case": "withdraw_from_waitlist"]),
             http: http
         )

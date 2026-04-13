@@ -217,7 +217,16 @@ struct PatientDatabaseMapper {
             socialIdentity: socialIdentity,
             placementHistory: placementHistory,
             intakeInfo: intakeInfo,
-            status: PatientStatus(rawValue: patient.status) ?? .active,
+            status: try {
+                guard let s = PatientStatus(rawValue: patient.status) else {
+                    throw PersistenceDataIntegrityError.invalidEnumValue(
+                        column: "status",
+                        value: patient.status,
+                        expected: "waitlisted, active, discharged"
+                    )
+                }
+                return s
+            }(),
             dischargeInfo: dischargeInfo,
             withdrawInfo: withdrawInfo
         )

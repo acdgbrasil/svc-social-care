@@ -82,13 +82,14 @@ actor InMemoryPatientRepository: PatientRepository {
         // Ordenar por ID para cursor estável
         patients.sort { $0.id.description < $1.id.description }
 
+        // totalCount reflete o total de matches ANTES do cursor (como o repo real)
+        let totalCount = patients.count
+
         // Cursor: pular até depois do cursor
         if let cursor {
             let cursorStr = cursor.description
             patients = patients.filter { $0.id.description > cursorStr }
         }
-
-        let totalCount = (search != nil || status != nil) ? patients.count : storage.count
         let hasMore = patients.count > limit
         let page = Array(patients.prefix(limit))
 

@@ -11,7 +11,7 @@ extension ReadmitPatientCommandHandler {
             case .alreadyActive:
                 return ReadmitPatientError.alreadyActive(patientId)
             case .cannotReadmitWaitlisted:
-                return ReadmitPatientError.alreadyActive(patientId)
+                return ReadmitPatientError.cannotReadmitWaitlisted(patientId)
             default:
                 return error
             }
@@ -21,7 +21,7 @@ extension ReadmitPatientCommandHandler {
             switch e {
             case .notesExceedMaxLength(let length):
                 return ReadmitPatientError.notesExceedMaxLength(length)
-            case .notesRequiredWhenReasonIsOther:
+            default:
                 return error
             }
         }

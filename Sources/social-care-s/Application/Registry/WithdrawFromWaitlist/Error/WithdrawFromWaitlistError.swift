@@ -19,11 +19,11 @@ extension WithdrawFromWaitlistError: AppErrorConvertible {
     public var asAppError: AppError {
         switch self {
         case .patientNotFound(let id):
-            return appFailure("001", kind: "PatientNotFound", "Paciente nao encontrado: \(id).", category: .domainRuleViolation, severity: .warning, http: 404)
+            return appFailure("001", kind: "PatientNotFound", "Paciente nao encontrado.", category: .domainRuleViolation, severity: .warning, http: 404, context: ["patientId": id])
         case .alreadyDischarged(let id):
-            return appFailure("002", kind: "AlreadyDischarged", "O paciente \(id) ja esta desligado.", category: .conflict, severity: .warning, http: 409)
+            return appFailure("002", kind: "AlreadyDischarged", "O paciente ja esta desligado.", category: .conflict, severity: .warning, http: 409, context: ["patientId": id])
         case .patientIsActive(let id):
-            return appFailure("003", kind: "PatientIsActive", "Paciente ativo \(id) nao pode ser retirado da fila. Use discharge.", category: .conflict, severity: .warning, http: 409)
+            return appFailure("003", kind: "PatientIsActive", "Paciente ativo nao pode ser retirado da fila. Use discharge.", category: .conflict, severity: .warning, http: 409, context: ["patientId": id])
         case .invalidReason(let value):
             return appFailure("004", kind: "InvalidReason", "Motivo de retirada invalido: '\(value)'.", category: .domainRuleViolation, severity: .warning, http: 400)
         case .notesRequiredForOtherReason:

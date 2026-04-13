@@ -16,11 +16,11 @@ extension AdmitPatientError: AppErrorConvertible {
     public var asAppError: AppError {
         switch self {
         case .patientNotFound(let id):
-            return appFailure("001", kind: "PatientNotFound", "Paciente nao encontrado: \(id).", category: .domainRuleViolation, severity: .warning, http: 404)
+            return appFailure("001", kind: "PatientNotFound", "Paciente nao encontrado.", category: .domainRuleViolation, severity: .warning, http: 404, context: ["patientId": id])
         case .alreadyActive(let id):
-            return appFailure("002", kind: "AlreadyActive", "O paciente \(id) ja esta ativo.", category: .conflict, severity: .warning, http: 409)
+            return appFailure("002", kind: "AlreadyActive", "O paciente ja esta ativo.", category: .conflict, severity: .warning, http: 409, context: ["patientId": id])
         case .cannotAdmitDischarged(let id):
-            return appFailure("003", kind: "CannotAdmitDischarged", "Paciente desligado \(id) nao pode ser admitido.", category: .conflict, severity: .warning, http: 409)
+            return appFailure("003", kind: "CannotAdmitDischarged", "Paciente desligado nao pode ser admitido diretamente. Use readmit.", category: .conflict, severity: .warning, http: 409, context: ["patientId": id])
         case .invalidPatientIdFormat(let value):
             return appFailure("004", kind: "InvalidPatientIdFormat", "Formato de ID do paciente invalido: '\(value)'.", category: .dataConsistencyIncident, severity: .error, http: 400)
         }

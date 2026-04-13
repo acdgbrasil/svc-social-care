@@ -11,9 +11,7 @@ extension DischargePatientCommandHandler {
             case .alreadyDischarged:
                 return DischargePatientError.alreadyDischarged(patientId)
             case .cannotDischargeWaitlisted:
-                return DischargePatientError.alreadyDischarged(patientId)
-            case .patientIsDischarged, .patientIsWaitlisted:
-                return DischargePatientError.patientNotFound(patientId)
+                return DischargePatientError.cannotDischargeWaitlisted(patientId)
             default:
                 return error
             }

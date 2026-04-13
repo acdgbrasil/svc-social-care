@@ -6,6 +6,7 @@ public enum ReadmitPatientError: Error, Sendable, Equatable {
     case alreadyActive(String)
     case invalidPatientIdFormat(String)
     case notesExceedMaxLength(Int)
+    case cannotReadmitWaitlisted(String)
 }
 
 extension ReadmitPatientError: AppErrorConvertible {
@@ -16,13 +17,15 @@ extension ReadmitPatientError: AppErrorConvertible {
     public var asAppError: AppError {
         switch self {
         case .patientNotFound(let id):
-            return appFailure("002", kind: "PatientNotFound", "Paciente não encontrado: \(id).", category: .domainRuleViolation, severity: .warning, http: 404)
+            return appFailure("002", kind: "PatientNotFound", "Paciente não encontrado.", category: .domainRuleViolation, severity: .warning, http: 404, context: ["patientId": id])
         case .alreadyActive(let id):
-            return appFailure("001", kind: "AlreadyActive", "O paciente \(id) já está ativo.", category: .conflict, severity: .warning, http: 409)
+            return appFailure("001", kind: "AlreadyActive", "O paciente já está ativo.", category: .conflict, severity: .warning, http: 409, context: ["patientId": id])
         case .invalidPatientIdFormat(let value):
             return appFailure("003", kind: "InvalidPatientIdFormat", "Formato de ID do paciente inválido: '\(value)'.", category: .dataConsistencyIncident, severity: .error, http: 400)
         case .notesExceedMaxLength(let length):
             return appFailure("004", kind: "NotesExceedMaxLength", "Observações excedem o limite de 1000 caracteres (informado: \(length)).", category: .domainRuleViolation, severity: .warning, http: 400)
+        case .cannotReadmitWaitlisted:
+            return appFailure("005", kind: "CannotReadmitWaitlisted", "Paciente em lista de espera não pode ser readmitido. Use admit.", category: .conflict, severity: .warning, http: 409)
         }
     }
 

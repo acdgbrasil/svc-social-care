@@ -144,7 +144,7 @@ extension Patient {
             personId: personId.description,
             actorId: actorId,
             reason: reason.rawValue,
-            notes: notes,
+            notes: info.notes,
             occurredAt: now.date
         ))
     }
@@ -167,6 +167,7 @@ extension Patient {
         }
         self.status = .active
         self.dischargeInfo = nil
+        self.withdrawInfo = nil
         self.recordEvent(PatientReadmittedEvent(
             patientId: id.description,
             personId: personId.description,
@@ -219,7 +220,7 @@ extension Patient {
                 personId: personId.description,
                 actorId: actorId,
                 reason: reason.rawValue,
-                notes: notes,
+                notes: info.notes,
                 occurredAt: now.date
             ))
         }

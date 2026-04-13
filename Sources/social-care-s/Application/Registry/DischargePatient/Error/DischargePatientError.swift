@@ -8,6 +8,7 @@ public enum DischargePatientError: Error, Sendable, Equatable {
     case notesRequiredForOtherReason
     case notesExceedMaxLength(Int)
     case invalidPatientIdFormat(String)
+    case cannotDischargeWaitlisted(String)
 }
 
 extension DischargePatientError: AppErrorConvertible {
@@ -18,9 +19,9 @@ extension DischargePatientError: AppErrorConvertible {
     public var asAppError: AppError {
         switch self {
         case .patientNotFound(let id):
-            return appFailure("004", kind: "PatientNotFound", "Paciente não encontrado: \(id).", category: .domainRuleViolation, severity: .warning, http: 404)
+            return appFailure("004", kind: "PatientNotFound", "Paciente não encontrado.", category: .domainRuleViolation, severity: .warning, http: 404, context: ["patientId": id])
         case .alreadyDischarged(let id):
-            return appFailure("001", kind: "AlreadyDischarged", "O paciente \(id) já está desligado.", category: .conflict, severity: .warning, http: 409)
+            return appFailure("001", kind: "AlreadyDischarged", "O paciente já está desligado.", category: .conflict, severity: .warning, http: 409, context: ["patientId": id])
         case .invalidReason(let value):
             return appFailure("002", kind: "InvalidReason", "Motivo de desligamento inválido: '\(value)'.", category: .domainRuleViolation, severity: .warning, http: 400)
         case .notesRequiredForOtherReason:
@@ -29,6 +30,8 @@ extension DischargePatientError: AppErrorConvertible {
             return appFailure("005", kind: "NotesExceedMaxLength", "Observações excedem o limite de 1000 caracteres (informado: \(length)).", category: .domainRuleViolation, severity: .warning, http: 400)
         case .invalidPatientIdFormat(let value):
             return appFailure("006", kind: "InvalidPatientIdFormat", "Formato de ID do paciente inválido: '\(value)'.", category: .dataConsistencyIncident, severity: .error, http: 400)
+        case .cannotDischargeWaitlisted:
+            return appFailure("007", kind: "CannotDischargeWaitlisted", "Paciente em lista de espera não pode ser desligado. Use withdraw.", category: .conflict, severity: .warning, http: 409)
         }
     }
 

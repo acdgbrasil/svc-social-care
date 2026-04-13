@@ -22,5 +22,7 @@ extension DomainEventRegistry {
         self.register(IntakeInfoUpdatedEvent.self)
         self.register(PatientDischargedEvent.self)
         self.register(PatientReadmittedEvent.self)
+        self.register(PatientAdmittedEvent.self)
+        self.register(PatientWithdrawnFromWaitlistEvent.self)
     }
 }

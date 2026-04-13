@@ -9,7 +9,7 @@ struct CreateReferralTests {
     func successfulCreation() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = CreateReferralCommandHandler(repository: repo, eventBus: bus)
@@ -35,7 +35,7 @@ struct CreateReferralTests {
     func invalidDestinationService() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = CreateReferralCommandHandler(repository: repo, eventBus: bus)
@@ -73,8 +73,8 @@ struct CreateReferralTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
 
-        let p1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
-        let p2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let p1 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
+        let p2 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
         await repo.seed(p1)
         await repo.seed(p2)
 

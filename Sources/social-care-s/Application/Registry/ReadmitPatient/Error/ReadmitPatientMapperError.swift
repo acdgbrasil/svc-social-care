@@ -1,36 +1,35 @@
 import Foundation
 
 extension ReadmitPatientCommandHandler {
-    /// Mapeia erros genéricos ou de domínio para o erro específico do Caso de Uso.
-    public func mapError(_ error: Error, patientId: String) -> ReadmitPatientError {
-        if let e = error as? ReadmitPatientError {
-            return e
-        }
+    /// Mapeia erros de domínio para o erro específico do Caso de Uso.
+    /// Erros não reconhecidos são propagados sem mascaramento.
+    public func mapError(_ error: Error, patientId: String) -> any Error {
+        if error is ReadmitPatientError { return error }
 
         if let e = error as? PatientError {
             switch e {
             case .alreadyActive:
-                return .alreadyActive(patientId)
+                return ReadmitPatientError.alreadyActive(patientId)
+            case .cannotReadmitWaitlisted:
+                return ReadmitPatientError.alreadyActive(patientId)
             default:
-                return .patientNotFound(patientId)
+                return error
             }
         }
 
         if let e = error as? DischargeInfoError {
             switch e {
             case .notesExceedMaxLength(let length):
-                return .notesExceedMaxLength(length)
+                return ReadmitPatientError.notesExceedMaxLength(length)
             case .notesRequiredWhenReasonIsOther:
-                // Unreachable in readmit flow — readmit never creates DischargeInfo.
-                // Mapped defensively to avoid compiler warning on exhaustive switch.
-                return .alreadyActive(patientId)
+                return error
             }
         }
 
         if error is PatientIdError {
-            return .invalidPatientIdFormat(patientId)
+            return ReadmitPatientError.invalidPatientIdFormat(patientId)
         }
 
-        return .patientNotFound(patientId)
+        return error
     }
 }

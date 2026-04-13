@@ -317,6 +317,11 @@ struct ReadmitPatientRequest: Content {
     let notes: String?
 }
 
+struct WithdrawPatientRequest: Content {
+    let reason: String
+    let notes: String?
+}
+
 // MARK: - Care
 
 struct RegisterAppointmentRequest: Content {

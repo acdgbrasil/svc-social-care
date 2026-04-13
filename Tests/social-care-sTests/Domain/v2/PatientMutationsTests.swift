@@ -70,7 +70,9 @@ private func createMinimalPatient() throws -> Patient {
     let pId = PersonId()
     let prId = try LookupId(UUID().uuidString)
     let prMember = FamilyMember(personId: pId, relationshipId: prId, isPrimaryCaregiver: true, residesWithPatient: true, birthDate: .now)
-    let patient = try Patient(id: PatientId(), personId: pId, diagnoses: [try createDiagnosis()], familyMembers: [prMember], prRelationshipId: prId, actorId: "test-actor")
+    var patient = try Patient(id: PatientId(), personId: pId, diagnoses: [try createDiagnosis()], familyMembers: [prMember], prRelationshipId: prId, actorId: "test-actor")
+    try patient.admit(actorId: "setup")
+    patient.clearEvents()
     return patient
 }
 

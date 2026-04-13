@@ -102,7 +102,7 @@ extension ListPatientsError: AppErrorConvertible {
         case .invalidStatusFilter(let value):
             return AppError(
                 code: "\(Self.codePrefix)-003",
-                message: "Status filter inválido: '\(value)'. Valores aceitos: active, discharged.",
+                message: "Status filter inválido: '\(value)'. Valores aceitos: waitlisted, active, discharged.",
                 bc: Self.bc, module: Self.module, kind: "InvalidStatusFilter",
                 context: [:], safeContext: [:],
                 observability: .init(

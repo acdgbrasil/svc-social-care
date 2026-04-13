@@ -29,6 +29,28 @@ enum PatientFixture {
         )
     }
 
+    /// Creates a minimal patient and admits it (status = .active), clearing setup events.
+    static func createMinimalActive(
+        personId: String = defaultPersonId,
+        actorId: String = defaultActorId
+    ) throws -> Patient {
+        var patient = try createMinimal(personId: personId, actorId: actorId)
+        try patient.admit(actorId: "setup")
+        patient.clearEvents()
+        return patient
+    }
+
+    /// Creates a patient with a female PR and admits it (status = .active), clearing setup events.
+    static func createWithFemalePRActive(
+        personId: String = defaultPersonId,
+        actorId: String = defaultActorId
+    ) throws -> Patient {
+        var patient = try createWithFemalePR(personId: personId, actorId: actorId)
+        try patient.admit(actorId: "setup")
+        patient.clearEvents()
+        return patient
+    }
+
     static func createWithFemalePR(
         personId: String = defaultPersonId,
         actorId: String = defaultActorId
@@ -61,6 +83,19 @@ enum PatientFixture {
             prRelationshipId: prId,
             actorId: actorId
         )
+    }
+
+    /// Creates a patient with an additional member and admits it (status = .active), clearing setup events.
+    static func createWithAdditionalMemberActive(
+        personId: String = defaultPersonId,
+        memberId: String = defaultMemberId,
+        memberBirthDate: String = "2010-06-15T00:00:00Z",
+        actorId: String = defaultActorId
+    ) throws -> Patient {
+        var patient = try createWithAdditionalMember(personId: personId, memberId: memberId, memberBirthDate: memberBirthDate, actorId: actorId)
+        try patient.admit(actorId: "setup")
+        patient.clearEvents()
+        return patient
     }
 
     static func createWithAdditionalMember(

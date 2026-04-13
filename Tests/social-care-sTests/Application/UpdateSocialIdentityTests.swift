@@ -9,7 +9,7 @@ struct UpdateSocialIdentityTests {
     func successfulUpdate() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdateSocialIdentityCommandHandler(
@@ -38,7 +38,7 @@ struct UpdateSocialIdentityTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
         let lookup = InMemoryLookupValidator()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdateSocialIdentityCommandHandler(

@@ -9,7 +9,7 @@ struct UpdateCommunitySupportNetworkTests {
     func successfulUpdate() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdateCommunitySupportNetworkCommandHandler(repository: repo, eventBus: bus)
@@ -87,8 +87,8 @@ struct UpdateCommunitySupportNetworkTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
 
-        let patient1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
-        let patient2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let patient1 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
+        let patient2 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
         await repo.seed(patient1)
         await repo.seed(patient2)
 

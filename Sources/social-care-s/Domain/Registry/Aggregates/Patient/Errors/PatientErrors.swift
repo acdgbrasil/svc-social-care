@@ -20,6 +20,11 @@ public enum PatientError: Error, Sendable, Equatable {
     case alreadyActive
     case patientIsDischarged
 
+    // Versão 2.2 - Lista de Espera
+    case cannotAdmitDischarged
+    case cannotDischargeWaitlisted
+    case cannotReadmitWaitlisted
+    case patientIsWaitlisted
 }
 
 extension PatientError: AppErrorConvertible {
@@ -86,6 +91,58 @@ extension PatientError: AppErrorConvertible {
                 observability: .init(
                     category: .conflict, severity: .warning,
                     fingerprint: ["\(Self.codePrefix)-014"],
+                    tags: ["aggregate": "patient"]
+                ),
+                http: 409
+            )
+        case .cannotAdmitDischarged:
+            return AppError(
+                code: "\(Self.codePrefix)-015",
+                message: "Paciente desligado não pode ser admitido diretamente. Use readmit primeiro.",
+                bc: Self.bc, module: Self.module, kind: "CannotAdmitDischarged",
+                context: [:], safeContext: [:],
+                observability: .init(
+                    category: .conflict, severity: .warning,
+                    fingerprint: ["\(Self.codePrefix)-015"],
+                    tags: ["aggregate": "patient"]
+                ),
+                http: 409
+            )
+        case .cannotDischargeWaitlisted:
+            return AppError(
+                code: "\(Self.codePrefix)-016",
+                message: "Paciente em lista de espera não pode ser desligado. Use withdraw.",
+                bc: Self.bc, module: Self.module, kind: "CannotDischargeWaitlisted",
+                context: [:], safeContext: [:],
+                observability: .init(
+                    category: .conflict, severity: .warning,
+                    fingerprint: ["\(Self.codePrefix)-016"],
+                    tags: ["aggregate": "patient"]
+                ),
+                http: 409
+            )
+        case .cannotReadmitWaitlisted:
+            return AppError(
+                code: "\(Self.codePrefix)-017",
+                message: "Paciente em lista de espera não pode ser readmitido. Use admit.",
+                bc: Self.bc, module: Self.module, kind: "CannotReadmitWaitlisted",
+                context: [:], safeContext: [:],
+                observability: .init(
+                    category: .conflict, severity: .warning,
+                    fingerprint: ["\(Self.codePrefix)-017"],
+                    tags: ["aggregate": "patient"]
+                ),
+                http: 409
+            )
+        case .patientIsWaitlisted:
+            return AppError(
+                code: "\(Self.codePrefix)-019",
+                message: "Operação não permitida: o paciente está na lista de espera. Admita o paciente antes de realizar alterações.",
+                bc: Self.bc, module: Self.module, kind: "PatientIsWaitlisted",
+                context: [:], safeContext: [:],
+                observability: .init(
+                    category: .conflict, severity: .warning,
+                    fingerprint: ["\(Self.codePrefix)-019"],
                     tags: ["aggregate": "patient"]
                 ),
                 http: 409

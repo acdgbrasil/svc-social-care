@@ -110,6 +110,11 @@ struct PatientModel: Codable {
     let discharged_at: Date?
     let discharged_by: String?
 
+    // withdraw
+    let withdraw_reason: String?
+    let withdraw_notes: String?
+    let withdrawn_at: Date?
+    let withdrawn_by: String?
 }
 
 // MARK: - Existing Child Tables

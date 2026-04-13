@@ -86,8 +86,9 @@ extension Patient {
         socialIdentity: SocialIdentity? = nil,
         placementHistory: PlacementHistory? = nil,
         intakeInfo: IngressInfo? = nil,
-        status: PatientStatus = .active,
-        dischargeInfo: DischargeInfo? = nil
+        status: PatientStatus = .waitlisted,
+        dischargeInfo: DischargeInfo? = nil,
+        withdrawInfo: WithdrawInfo? = nil
     ) -> Patient {
         var patient = Patient(
             id: id,
@@ -115,6 +116,7 @@ extension Patient {
         patient.intakeInfo = intakeInfo
         patient.status = status
         patient.dischargeInfo = dischargeInfo
+        patient.withdrawInfo = withdrawInfo
 
         return patient
     }
@@ -126,8 +128,13 @@ extension Patient {
     /// - Throws: `PatientError.alreadyDischarged` se o status atual não for `.active`.
     /// - Throws: `DischargeInfoError` se a validação do `DischargeInfo` falhar.
     public mutating func discharge(reason: DischargeReason, notes: String?, actorId: String, now: TimeStamp = .now) throws {
-        guard status == .active else {
+        switch status {
+        case .active:
+            break
+        case .discharged:
             throw PatientError.alreadyDischarged
+        case .waitlisted:
+            throw PatientError.cannotDischargeWaitlisted
         }
         let info = try DischargeInfo(reason: reason, notes: notes, dischargedAt: now, dischargedBy: actorId)
         self.status = .discharged
@@ -147,8 +154,13 @@ extension Patient {
     /// - Throws: `PatientError.alreadyActive` se o status atual não for `.discharged`.
     /// - Throws: `DischargeInfoError.notesExceedMaxLength` se as notas excederem 1000 caracteres.
     public mutating func readmit(notes: String?, actorId: String, now: TimeStamp = .now) throws {
-        guard status == .discharged else {
+        switch status {
+        case .discharged:
+            break
+        case .active:
             throw PatientError.alreadyActive
+        case .waitlisted:
+            throw PatientError.cannotReadmitWaitlisted
         }
         if let notes, notes.count > 1000 {
             throw DischargeInfoError.notesExceedMaxLength(notes.count)
@@ -162,6 +174,55 @@ extension Patient {
             notes: notes,
             occurredAt: now.date
         ))
+    }
+
+    // MARK: - Waitlist Lifecycle
+
+    /// Admite um paciente da lista de espera para acompanhamento ativo.
+    ///
+    /// - Throws: `PatientError.alreadyActive` se já estiver ativo.
+    /// - Throws: `PatientError.cannotAdmitDischarged` se estiver desligado.
+    public mutating func admit(actorId: String, now: TimeStamp = .now) throws {
+        switch status {
+        case .active:
+            throw PatientError.alreadyActive
+        case .discharged:
+            throw PatientError.cannotAdmitDischarged
+        case .waitlisted:
+            self.status = .active
+            self.recordEvent(PatientAdmittedEvent(
+                patientId: id.description,
+                personId: personId.description,
+                actorId: actorId,
+                occurredAt: now.date
+            ))
+        }
+    }
+
+    /// Remove o paciente da lista de espera sem admiti-lo.
+    ///
+    /// - Throws: `PatientError.alreadyDischarged` se já estiver desligado.
+    /// - Throws: `PatientError.alreadyActive` se estiver ativo (use discharge ao invés).
+    /// - Throws: `WithdrawInfoError` se a validação do `WithdrawInfo` falhar.
+    public mutating func withdraw(reason: WithdrawReason, notes: String?, actorId: String, now: TimeStamp = .now) throws {
+        switch status {
+        case .discharged:
+            throw PatientError.alreadyDischarged
+        case .active:
+            throw PatientError.alreadyActive
+        case .waitlisted:
+            let info = try WithdrawInfo(reason: reason, notes: notes, withdrawnAt: now, withdrawnBy: actorId)
+            self.status = .discharged
+            self.withdrawInfo = info
+            self.recordEvent(PatientWithdrawnFromWaitlistEvent(
+                patientId: id.description,
+                personId: personId.description,
+                actorId: actorId,
+                reason: reason.rawValue,
+                notes: notes,
+                occurredAt: now.date
+            ))
+        }
     }
 
     /// Inicializador privado para uso exclusivo em factory e reconstituição.

@@ -9,7 +9,7 @@ struct RegisterAppointmentTests {
     func successfulRegistration() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = RegisterAppointmentCommandHandler(repository: repo, eventBus: bus)
@@ -36,7 +36,7 @@ struct RegisterAppointmentTests {
     func registrationWithDefaultType() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = RegisterAppointmentCommandHandler(repository: repo, eventBus: bus)
@@ -55,7 +55,7 @@ struct RegisterAppointmentTests {
     func invalidAppointmentType() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = RegisterAppointmentCommandHandler(repository: repo, eventBus: bus)
@@ -91,8 +91,8 @@ struct RegisterAppointmentTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
 
-        let p1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
-        let p2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let p1 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
+        let p2 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
         await repo.seed(p1)
         await repo.seed(p2)
 

@@ -55,7 +55,8 @@ actor InMemoryPatientRepository: PatientRepository {
             placementHistory: existing.placementHistory,
             intakeInfo: existing.intakeInfo,
             status: existing.status,
-            dischargeInfo: existing.dischargeInfo
+            dischargeInfo: existing.dischargeInfo,
+            withdrawInfo: existing.withdrawInfo
         )
         storage[patientId] = updated
     }

@@ -9,6 +9,7 @@ public enum UpdateSocialIdentityError: Error, Sendable, Equatable {
     case descriptionRequiredForOtherType
     case invalidLookupId(table: String, id: String)
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension UpdateSocialIdentityError: AppErrorConvertible {
@@ -30,6 +31,8 @@ extension UpdateSocialIdentityError: AppErrorConvertible {
             return appFailure("006", kind: "DescriptionRequiredForOtherType", "Descrição detalhada é obrigatória para este tipo de identidade social.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .invalidLookupId(let table, let id):
             return appFailure("007", kind: "InvalidLookupId", "ID '\(id)' nao encontrado na tabela '\(table)'.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("008", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("005", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar a identidade social.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

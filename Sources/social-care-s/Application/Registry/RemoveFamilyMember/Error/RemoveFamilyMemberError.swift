@@ -6,6 +6,7 @@ public enum RemoveFamilyMemberError: Error, Sendable, Equatable {
     case familyMemberNotFound(personId: String)
     case invalidPersonIdFormat(String)
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension RemoveFamilyMemberError: AppErrorConvertible {
@@ -21,6 +22,8 @@ extension RemoveFamilyMemberError: AppErrorConvertible {
             return appFailure("002", kind: "FamilyMemberNotFound", "O membro da família com ID \(personId) não foi encontrado.", category: .domainRuleViolation, severity: .warning, http: 404, context: ["personId": personId])
         case .invalidPersonIdFormat(let value):
             return appFailure("003", kind: "InvalidPersonIdFormat", "ID de pessoa inválido: \(value)", category: .dataConsistencyIncident, severity: .error, http: 400)
+        case .patientNotActive(let reason):
+            return appFailure("005", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("004", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao remover o membro familiar.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

@@ -14,6 +14,7 @@ public enum UpdateSocioEconomicSituationError: Error, Sendable, Equatable {
     case amountInvalid(amount: Double)
     case duplicateBenefitNotAllowed(name: String)
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension UpdateSocioEconomicSituationError: AppErrorConvertible {
@@ -45,6 +46,8 @@ extension UpdateSocioEconomicSituationError: AppErrorConvertible {
             return appFailure("010", kind: "AmountInvalid", "Valor de benefício inválido: \(amount).", category: .domainRuleViolation, severity: .warning, http: 422)
         case .duplicateBenefitNotAllowed(let name):
             return appFailure("011", kind: "DuplicateBenefitNotAllowed", "Benefício duplicado: \(name).", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("013", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("012", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar a situação socioeconômica.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

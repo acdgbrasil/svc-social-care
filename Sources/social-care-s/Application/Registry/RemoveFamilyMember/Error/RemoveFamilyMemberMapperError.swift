@@ -11,6 +11,10 @@ extension RemoveFamilyMemberCommandHandler {
             switch e {
             case .familyMemberNotFound(let personId):
                 return .familyMemberNotFound(personId: personId)
+            case .patientIsWaitlisted:
+                return .patientNotActive(reason: "o paciente está na lista de espera. Admita o paciente antes de realizar alterações.")
+            case .patientIsDischarged:
+                return .patientNotActive(reason: "o paciente está desligado. Readmita o paciente antes de realizar alterações.")
             default:
                 break
             }

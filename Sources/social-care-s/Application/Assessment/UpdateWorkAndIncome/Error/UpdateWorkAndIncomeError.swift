@@ -5,6 +5,7 @@ public enum UpdateWorkAndIncomeError: Error, Sendable, Equatable {
     case invalidPersonIdFormat(String)
     case invalidLookupId(table: String, id: String)
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension UpdateWorkAndIncomeError: AppErrorConvertible {
@@ -20,6 +21,8 @@ extension UpdateWorkAndIncomeError: AppErrorConvertible {
             return appFailure("002", kind: "InvalidPersonIdFormat", "ID de pessoa invalido: \(value)", category: .dataConsistencyIncident, severity: .error, http: 400)
         case .invalidLookupId(let table, let id):
             return appFailure("003", kind: "InvalidLookupId", "ID '\(id)' nao encontrado na tabela '\(table)'.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("005", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("004", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar trabalho e renda.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

@@ -11,11 +11,15 @@ extension ReportRightsViolationCommandHandler {
             switch e {
             case .violationTargetOutsideBoundary(let targetId):
                 return .targetOutsideBoundary(targetId)
+            case .patientIsWaitlisted:
+                return .patientNotActive(reason: "o paciente está na lista de espera. Admita o paciente antes de realizar alterações.")
+            case .patientIsDischarged:
+                return .patientNotActive(reason: "o paciente está desligado. Readmita o paciente antes de realizar alterações.")
             default:
                 break
             }
         }
-        
+
         if let e = error as? RightsViolationReportError {
             switch e {
             case .reportDateInFuture:

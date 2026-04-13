@@ -5,6 +5,7 @@ public enum UpdateSocialHealthSummaryError: Error, Sendable, Equatable {
     case invalidPersonIdFormat(String)
     case functionalDependenciesEmpty
     case unexpectedFailure(String)
+    case patientNotActive(reason: String)
 }
 
 extension UpdateSocialHealthSummaryError: AppErrorConvertible {
@@ -20,6 +21,8 @@ extension UpdateSocialHealthSummaryError: AppErrorConvertible {
             return appFailure("002", kind: "InvalidPersonIdFormat", "ID de pessoa inválido: \(value)", http: 400)
         case .functionalDependenciesEmpty:
             return appFailure("003", kind: "FunctionalDependenciesEmpty", "A lista de dependências funcionais contém itens vazios.", http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("004", kind: "PatientNotActive", "Operação não permitida: \(reason)", http: 409)
         case .unexpectedFailure(let detail):
             return appFailure("999", kind: "UnexpectedFailure", "Falha inesperada: \(detail)", http: 500)
         }

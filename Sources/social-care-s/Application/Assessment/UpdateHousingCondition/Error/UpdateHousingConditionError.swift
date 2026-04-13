@@ -17,6 +17,7 @@ public enum UpdateHousingConditionError: Error, Sendable, Equatable {
     case bedroomsExceedRooms
     case bathroomsExceedRooms
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension UpdateHousingConditionError: AppErrorConvertible {
@@ -54,6 +55,8 @@ extension UpdateHousingConditionError: AppErrorConvertible {
             return appFailure("013", kind: "BedroomsExceedRooms", "O numero de dormitorios nao pode exceder o total de comodos.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .bathroomsExceedRooms:
             return appFailure("014", kind: "BathroomsExceedRooms", "O numero de banheiros nao pode exceder o total de comodos.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("016", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("015", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar as condicoes de moradia.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

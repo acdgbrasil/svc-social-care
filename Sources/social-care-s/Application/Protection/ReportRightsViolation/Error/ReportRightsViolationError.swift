@@ -11,6 +11,7 @@ public enum ReportRightsViolationError: Error, Sendable, Equatable {
     case emptyDescription
     case targetOutsideBoundary(String)
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension ReportRightsViolationError: AppErrorConvertible {
@@ -36,6 +37,8 @@ extension ReportRightsViolationError: AppErrorConvertible {
             return appFailure("007", kind: "EmptyDescription", "A descrição dos fatos não pode ser vazia.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .targetOutsideBoundary(let targetId):
             return appFailure("008", kind: "TargetOutsideBoundary", "A vítima da violação (\(targetId)) não pertence a este paciente ou sua família.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("010", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("009", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar o relato de violação.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

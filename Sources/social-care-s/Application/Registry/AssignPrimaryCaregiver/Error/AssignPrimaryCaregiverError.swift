@@ -6,6 +6,7 @@ public enum AssignPrimaryCaregiverError: Error, Sendable, Equatable {
     case familyMemberNotFound(personId: String)
     case invalidPersonIdFormat(String)
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension AssignPrimaryCaregiverError: AppErrorConvertible {
@@ -44,6 +45,15 @@ extension AssignPrimaryCaregiverError: AppErrorConvertible {
                 severity: .error,
                 http: 400,
                 context: ["value": value]
+            )
+        case .patientNotActive(let reason):
+            return appFailure(
+                "005",
+                kind: "PatientNotActive",
+                "Operação não permitida: \(reason)",
+                category: .conflict,
+                severity: .warning,
+                http: 409
             )
         case .persistenceMappingFailure(let issues):
             return appFailure(

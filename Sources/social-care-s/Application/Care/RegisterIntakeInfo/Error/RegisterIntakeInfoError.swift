@@ -5,6 +5,7 @@ public enum RegisterIntakeInfoError: Error, Sendable, Equatable {
     case invalidPersonIdFormat(String)
     case invalidLookupId(table: String, id: String)
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension RegisterIntakeInfoError: AppErrorConvertible {
@@ -20,6 +21,8 @@ extension RegisterIntakeInfoError: AppErrorConvertible {
             return appFailure("002", kind: "InvalidPersonIdFormat", "Invalid person ID format: \(value)", category: .dataConsistencyIncident, severity: .error, http: 400)
         case .invalidLookupId(let table, let id):
             return appFailure("003", kind: "InvalidLookupId", "Lookup ID '\(id)' not found in table '\(table)'.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("005", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("004", kind: "PersistenceMappingFailure", "Infrastructure failure while saving intake information.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

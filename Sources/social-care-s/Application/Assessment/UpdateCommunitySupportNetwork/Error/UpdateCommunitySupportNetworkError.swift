@@ -6,6 +6,7 @@ public enum UpdateCommunitySupportNetworkError: Error, Sendable, Equatable {
     case familyConflictsWhitespace
     case familyConflictsTooLong(limit: Int)
     case unexpectedFailure(String)
+    case patientNotActive(reason: String)
 }
 
 extension UpdateCommunitySupportNetworkError: AppErrorConvertible {
@@ -23,6 +24,8 @@ extension UpdateCommunitySupportNetworkError: AppErrorConvertible {
             return appFailure("003", kind: "FamilyConflictsWhitespace", "O campo de conflitos familiares não pode conter apenas espaços.", http: 422)
         case .familyConflictsTooLong(let limit):
             return appFailure("004", kind: "FamilyConflictsTooLong", "O campo de conflitos familiares excede o limite de \(limit) caracteres.", http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("005", kind: "PatientNotActive", "Operação não permitida: \(reason)", http: 409)
         case .unexpectedFailure(let detail):
             return appFailure("999", kind: "UnexpectedFailure", "Falha inesperada: \(detail)", http: 500)
         }

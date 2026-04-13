@@ -7,6 +7,7 @@ public enum UpdatePlacementHistoryError: Error, Sendable, Equatable {
     case invalidDateRange(memberId: String)
     case incompatibleSeparationSituation
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension UpdatePlacementHistoryError: AppErrorConvertible {
@@ -26,6 +27,8 @@ extension UpdatePlacementHistoryError: AppErrorConvertible {
             return appFailure("004", kind: "InvalidDateRange", "End date cannot be before start date for member: \(id)", category: .domainRuleViolation, severity: .error, http: 422)
         case .incompatibleSeparationSituation:
             return appFailure("005", kind: "IncompatibleSeparation", "The separation situation is incompatible with the family age composition.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("007", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("006", kind: "PersistenceMappingFailure", "Infrastructure failure while saving placement history.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

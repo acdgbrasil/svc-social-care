@@ -12,6 +12,7 @@ public enum RegisterAppointmentError: Error, Sendable, Equatable {
     case actionPlanTooLong(limit: Int)
     case dateInFuture
     case persistenceMappingFailure(issues: [String])
+    case patientNotActive(reason: String)
 }
 
 extension RegisterAppointmentError: AppErrorConvertible {
@@ -39,6 +40,8 @@ extension RegisterAppointmentError: AppErrorConvertible {
             return appFailure("008", kind: "ActionPlanTooLong", "O plano de ação excede o limite de \(limit) caracteres.", category: .domainRuleViolation, severity: .warning, http: 422)
         case .dateInFuture:
             return appFailure("009", kind: "DateInFuture", "A data do atendimento não pode estar no futuro.", category: .domainRuleViolation, severity: .warning, http: 422)
+        case .patientNotActive(let reason):
+            return appFailure("011", kind: "PatientNotActive", "Operação não permitida: \(reason)", category: .conflict, severity: .warning, http: 409)
         case .persistenceMappingFailure(let issues):
             return appFailure("010", kind: "PersistenceMappingFailure", "Falha de infraestrutura ao salvar o atendimento.", category: .infrastructureDependencyFailure, severity: .critical, http: 500, context: ["issues": issues])
         }

@@ -23,7 +23,7 @@ struct ReadmitPatientTests {
     private static func seedDischargedPatient(
         repo: InMemoryPatientRepository
     ) async throws -> Patient {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         try patient.discharge(
             reason: .caseObjectiveAchieved,
             notes: nil,
@@ -122,7 +122,7 @@ struct ReadmitPatientTests {
     func alreadyActive() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = ReadmitPatientCommandHandler(

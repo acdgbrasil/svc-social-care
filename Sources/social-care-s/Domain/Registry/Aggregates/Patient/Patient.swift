@@ -84,11 +84,14 @@ public struct Patient: EventSourcedAggregate, EventSourcedAggregateInternal {
 
     // MARK: - Lifecycle Status
 
-    /// Status do paciente no sistema (ativo ou desligado).
-    public internal(set) var status: PatientStatus = .active
+    /// Status do paciente no sistema (lista de espera, ativo ou desligado).
+    public internal(set) var status: PatientStatus = .waitlisted
 
     /// Informações do desligamento, preenchidas apenas quando status == .discharged.
     public internal(set) var dischargeInfo: DischargeInfo?
+
+    /// Informações da desistência/retirada da fila, preenchidas quando saiu da fila sem ser admitido.
+    public internal(set) var withdrawInfo: WithdrawInfo?
 
     // MARK: - Clinical Data
     
@@ -121,10 +124,15 @@ public struct Patient: EventSourcedAggregate, EventSourcedAggregateInternal {
 
     // MARK: - Lifecycle Guard
 
-    /// Verifica se o paciente está ativo. Lança erro se estiver desligado.
+    /// Verifica se o paciente está ativo. Lança erro apropriado se estiver desligado ou na lista de espera.
     public func requireActive() throws {
-        guard status == .active else {
+        switch status {
+        case .active:
+            return
+        case .discharged:
             throw PatientError.patientIsDischarged
+        case .waitlisted:
+            throw PatientError.patientIsWaitlisted
         }
     }
 

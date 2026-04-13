@@ -27,7 +27,7 @@ struct DischargePatientTests {
     func successfulDischarge() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = DischargePatientCommandHandler(
@@ -54,7 +54,7 @@ struct DischargePatientTests {
     func successfulDischargeWithOtherReason() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = DischargePatientCommandHandler(
@@ -77,7 +77,7 @@ struct DischargePatientTests {
     func eventPublishedAfterPersistence() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = DischargePatientCommandHandler(
@@ -119,7 +119,7 @@ struct DischargePatientTests {
     func alreadyDischarged() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         try patient.discharge(
             reason: .caseObjectiveAchieved,
             notes: nil,
@@ -159,7 +159,7 @@ struct DischargePatientTests {
     func invalidReason() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = DischargePatientCommandHandler(
@@ -178,7 +178,7 @@ struct DischargePatientTests {
     func otherReasonWithoutNotes() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = DischargePatientCommandHandler(
@@ -201,7 +201,7 @@ struct DischargePatientTests {
     func notesExceedMaxLength() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = DischargePatientCommandHandler(

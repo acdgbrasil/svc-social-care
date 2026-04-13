@@ -9,7 +9,7 @@ struct UpdateHealthStatusTests {
     func successfulUpdate() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let memberId = patient.personId.description
@@ -45,7 +45,7 @@ struct UpdateHealthStatusTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
         let lookup = InMemoryLookupValidator()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdateHealthStatusCommandHandler(
@@ -96,8 +96,8 @@ struct UpdateHealthStatusTests {
             repository: repo, eventBus: bus, lookupValidator: AllowAllLookupValidator()
         )
 
-        let p1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
-        let p2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let p1 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
+        let p2 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
         await repo.seed(p1)
         await repo.seed(p2)
 

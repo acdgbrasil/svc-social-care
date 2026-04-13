@@ -21,6 +21,8 @@ struct PatientController: RouteCollection {
         let lifecycle = patients.grouped(RoleGuardMiddleware("social_worker", "admin"))
         lifecycle.post(":patientId", "discharge", use: discharge)
         lifecycle.post(":patientId", "readmit", use: readmit)
+        lifecycle.post(":patientId", "admit", use: admit)
+        lifecycle.post(":patientId", "withdraw", use: withdraw)
     }
 
     // MARK: - Patient List
@@ -165,6 +167,32 @@ struct PatientController: RouteCollection {
             actorId: actorId
         )
         try await req.services.readmitPatient.handle(command)
+        return .noContent
+    }
+
+    // MARK: - Waitlist Lifecycle (Admit / Withdraw)
+
+    @Sendable
+    private func admit(req: Request) async throws -> HTTPStatus {
+        let actorId = try req.extractActorId()
+        let patientId = try req.parameters.require("patientId")
+        let command = AdmitPatientCommand(patientId: patientId, actorId: actorId)
+        try await req.services.admitPatient.handle(command)
+        return .noContent
+    }
+
+    @Sendable
+    private func withdraw(req: Request) async throws -> HTTPStatus {
+        let actorId = try req.extractActorId()
+        let patientId = try req.parameters.require("patientId")
+        let body = try req.content.decode(WithdrawPatientRequest.self)
+        let command = WithdrawFromWaitlistCommand(
+            patientId: patientId,
+            reason: body.reason,
+            notes: body.notes,
+            actorId: actorId
+        )
+        try await req.services.withdrawFromWaitlist.handle(command)
         return .noContent
     }
 

@@ -11,7 +11,7 @@ struct PatientDischargeTests {
 
     @Test("Deve desligar paciente ativo com sucesso")
     func dischargeActivePatient() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         #expect(patient.status == .active)
 
         try patient.discharge(
@@ -28,7 +28,7 @@ struct PatientDischargeTests {
 
     @Test("Deve registrar evento PatientDischargedEvent ao desligar")
     func dischargeRecordsEvent() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         let versionBefore = patient.version
         patient.clearEvents()
 
@@ -49,7 +49,7 @@ struct PatientDischargeTests {
 
     @Test("Deve desligar com reason=other e notes validas")
     func dischargeWithOtherReasonAndNotes() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
 
         try patient.discharge(
             reason: .other,
@@ -66,7 +66,7 @@ struct PatientDischargeTests {
 
     @Test("Deve falhar ao desligar paciente ja desligado")
     func dischargeAlreadyDischarged() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         try patient.discharge(
             reason: .caseObjectiveAchieved,
             notes: nil,
@@ -84,7 +84,7 @@ struct PatientDischargeTests {
 
     @Test("Deve falhar ao desligar com reason=other sem notes")
     func dischargeOtherReasonWithoutNotes() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
 
         #expect(throws: DischargeInfoError.notesRequiredWhenReasonIsOther) {
             try patient.discharge(
@@ -99,7 +99,7 @@ struct PatientDischargeTests {
 
     @Test("Deve falhar ao desligar com notes excedendo 1000 caracteres")
     func dischargeNotesExceedMaxLength() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         let longNotes = String(repeating: "x", count: 1001)
 
         #expect(throws: DischargeInfoError.notesExceedMaxLength(1001)) {
@@ -117,7 +117,7 @@ struct PatientDischargeTests {
 
     @Test("Deve readmitir paciente desligado com sucesso")
     func readmitDischargedPatient() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         try patient.discharge(
             reason: .patientRequestedDischarge,
             notes: nil,
@@ -133,7 +133,7 @@ struct PatientDischargeTests {
 
     @Test("Deve registrar evento PatientReadmittedEvent ao readmitir")
     func readmitRecordsEvent() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         try patient.discharge(
             reason: .lossOfContact,
             notes: nil,
@@ -154,7 +154,7 @@ struct PatientDischargeTests {
 
     @Test("Deve falhar ao readmitir paciente ja ativo")
     func readmitAlreadyActive() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         #expect(patient.status == .active)
 
         #expect(throws: PatientError.alreadyActive) {
@@ -164,7 +164,7 @@ struct PatientDischargeTests {
 
     @Test("Deve falhar ao readmitir com notes excedendo 1000 caracteres")
     func readmitNotesExceedMaxLength() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         try patient.discharge(
             reason: .caseObjectiveAchieved,
             notes: nil,
@@ -183,7 +183,7 @@ struct PatientDischargeTests {
 
     @Test("Deve completar ciclo completo: ativo -> desligado -> readmitido")
     func fullDischargeReadmitCycle() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         #expect(patient.status == .active)
 
         // Discharge
@@ -215,7 +215,7 @@ struct PatientDischargeTests {
 
     @Test("Deve preservar dados do paciente apos desligamento")
     func dischargePreservesPatientData() throws {
-        var patient = try PatientFixture.createMinimal()
+        var patient = try PatientFixture.createMinimalActive()
         let originalPersonId = patient.personId
         let originalDiagnoses = patient.diagnoses
         let originalFamilyMembers = patient.familyMembers

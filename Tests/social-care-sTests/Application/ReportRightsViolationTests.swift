@@ -9,7 +9,7 @@ struct ReportRightsViolationTests {
     func successfulReport() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = ReportRightsViolationCommandHandler(repository: repo, eventBus: bus)
@@ -35,7 +35,7 @@ struct ReportRightsViolationTests {
     func invalidViolationType() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = ReportRightsViolationCommandHandler(repository: repo, eventBus: bus)
@@ -73,8 +73,8 @@ struct ReportRightsViolationTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
 
-        let p1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
-        let p2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let p1 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
+        let p2 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
         await repo.seed(p1)
         await repo.seed(p2)
 

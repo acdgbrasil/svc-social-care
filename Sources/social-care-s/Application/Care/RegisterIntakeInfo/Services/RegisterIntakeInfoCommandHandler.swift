@@ -51,7 +51,7 @@ public actor RegisterIntakeInfoCommandHandler: RegisterIntakeInfoUseCase {
             }
 
             // 5. Domain Logic
-            patient.updateIntakeInfo(intakeInfo, actorId: command.actorId)
+            try patient.updateIntakeInfo(intakeInfo, actorId: command.actorId)
 
             // 6. Persistence & Events
             try await repository.save(patient)

@@ -85,7 +85,9 @@ extension Patient {
         socialHealthSummary: SocialHealthSummary? = nil,
         socialIdentity: SocialIdentity? = nil,
         placementHistory: PlacementHistory? = nil,
-        intakeInfo: IngressInfo? = nil
+        intakeInfo: IngressInfo? = nil,
+        status: PatientStatus = .active,
+        dischargeInfo: DischargeInfo? = nil
     ) -> Patient {
         var patient = Patient(
             id: id,
@@ -111,8 +113,55 @@ extension Patient {
         patient.socialIdentity = socialIdentity
         patient.placementHistory = placementHistory
         patient.intakeInfo = intakeInfo
+        patient.status = status
+        patient.dischargeInfo = dischargeInfo
 
         return patient
+    }
+
+    // MARK: - Discharge & Readmit
+
+    /// Desliga formalmente o paciente do acompanhamento.
+    ///
+    /// - Throws: `PatientError.alreadyDischarged` se o status atual não for `.active`.
+    /// - Throws: `DischargeInfoError` se a validação do `DischargeInfo` falhar.
+    public mutating func discharge(reason: DischargeReason, notes: String?, actorId: String, now: TimeStamp = .now) throws {
+        guard status == .active else {
+            throw PatientError.alreadyDischarged
+        }
+        let info = try DischargeInfo(reason: reason, notes: notes, dischargedAt: now, dischargedBy: actorId)
+        self.status = .discharged
+        self.dischargeInfo = info
+        self.recordEvent(PatientDischargedEvent(
+            patientId: id.description,
+            personId: personId.description,
+            actorId: actorId,
+            reason: reason.rawValue,
+            notes: notes,
+            occurredAt: now.date
+        ))
+    }
+
+    /// Readmite um paciente previamente desligado, retomando o acompanhamento.
+    ///
+    /// - Throws: `PatientError.alreadyActive` se o status atual não for `.discharged`.
+    /// - Throws: `DischargeInfoError.notesExceedMaxLength` se as notas excederem 1000 caracteres.
+    public mutating func readmit(notes: String?, actorId: String, now: TimeStamp = .now) throws {
+        guard status == .discharged else {
+            throw PatientError.alreadyActive
+        }
+        if let notes, notes.count > 1000 {
+            throw DischargeInfoError.notesExceedMaxLength(notes.count)
+        }
+        self.status = .active
+        self.dischargeInfo = nil
+        self.recordEvent(PatientReadmittedEvent(
+            patientId: id.description,
+            personId: personId.description,
+            actorId: actorId,
+            notes: notes,
+            occurredAt: now.date
+        ))
     }
 
     /// Inicializador privado para uso exclusivo em factory e reconstituição.

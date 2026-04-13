@@ -53,13 +53,20 @@ actor InMemoryPatientRepository: PatientRepository {
             socialHealthSummary: existing.socialHealthSummary,
             socialIdentity: existing.socialIdentity,
             placementHistory: existing.placementHistory,
-            intakeInfo: existing.intakeInfo
+            intakeInfo: existing.intakeInfo,
+            status: existing.status,
+            dischargeInfo: existing.dischargeInfo
         )
         storage[patientId] = updated
     }
 
-    func list(search: String?, cursor: PatientId?, limit: Int) async throws -> PatientListResult {
+    func list(search: String?, status: PatientStatus?, cursor: PatientId?, limit: Int) async throws -> PatientListResult {
         var patients = Array(storage.values)
+
+        // Filtro por status
+        if let status {
+            patients = patients.filter { $0.status == status }
+        }
 
         // Busca por nome
         if let search, !search.isEmpty {
@@ -80,7 +87,7 @@ actor InMemoryPatientRepository: PatientRepository {
             patients = patients.filter { $0.id.description > cursorStr }
         }
 
-        let totalCount = search != nil ? patients.count : storage.count
+        let totalCount = (search != nil || status != nil) ? patients.count : storage.count
         let hasMore = patients.count > limit
         let page = Array(patients.prefix(limit))
 
@@ -91,7 +98,8 @@ actor InMemoryPatientRepository: PatientRepository {
                 firstName: p.personalData?.firstName,
                 lastName: p.personalData?.lastName,
                 primaryDiagnosis: p.diagnoses.first?.description,
-                memberCount: p.familyMembers.count
+                memberCount: p.familyMembers.count,
+                status: p.status
             )
         }
 

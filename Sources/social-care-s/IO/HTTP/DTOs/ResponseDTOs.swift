@@ -50,6 +50,8 @@ struct PatientResponse: Content {
     let patientId: String
     let personId: String
     let version: Int
+    let status: String
+    let dischargeInfo: DischargeInfoResponse?
     let personalData: PersonalDataResponse?
     let civilDocuments: CivilDocumentsResponse?
     let address: AddressResponse?
@@ -74,6 +76,8 @@ struct PatientResponse: Content {
         self.patientId = p.id.description
         self.personId = p.personId.description
         self.version = p.version
+        self.status = p.status.rawValue
+        self.dischargeInfo = p.dischargeInfo.map { DischargeInfoResponse(from: $0) }
         self.personalData = p.personalData.map { PersonalDataResponse(from: $0) }
         self.civilDocuments = p.civilDocuments.map { CivilDocumentsResponse(from: $0) }
         self.address = p.address.map { AddressResponse(from: $0) }
@@ -96,6 +100,20 @@ struct PatientResponse: Content {
     }
 }
 
+struct DischargeInfoResponse: Content {
+    let reason: String
+    let notes: String?
+    let dischargedAt: Date
+    let dischargedBy: String
+
+    init(from d: DischargeInfo) {
+        self.reason = d.reason.rawValue
+        self.notes = d.notes
+        self.dischargedAt = d.dischargedAt.date
+        self.dischargedBy = d.dischargedBy
+    }
+}
+
 // MARK: - Patient Summary Response (listagem leve)
 
 struct PatientSummaryResponse: Content {
@@ -106,6 +124,7 @@ struct PatientSummaryResponse: Content {
     let fullName: String?
     let primaryDiagnosis: String?
     let memberCount: Int
+    let status: String
 
     init(from dto: PatientSummaryDTO) {
         self.patientId = dto.patientId
@@ -115,6 +134,7 @@ struct PatientSummaryResponse: Content {
         self.fullName = dto.fullName
         self.primaryDiagnosis = dto.primaryDiagnosis
         self.memberCount = dto.memberCount
+        self.status = dto.status
     }
 }
 

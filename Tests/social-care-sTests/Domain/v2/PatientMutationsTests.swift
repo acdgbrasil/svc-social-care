@@ -10,13 +10,13 @@ struct PatientMutationsTests {
         var patient = try createMinimalPatient()
         let initialVersion = patient.version
         
-        patient.updateHousingCondition(nil, actorId: "test-actor")
+        try patient.updateHousingCondition(nil, actorId: "test-actor")
         #expect(patient.version == initialVersion + 1)
         
-        patient.updateWorkAndIncome(nil, actorId: "test-actor")
+        try patient.updateWorkAndIncome(nil, actorId: "test-actor")
         #expect(patient.version == initialVersion + 2)
         
-        patient.updateEducationalStatus(nil, actorId: "test-actor")
+        try patient.updateEducationalStatus(nil, actorId: "test-actor")
         #expect(patient.version == initialVersion + 3)
     }
 
@@ -70,7 +70,8 @@ private func createMinimalPatient() throws -> Patient {
     let pId = PersonId()
     let prId = try LookupId(UUID().uuidString)
     let prMember = FamilyMember(personId: pId, relationshipId: prId, isPrimaryCaregiver: true, residesWithPatient: true, birthDate: .now)
-    return try Patient(id: PatientId(), personId: pId, diagnoses: [try createDiagnosis()], familyMembers: [prMember], prRelationshipId: prId, actorId: "test-actor")
+    let patient = try Patient(id: PatientId(), personId: pId, diagnoses: [try createDiagnosis()], familyMembers: [prMember], prRelationshipId: prId, actorId: "test-actor")
+    return patient
 }
 
 private func createDiagnosis() throws -> Diagnosis {

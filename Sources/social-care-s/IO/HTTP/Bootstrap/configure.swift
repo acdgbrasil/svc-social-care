@@ -47,6 +47,7 @@ func configure(_ app: Application) async throws {
         CreateLookupRequests(),
         AddCNSAndHomeless(),
         AddUniqueCpfConstraint(),
+        AddPatientDischarge(),
     ]
     for attempt in 1...10 {
         do {

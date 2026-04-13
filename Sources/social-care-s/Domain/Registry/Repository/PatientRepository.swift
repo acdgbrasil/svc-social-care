@@ -31,8 +31,8 @@ public protocol PatientRepository: Sendable {
     /// Atualiza o person_id de um paciente existente (reconciliação com people-context).
     func updatePersonId(patientId: PatientId, newPersonId: PersonId) async throws
 
-    /// Lista pacientes com paginação cursor-based e busca opcional.
-    func list(search: String?, cursor: PatientId?, limit: Int) async throws -> PatientListResult
+    /// Lista pacientes com paginação cursor-based, busca opcional e filtro por status.
+    func list(search: String?, status: PatientStatus?, cursor: PatientId?, limit: Int) async throws -> PatientListResult
 }
 
 /// Resultado paginado da listagem de pacientes.
@@ -58,6 +58,7 @@ public struct PatientSummary: Sendable {
     public let lastName: String?
     public let primaryDiagnosis: String?
     public let memberCount: Int
+    public let status: PatientStatus
 
     public init(
         patientId: PatientId,
@@ -65,7 +66,8 @@ public struct PatientSummary: Sendable {
         firstName: String?,
         lastName: String?,
         primaryDiagnosis: String?,
-        memberCount: Int
+        memberCount: Int,
+        status: PatientStatus = .active
     ) {
         self.patientId = patientId
         self.personId = personId
@@ -73,5 +75,6 @@ public struct PatientSummary: Sendable {
         self.lastName = lastName
         self.primaryDiagnosis = primaryDiagnosis
         self.memberCount = memberCount
+        self.status = status
     }
 }

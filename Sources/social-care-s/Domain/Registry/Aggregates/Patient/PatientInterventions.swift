@@ -15,6 +15,7 @@ extension Patient {
         actorId: String,
         now: TimeStamp = .now
     ) throws {
+        try requireActive()
         let appointment = try SocialCareAppointment(
             id: id,
             date: date,
@@ -49,6 +50,7 @@ extension Patient {
         actorId: String,
         now: TimeStamp = .now
     ) throws {
+        try requireActive()
         // Regra de Integridade: O alvo do encaminhamento deve ser o titular ou um membro da família.
         guard self.containsPerson(referredPersonId) else {
             throw PatientError.referralTargetOutsideBoundary(targetId: referredPersonId.description)
@@ -90,6 +92,7 @@ extension Patient {
         actorId: String,
         now: TimeStamp = .now
     ) throws {
+        try requireActive()
         // Regra de Integridade: A vítima deve pertencer à família atendida.
         guard self.containsPerson(victimId) else {
             throw PatientError.violationTargetOutsideBoundary(targetId: victimId.description)

@@ -192,6 +192,7 @@ struct PatientDatabaseMapper {
         let healthStatus = try reconstructHealthStatus(from: patient, deficiencies: memberDeficiencies, gestating: gestatingMembers)
         let placementHistory = try reconstructPlacementHistory(from: patient, registries: placementRegistries)
         let intakeInfo = try reconstructIngressInfo(from: patient, programs: ingressLinkedPrograms)
+        let dischargeInfo = try reconstructDischargeInfo(from: patient)
 
         return Patient.reconstitute(
             id: try PatientId(patient.id.uuidString),
@@ -214,7 +215,9 @@ struct PatientDatabaseMapper {
             socialHealthSummary: socialHealthSummary,
             socialIdentity: socialIdentity,
             placementHistory: placementHistory,
-            intakeInfo: intakeInfo
+            intakeInfo: intakeInfo,
+            status: PatientStatus(rawValue: patient.status) ?? .active,
+            dischargeInfo: dischargeInfo
         )
     }
 
@@ -355,7 +358,13 @@ private extension PatientDatabaseMapper {
             ii_ingress_type_id: patient.intakeInfo.flatMap { UUID(uuidString: $0.ingressTypeId.description) },
             ii_origin_name: patient.intakeInfo?.originName,
             ii_origin_contact: patient.intakeInfo?.originContact,
-            ii_service_reason: patient.intakeInfo?.serviceReason
+            ii_service_reason: patient.intakeInfo?.serviceReason,
+            // discharge
+            status: patient.status.rawValue,
+            discharge_reason: patient.dischargeInfo?.reason.rawValue,
+            discharge_notes: patient.dischargeInfo?.notes,
+            discharged_at: patient.dischargeInfo?.dischargedAt.date,
+            discharged_by: patient.dischargeInfo?.dischargedBy
         )
     }
 
@@ -823,4 +832,19 @@ private extension PatientDatabaseMapper {
             linkedSocialPrograms: domainPrograms
         )
     }
+
+    static func reconstructDischargeInfo(from p: PatientModel) throws -> DischargeInfo? {
+        guard let reasonRaw = p.discharge_reason,
+              let reason = DischargeReason(rawValue: reasonRaw),
+              let dischargedAt = p.discharged_at,
+              let dischargedBy = p.discharged_by else { return nil }
+
+        return try DischargeInfo(
+            reason: reason,
+            notes: p.discharge_notes,
+            dischargedAt: try TimeStamp(dischargedAt),
+            dischargedBy: dischargedBy
+        )
+    }
+
 }

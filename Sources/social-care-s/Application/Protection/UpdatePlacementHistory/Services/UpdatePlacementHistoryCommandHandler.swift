@@ -47,7 +47,7 @@ public actor UpdatePlacementHistoryCommandHandler: UpdatePlacementHistoryUseCase
             )
 
             try patient.validatePlacementCompatibility(history)
-            patient.updatePlacementHistory(history, actorId: command.actorId)
+            try patient.updatePlacementHistory(history, actorId: command.actorId)
 
             try await repository.save(patient)
             try await eventBus.publish(patient.uncommittedEvents)

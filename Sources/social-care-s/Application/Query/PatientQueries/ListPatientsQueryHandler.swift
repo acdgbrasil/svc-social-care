@@ -6,11 +6,13 @@ public struct ListPatientsQuery: Query {
     public typealias Result = PatientListQueryDTO
 
     public let search: String?
+    public let status: String?
     public let cursor: String?
     public let limit: Int
 
-    public init(search: String? = nil, cursor: String? = nil, limit: Int = 20) {
+    public init(search: String? = nil, status: String? = nil, cursor: String? = nil, limit: Int = 20) {
         self.search = search
+        self.status = status
         self.cursor = cursor
         self.limit = limit
     }
@@ -40,6 +42,7 @@ public struct PatientSummaryDTO: Codable, Sendable {
     public let fullName: String?
     public let primaryDiagnosis: String?
     public let memberCount: Int
+    public let status: String
 
     public init(from summary: PatientSummary) {
         self.patientId = summary.patientId.description
@@ -53,6 +56,7 @@ public struct PatientSummaryDTO: Codable, Sendable {
         }
         self.primaryDiagnosis = summary.primaryDiagnosis
         self.memberCount = summary.memberCount
+        self.status = summary.status.rawValue
     }
 }
 
@@ -61,6 +65,7 @@ public struct PatientSummaryDTO: Codable, Sendable {
 public enum ListPatientsError: Error, Sendable, Equatable {
     case invalidCursorFormat
     case invalidLimit
+    case invalidStatusFilter(String)
 }
 
 extension ListPatientsError: AppErrorConvertible {
@@ -94,6 +99,18 @@ extension ListPatientsError: AppErrorConvertible {
                 ),
                 http: 400
             )
+        case .invalidStatusFilter(let value):
+            return AppError(
+                code: "\(Self.codePrefix)-003",
+                message: "Status filter inválido: '\(value)'. Valores aceitos: active, discharged.",
+                bc: Self.bc, module: Self.module, kind: "InvalidStatusFilter",
+                context: [:], safeContext: [:],
+                observability: .init(
+                    category: .dataConsistencyIncident, severity: .warning,
+                    fingerprint: ["\(Self.codePrefix)-003"], tags: ["layer": "query"]
+                ),
+                http: 400
+            )
         }
     }
 }
@@ -113,6 +130,17 @@ public struct ListPatientsQueryHandler: QueryHandling {
             throw ListPatientsError.invalidLimit
         }
 
+        // Parse status filter
+        let status: PatientStatus?
+        if let statusStr = query.status {
+            guard let parsed = PatientStatus(rawValue: statusStr) else {
+                throw ListPatientsError.invalidStatusFilter(statusStr)
+            }
+            status = parsed
+        } else {
+            status = nil
+        }
+
         let cursor: PatientId?
         if let cursorStr = query.cursor {
             guard let validCursor = try? PatientId(cursorStr) else {
@@ -125,6 +153,7 @@ public struct ListPatientsQueryHandler: QueryHandling {
 
         let result = try await repository.list(
             search: query.search,
+            status: status,
             cursor: cursor,
             limit: query.limit
         )

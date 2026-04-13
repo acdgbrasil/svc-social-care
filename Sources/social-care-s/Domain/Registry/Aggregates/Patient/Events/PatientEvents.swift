@@ -281,3 +281,32 @@ public struct PatientReadmittedEvent: DomainEvent, Codable {
     }
 }
 
+// MARK: - Waitlist Events
+
+public struct PatientAdmittedEvent: DomainEvent, Codable {
+    public let id: UUID
+    public let patientId: String
+    public let personId: String
+    public let actorId: String
+    public let occurredAt: Date
+
+    public init(patientId: String, personId: String, actorId: String, occurredAt: Date) {
+        self.id = UUID(); self.patientId = patientId; self.personId = personId
+        self.actorId = actorId; self.occurredAt = occurredAt
+    }
+}
+
+public struct PatientWithdrawnFromWaitlistEvent: DomainEvent, Codable {
+    public let id: UUID
+    public let patientId: String
+    public let personId: String
+    public let actorId: String
+    public let reason: String
+    public let notes: String?
+    public let occurredAt: Date
+
+    public init(patientId: String, personId: String, actorId: String, reason: String, notes: String?, occurredAt: Date) {
+        self.id = UUID(); self.patientId = patientId; self.personId = personId
+        self.actorId = actorId; self.reason = reason; self.notes = notes; self.occurredAt = occurredAt
+    }
+}

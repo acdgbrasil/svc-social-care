@@ -9,7 +9,7 @@ struct AssignPrimaryCaregiverTests {
     func successfulAssignment() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createWithAdditionalMember()
+        let patient = try PatientFixture.createWithAdditionalMemberActive()
         await repo.seed(patient)
 
         let handler = AssignPrimaryCaregiverCommandHandler(repository: repo, eventBus: bus)
@@ -32,7 +32,7 @@ struct AssignPrimaryCaregiverTests {
     func memberNotInFamily() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = AssignPrimaryCaregiverCommandHandler(repository: repo, eventBus: bus)

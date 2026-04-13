@@ -193,6 +193,7 @@ struct PatientDatabaseMapper {
         let placementHistory = try reconstructPlacementHistory(from: patient, registries: placementRegistries)
         let intakeInfo = try reconstructIngressInfo(from: patient, programs: ingressLinkedPrograms)
         let dischargeInfo = try reconstructDischargeInfo(from: patient)
+        let withdrawInfo = try reconstructWithdrawInfo(from: patient)
 
         return Patient.reconstitute(
             id: try PatientId(patient.id.uuidString),
@@ -217,7 +218,8 @@ struct PatientDatabaseMapper {
             placementHistory: placementHistory,
             intakeInfo: intakeInfo,
             status: PatientStatus(rawValue: patient.status) ?? .active,
-            dischargeInfo: dischargeInfo
+            dischargeInfo: dischargeInfo,
+            withdrawInfo: withdrawInfo
         )
     }
 
@@ -364,7 +366,12 @@ private extension PatientDatabaseMapper {
             discharge_reason: patient.dischargeInfo?.reason.rawValue,
             discharge_notes: patient.dischargeInfo?.notes,
             discharged_at: patient.dischargeInfo?.dischargedAt.date,
-            discharged_by: patient.dischargeInfo?.dischargedBy
+            discharged_by: patient.dischargeInfo?.dischargedBy,
+            // withdraw
+            withdraw_reason: patient.withdrawInfo?.reason.rawValue,
+            withdraw_notes: patient.withdrawInfo?.notes,
+            withdrawn_at: patient.withdrawInfo?.withdrawnAt.date,
+            withdrawn_by: patient.withdrawInfo?.withdrawnBy
         )
     }
 
@@ -847,4 +854,17 @@ private extension PatientDatabaseMapper {
         )
     }
 
+    static func reconstructWithdrawInfo(from p: PatientModel) throws -> WithdrawInfo? {
+        guard let reasonRaw = p.withdraw_reason,
+              let reason = WithdrawReason(rawValue: reasonRaw),
+              let withdrawnAt = p.withdrawn_at,
+              let withdrawnBy = p.withdrawn_by else { return nil }
+
+        return try WithdrawInfo(
+            reason: reason,
+            notes: p.withdraw_notes,
+            withdrawnAt: try TimeStamp(withdrawnAt),
+            withdrawnBy: withdrawnBy
+        )
+    }
 }

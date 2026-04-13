@@ -52,6 +52,7 @@ struct PatientResponse: Content {
     let version: Int
     let status: String
     let dischargeInfo: DischargeInfoResponse?
+    let withdrawInfo: WithdrawInfoResponse?
     let personalData: PersonalDataResponse?
     let civilDocuments: CivilDocumentsResponse?
     let address: AddressResponse?
@@ -78,6 +79,7 @@ struct PatientResponse: Content {
         self.version = p.version
         self.status = p.status.rawValue
         self.dischargeInfo = p.dischargeInfo.map { DischargeInfoResponse(from: $0) }
+        self.withdrawInfo = p.withdrawInfo.map { WithdrawInfoResponse(from: $0) }
         self.personalData = p.personalData.map { PersonalDataResponse(from: $0) }
         self.civilDocuments = p.civilDocuments.map { CivilDocumentsResponse(from: $0) }
         self.address = p.address.map { AddressResponse(from: $0) }
@@ -111,6 +113,20 @@ struct DischargeInfoResponse: Content {
         self.notes = d.notes
         self.dischargedAt = d.dischargedAt.date
         self.dischargedBy = d.dischargedBy
+    }
+}
+
+struct WithdrawInfoResponse: Content {
+    let reason: String
+    let notes: String?
+    let withdrawnAt: Date
+    let withdrawnBy: String
+
+    init(from w: WithdrawInfo) {
+        self.reason = w.reason.rawValue
+        self.notes = w.notes
+        self.withdrawnAt = w.withdrawnAt.date
+        self.withdrawnBy = w.withdrawnBy
     }
 }
 

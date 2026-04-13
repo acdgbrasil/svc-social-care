@@ -12,7 +12,7 @@ struct UpdatePlacementHistoryTests {
     func successfulUpdate() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createWithAdditionalMember()
+        let patient = try PatientFixture.createWithAdditionalMemberActive()
         await repo.seed(patient)
 
         let memberId = PatientFixture.defaultMemberId
@@ -44,7 +44,7 @@ struct UpdatePlacementHistoryTests {
     func memberNotInFamily() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdatePlacementHistoryCommandHandler(repository: repo, eventBus: bus)
@@ -89,7 +89,7 @@ struct UpdatePlacementHistoryTests {
     func actorSerialization() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createWithAdditionalMember()
+        let patient = try PatientFixture.createWithAdditionalMemberActive()
         await repo.seed(patient)
 
         let handler = UpdatePlacementHistoryCommandHandler(repository: repo, eventBus: bus)

@@ -72,6 +72,7 @@ struct AuditTrailTests {
     @Test("toOutbox deve preservar event_type para cada tipo de evento")
     func toOutboxPreservesEventTypes() throws {
         var patient = try PatientFixture.createWithAdditionalMember()
+        try patient.admit(actorId: "setup")
 
         var mutated = patient
         try mutated.updateHousingCondition(
@@ -162,6 +163,7 @@ struct AuditTrailTests {
         await registry.bootstrap()
 
         var patient = try PatientFixture.createWithAdditionalMember()
+        try patient.admit(actorId: "setup")
         var mutated = patient
 
         try mutated.updateCommunitySupportNetwork(

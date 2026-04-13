@@ -11,7 +11,7 @@ struct AddFamilyMemberTests {
     func successfulAddition() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = AddFamilyMemberCommandHandler(
@@ -44,7 +44,7 @@ struct AddFamilyMemberTests {
     func duplicateMember() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = AddFamilyMemberCommandHandler(
@@ -98,7 +98,7 @@ struct AddFamilyMemberTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
         let lookup = InMemoryLookupValidator()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = AddFamilyMemberCommandHandler(

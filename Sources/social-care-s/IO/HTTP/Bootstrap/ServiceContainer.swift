@@ -24,6 +24,8 @@ struct ServiceContainer: Sendable {
     let registerIntakeInfo: RegisterIntakeInfoCommandHandler
     let dischargePatient: DischargePatientCommandHandler
     let readmitPatient: ReadmitPatientCommandHandler
+    let admitPatient: AdmitPatientCommandHandler
+    let withdrawFromWaitlist: WithdrawFromWaitlistCommandHandler
     let listPatients: ListPatientsQueryHandler
     let createLookupItem: CreateLookupItemCommandHandler
     let updateLookupItem: UpdateLookupItemCommandHandler
@@ -100,6 +102,12 @@ struct ServiceContainer: Sendable {
             repository: repository, eventBus: eventBus
         )
         self.readmitPatient = ReadmitPatientCommandHandler(
+            repository: repository, eventBus: eventBus
+        )
+        self.admitPatient = AdmitPatientCommandHandler(
+            repository: repository, eventBus: eventBus
+        )
+        self.withdrawFromWaitlist = WithdrawFromWaitlistCommandHandler(
             repository: repository, eventBus: eventBus
         )
         self.listPatients = ListPatientsQueryHandler(repository: repository)

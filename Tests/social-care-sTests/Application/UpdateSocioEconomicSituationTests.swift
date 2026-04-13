@@ -9,7 +9,7 @@ struct UpdateSocioEconomicSituationTests {
     func successfulUpdate() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdateSocioEconomicSituationCommandHandler(repository: repo, eventBus: bus)
@@ -41,7 +41,7 @@ struct UpdateSocioEconomicSituationTests {
     func updateWithoutBenefits() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdateSocioEconomicSituationCommandHandler(repository: repo, eventBus: bus)
@@ -90,8 +90,8 @@ struct UpdateSocioEconomicSituationTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
 
-        let p1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
-        let p2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let p1 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
+        let p2 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
         await repo.seed(p1)
         await repo.seed(p2)
 

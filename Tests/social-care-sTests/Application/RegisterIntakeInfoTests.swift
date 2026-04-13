@@ -9,7 +9,7 @@ struct RegisterIntakeInfoTests {
     func successfulRegistration() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let ingressTypeId = UUID().uuidString
@@ -45,7 +45,7 @@ struct RegisterIntakeInfoTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
         let lookup = InMemoryLookupValidator()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = RegisterIntakeInfoCommandHandler(
@@ -70,7 +70,7 @@ struct RegisterIntakeInfoTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
         let lookup = InMemoryLookupValidator()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let ingressTypeId = try LookupId(UUID().uuidString)
@@ -121,8 +121,8 @@ struct RegisterIntakeInfoTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
 
-        let p1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
-        let p2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let p1 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
+        let p2 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
         await repo.seed(p1)
         await repo.seed(p2)
 

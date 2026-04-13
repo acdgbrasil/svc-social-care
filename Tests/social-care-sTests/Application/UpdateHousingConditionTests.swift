@@ -29,7 +29,7 @@ struct UpdateHousingConditionTests {
     func successfulUpdate() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdateHousingConditionCommandHandler(repository: repo, eventBus: bus)
@@ -52,7 +52,7 @@ struct UpdateHousingConditionTests {
     func invalidHousingType() async throws {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
-        let patient = try PatientFixture.createMinimal()
+        let patient = try PatientFixture.createMinimalActive()
         await repo.seed(patient)
 
         let handler = UpdateHousingConditionCommandHandler(repository: repo, eventBus: bus)
@@ -105,8 +105,8 @@ struct UpdateHousingConditionTests {
         let repo = InMemoryPatientRepository()
         let bus = InMemoryEventBus()
 
-        let p1 = try PatientFixture.createMinimal(personId: UUID().uuidString)
-        let p2 = try PatientFixture.createMinimal(personId: UUID().uuidString)
+        let p1 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
+        let p2 = try PatientFixture.createMinimalActive(personId: UUID().uuidString)
         await repo.seed(p1)
         await repo.seed(p2)
 

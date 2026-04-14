@@ -47,7 +47,7 @@ jobs:
 
   kodus-review:
     name: Kodus AI Review
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     uses: acdgbrasil/.github/.github/workflows/reusable-kodus-review.yml@main
     with:
       fail_on: critical

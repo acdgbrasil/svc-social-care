@@ -8,4 +8,5 @@ on:
 jobs:
   size:
     name: PR size check
+    if: github.actor != 'dependabot[bot]'
     uses: acdgbrasil/.github/.github/workflows/reusable-pr-size-guard.yml@main

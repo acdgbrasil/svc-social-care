@@ -7,17 +7,17 @@ struct LookupController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let dominios = routes.grouped("api", "v1", "dominios")
 
-        // Read: list lookup items (social_worker, owner, admin)
-        let read = dominios.grouped(RoleGuardMiddleware("social_worker", "owner", "admin"))
+        // Read: list lookup items (worker, owner, admin)
+        let read = dominios.grouped(RoleGuardMiddleware("worker", "owner", "admin"))
         read.get(":tableName", use: list)
 
         // Lookup Requests: rotas registradas ANTES de :tableName para evitar captura
         let requestsRead = dominios.grouped("requests")
-            .grouped(RoleGuardMiddleware("social_worker", "owner", "admin"))
+            .grouped(RoleGuardMiddleware("worker", "owner", "admin"))
         requestsRead.get(use: listRequests)
 
         let requestsWrite = dominios.grouped("requests")
-            .grouped(RoleGuardMiddleware("social_worker", "admin"))
+            .grouped(RoleGuardMiddleware("worker", "admin"))
         requestsWrite.post(use: createRequest)
 
         let requestsAdmin = dominios.grouped("requests")
@@ -142,7 +142,7 @@ struct LookupController: RouteCollection {
         let user = try req.requireAuthenticatedUser()
         let status: String? = req.query[String.self, at: "status"]
 
-        // Admin vê todas; social_worker vê apenas as próprias
+        // Admin vê todas; worker vê apenas as próprias
         let requestedBy: String? = user.hasAnyRole(Set(["admin"])) ? nil : user.userId
 
         let query = ListLookupRequestsQuery(status: status, requestedBy: requestedBy)

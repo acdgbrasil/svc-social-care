@@ -4,12 +4,20 @@ struct AuthenticatedUser: Sendable {
     let userId: String
     let roles: Set<String>
 
+    /// "superadmin" bypasses all role checks.
+    var isSuperAdmin: Bool {
+        roles.contains("superadmin")
+    }
+
     func hasRole(_ role: String) -> Bool {
-        roles.contains(role)
+        if isSuperAdmin { return true }
+        // Supports composite keys: "social-care:worker" satisfies "worker"
+        return roles.contains(role) || roles.contains(where: { $0.hasSuffix(":\(role)") })
     }
 
     func hasAnyRole(_ required: Set<String>) -> Bool {
-        !roles.isDisjoint(with: required)
+        if isSuperAdmin { return true }
+        return required.contains(where: { hasRole($0) })
     }
 }
 

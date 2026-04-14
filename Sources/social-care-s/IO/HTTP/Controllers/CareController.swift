@@ -3,7 +3,7 @@ import Vapor
 struct CareController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let patient = routes.grouped("api", "v1", "patients", ":patientId")
-            .grouped(RoleGuardMiddleware("social_worker"))
+            .grouped(RoleGuardMiddleware("worker"))
 
         patient.post("appointments", use: registerAppointment)
         patient.put("intake-info", use: registerIntakeInfo)

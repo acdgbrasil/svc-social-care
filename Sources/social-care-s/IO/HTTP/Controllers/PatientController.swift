@@ -5,20 +5,20 @@ struct PatientController: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let patients = routes.grouped("api", "v1", "patients")
 
-        let read = patients.grouped(RoleGuardMiddleware("social_worker", "owner", "admin"))
+        let read = patients.grouped(RoleGuardMiddleware("worker", "owner", "admin"))
         read.get(use: list)
         read.get(":patientId", use: getById)
         read.get("by-person", ":personId", use: getByPersonId)
         read.get(":patientId", "audit-trail", use: getAuditTrail)
 
-        let write = patients.grouped(RoleGuardMiddleware("social_worker"))
+        let write = patients.grouped(RoleGuardMiddleware("worker"))
         write.post(use: register)
         write.post(":patientId", "family-members", use: addFamilyMember)
         write.delete(":patientId", "family-members", ":memberId", use: removeFamilyMember)
         write.put(":patientId", "primary-caregiver", use: assignPrimaryCaregiver)
         write.put(":patientId", "social-identity", use: updateSocialIdentity)
 
-        let lifecycle = patients.grouped(RoleGuardMiddleware("social_worker", "admin"))
+        let lifecycle = patients.grouped(RoleGuardMiddleware("worker", "admin"))
         lifecycle.post(":patientId", "discharge", use: discharge)
         lifecycle.post(":patientId", "readmit", use: readmit)
         lifecycle.post(":patientId", "admit", use: admit)

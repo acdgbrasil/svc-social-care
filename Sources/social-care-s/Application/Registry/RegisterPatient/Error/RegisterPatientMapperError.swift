@@ -73,7 +73,6 @@ extension RegisterPatientCommandHandler {
             switch e {
             case .emptyNumber: return .invalidRGDocument("EMPTY")
             case .invalidNumberFormat(let v): return .invalidRGDocument(v)
-            case .invalidCheckDigit(let v, _, _): return .invalidRGDocument(v)
             case .invalidIssuingState(let v): return .invalidRGDocument(v)
             case .emptyIssuingAgency: return .invalidRGDocument("EMPTY_AGENCY")
             case .issueDateInFuture(let v, _): return .invalidRGDocument(v)

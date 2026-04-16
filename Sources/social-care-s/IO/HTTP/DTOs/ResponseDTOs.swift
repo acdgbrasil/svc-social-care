@@ -301,7 +301,7 @@ struct RGDocumentResponse: Content {
     let number, issuingState, issuingAgency: String
     let issueDate: Date
     init(from d: RGDocument) {
-        number = d.formattedNumber; issuingState = d.issuingState
+        number = d.number; issuingState = d.issuingState
         issuingAgency = d.issuingAgency; issueDate = d.issueDate.date
     }
 }

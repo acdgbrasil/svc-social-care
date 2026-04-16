@@ -3,7 +3,6 @@ import Foundation
 public enum RGDocumentError: Error, Sendable, Equatable {
     case emptyNumber
     case invalidNumberFormat(value: String)
-    case invalidCheckDigit(value: String, expected: String, provided: String)
     case invalidIssuingState(value: String)
     case emptyIssuingAgency
     case issueDateInFuture(date: String, now: String)
@@ -19,9 +18,7 @@ extension RGDocumentError: AppErrorConvertible {
         case .emptyNumber:
             return AppError(code: "\(Self.codePrefix)-001", message: "O numero do RG nao pode ser vazio.", bc: Self.bc, module: Self.module, kind: "NumberEmpty", context: [:], safeContext: [:], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-001"], tags: ["vo": "rg_document"]), http: 422)
         case .invalidNumberFormat(let value):
-            return AppError(code: "\(Self.codePrefix)-005", message: "Formato do RG invalido.", bc: Self.bc, module: Self.module, kind: "InvalidNumberFormat", context: ["providedValue": AnySendable(value)], safeContext: ["providedValue": AnySendable(value)], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-005"], tags: ["vo": "rg_document"]), http: 422)
-        case .invalidCheckDigit(let value, let expected, let provided):
-            return AppError(code: "\(Self.codePrefix)-006", message: "Digito verificador do RG invalido.", bc: Self.bc, module: Self.module, kind: "InvalidCheckDigit", context: ["providedValue": AnySendable(value), "expectedDigit": AnySendable(expected), "providedDigit": AnySendable(provided)], safeContext: [:], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-006"], tags: ["vo": "rg_document"]), http: 422)
+            return AppError(code: "\(Self.codePrefix)-005", message: "Formato do RG invalido. Aceito: alfanumerico, 4 a 15 caracteres.", bc: Self.bc, module: Self.module, kind: "InvalidNumberFormat", context: ["providedValue": AnySendable(value)], safeContext: ["providedValue": AnySendable(value)], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-005"], tags: ["vo": "rg_document"]), http: 422)
         case .invalidIssuingState(let value):
             return AppError(code: "\(Self.codePrefix)-002", message: "UF do RG invalida.", bc: Self.bc, module: Self.module, kind: "InvalidIssuingState", context: ["providedValue": AnySendable(value)], safeContext: [:], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-002"], tags: ["vo": "rg_document"]), http: 422)
         case .emptyIssuingAgency:

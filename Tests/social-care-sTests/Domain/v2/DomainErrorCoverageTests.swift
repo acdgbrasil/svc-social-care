@@ -38,11 +38,11 @@ struct DomainErrorCoverageTests {
     @Test("RGDocument Error Coverage")
     func rgErrors() throws {
         let now = TimeStamp.now
-        #expect(throws: RGDocumentError.emptyNumber) { 
-            try RGDocument(number: "", issuingState: "SP", issuingAgency: "SSP", issueDate: now) 
+        #expect(throws: RGDocumentError.emptyNumber) {
+            try RGDocument(number: "", issuingState: "SP", issuingAgency: "SSP", issueDate: now)
         }
-        #expect(throws: RGDocumentError.invalidNumberFormat(value: "123")) { 
-            try RGDocument(number: "123", issuingState: "SP", issuingAgency: "SSP", issueDate: now) 
+        #expect(throws: RGDocumentError.invalidNumberFormat(value: "12")) {
+            try RGDocument(number: "12", issuingState: "SP", issuingAgency: "SSP", issueDate: now)
         }
     }
 

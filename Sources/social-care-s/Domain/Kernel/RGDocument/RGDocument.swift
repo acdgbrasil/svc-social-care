@@ -6,7 +6,7 @@ public struct RGDocument: Codable, Equatable, Hashable, Sendable {
         let normalized = number.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard !normalized.isEmpty else { throw RGDocumentError.emptyNumber }
         let compact = normalized.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: "-", with: "").replacingOccurrences(of: " ", with: "")
-        guard compact.range(of: "^[A-Z0-9]{4,15}$", options: .regularExpression) != nil else { throw RGDocumentError.invalidNumberFormat(value: normalized) }
+        guard compact.range(of: "^[A-Z0-9]{4,15}$", options: .regularExpression) != nil else { throw RGDocumentError.invalidNumberFormat(value: compact) }
         let state = issuingState.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard Self.validStates.contains(state) else { throw RGDocumentError.invalidIssuingState(value: state) }
         let agency = issuingAgency.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression).uppercased()

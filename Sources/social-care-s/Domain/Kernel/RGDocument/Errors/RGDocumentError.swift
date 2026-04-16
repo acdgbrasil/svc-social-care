@@ -13,12 +13,17 @@ extension RGDocumentError: AppErrorConvertible {
     private static let module = "social-care/rg-document"
     private static let codePrefix = "RGD"
 
+    private static func maskRG(_ rg: String) -> String {
+        guard rg.count > 4 else { return "****" }
+        return "\(rg.prefix(2))***\(rg.suffix(1))"
+    }
+
     public var asAppError: AppError {
         switch self {
         case .emptyNumber:
             return AppError(code: "\(Self.codePrefix)-001", message: "O numero do RG nao pode ser vazio.", bc: Self.bc, module: Self.module, kind: "NumberEmpty", context: [:], safeContext: [:], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-001"], tags: ["vo": "rg_document"]), http: 422)
         case .invalidNumberFormat(let value):
-            return AppError(code: "\(Self.codePrefix)-005", message: "Formato do RG invalido. Aceito: alfanumerico, 4 a 15 caracteres.", bc: Self.bc, module: Self.module, kind: "InvalidNumberFormat", context: ["providedValue": AnySendable(value)], safeContext: ["providedValue": AnySendable(value)], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-005"], tags: ["vo": "rg_document"]), http: 422)
+            return AppError(code: "\(Self.codePrefix)-005", message: "Formato do RG invalido. Aceito: alfanumerico, 4 a 15 caracteres (pontos, hifens e espacos sao removidos antes da validacao).", bc: Self.bc, module: Self.module, kind: "InvalidNumberFormat", context: ["providedLength": AnySendable(value.count)], safeContext: ["providedValue": AnySendable(Self.maskRG(value))], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-005"], tags: ["vo": "rg_document"]), http: 422)
         case .invalidIssuingState(let value):
             return AppError(code: "\(Self.codePrefix)-002", message: "UF do RG invalida.", bc: Self.bc, module: Self.module, kind: "InvalidIssuingState", context: ["providedValue": AnySendable(value)], safeContext: [:], observability: .init(category: .domainRuleViolation, severity: .warning, fingerprint: ["\(Self.codePrefix)-002"], tags: ["vo": "rg_document"]), http: 422)
         case .emptyIssuingAgency:

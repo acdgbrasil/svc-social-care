@@ -114,33 +114,112 @@ func configure(_ app: Application) async throws {
     app.http.server.configuration.hostname = Environment.get("SERVER_HOST") ?? "0.0.0.0"
     app.http.server.configuration.port = Environment.get("PORT").flatMap(Int.init) ?? 8080
 
-    // MARK: - JWT (Zitadel OIDC)
+    // MARK: - JWT OIDC (multi-issuer: Authentik atual + Zitadel legado)
+    //
+    // ADR-027 + ADR-031: durante Sprint 3-4 da migracao Zitadel → Authentik,
+    // o social-care aceita tokens de AMBOS issuers em paralelo. Tokens sao
+    // validados contra o JWKS correspondente ao `kid` no header. Apos Sprint 6
+    // (cleanup), apenas o JWKS Authentik permanece configurado.
+    //
+    // Configuracao:
+    //   - OIDC_JWKS_URLS (CSV): URLs dos JWKS endpoints (uma por issuer)
+    //   - OIDC_ISSUERS (CSV):   issuers permitidos (validador)
+    //   - OIDC_AUDIENCES (CSV): audiences permitidas (validador)
+    //
+    // Backward compat (Sprint 1-2 single-issuer):
+    //   - Se OIDC_JWKS_URLS nao setada, usa JWKS_URL (legacy).
+    //   - Se OIDC_ISSUERS nao setada, usa ZITADEL_ISSUER (legacy).
+    //   - Se OIDC_AUDIENCES nao setada, usa ZITADEL_PROJECT_ID (legacy).
 
-    let jwksUrl = Environment.get("JWKS_URL") ?? "https://auth.acdgbrasil.com.br/oauth/v2/keys"
-    var jwksLoaded = false
-    for attempt in 1...10 {
-        do {
-            let jwksResponse = try await app.client.get(URI(string: jwksUrl))
-            guard let jwksData = jwksResponse.body else {
-                throw Abort(.internalServerError, reason: "Empty JWKS response")
-            }
-            let jwksJSON = String(buffer: jwksData)
-            guard jwksJSON.trimmingCharacters(in: .whitespaces).hasPrefix("{") else {
-                throw Abort(.internalServerError, reason: "JWKS response is not JSON: \(jwksJSON.prefix(100))")
-            }
-            try await app.jwt.keys.add(jwksJSON: jwksJSON)
-            jwksLoaded = true
-            break
-        } catch {
-            app.logger.warning("JWKS fetch attempt \(attempt)/10 failed: \(error)")
-            if attempt < 10 {
-                try await Task.sleep(for: .seconds(min(attempt * 2, 30)))
+    // Code-review M1 (2026-05-14): hardcoded de producao APENAS em dev.
+    // Em producao, ausencia de env e fail-fast — evita foot-gun onde dev
+    // local sobe apontando para o IdP de producao.
+    let jwksUrlsCsv: String = {
+        if let env = Environment.get("OIDC_JWKS_URLS") { return env }
+        if let legacy = Environment.get("JWKS_URL") {
+            app.logger.warning("JWKS_URL (legacy) usado — migrar para OIDC_JWKS_URLS antes de Sprint 6 cleanup")
+            return legacy
+        }
+        guard !isProduction else { return "" }
+        return "https://auth.acdgbrasil.com.br/oauth/v2/keys"
+    }()
+
+    let jwksUrls = jwksUrlsCsv
+        .split(separator: ",")
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .filter { !$0.isEmpty }
+
+    guard !jwksUrls.isEmpty else {
+        throw Abort(.internalServerError, reason: "OIDC_JWKS_URLS obrigatoria em producao")
+    }
+
+    // Code-review M2: carregar JWKS em PARALELO — pior caso reduzido de 180s
+    // (sequencial) para ~90s (paralelo) com 2 IdPs ativos durante migracao.
+    try await withThrowingTaskGroup(of: (String, String).self) { group in
+        for jwksUrl in jwksUrls {
+            group.addTask {
+                for attempt in 1...10 {
+                    do {
+                        let jwksResponse = try await app.client.get(URI(string: jwksUrl))
+                        guard let jwksData = jwksResponse.body else {
+                            throw Abort(.internalServerError, reason: "Empty JWKS response from \(jwksUrl)")
+                        }
+                        let jwksJSON = String(buffer: jwksData)
+                        guard jwksJSON.trimmingCharacters(in: .whitespaces).hasPrefix("{") else {
+                            throw Abort(
+                                .internalServerError,
+                                reason: "JWKS response is not JSON from \(jwksUrl): \(jwksJSON.prefix(100))"
+                            )
+                        }
+                        return (jwksUrl, jwksJSON)
+                    } catch {
+                        app.logger.warning("JWKS fetch attempt \(attempt)/10 failed for \(jwksUrl): \(error)")
+                        if attempt < 10 {
+                            try await Task.sleep(for: .seconds(min(attempt * 2, 30)))
+                        }
+                    }
+                }
+                throw Abort(.internalServerError, reason: "Failed to load JWKS after 10 attempts from \(jwksUrl)")
             }
         }
+
+        for try await (jwksUrl, jwksJSON) in group {
+            try await app.jwt.keys.add(jwksJSON: jwksJSON)
+            app.logger.info("JWKS loaded from \(jwksUrl)")
+        }
     }
-    if !jwksLoaded {
-        throw Abort(.internalServerError, reason: "Failed to load JWKS after 10 attempts from \(jwksUrl)")
+
+    // Registrar validators OIDC (multi-issuer + multi-audience).
+    // M1: hardcoded apenas em dev — em prod, env obrigatoria.
+    let issuersCsv: String = {
+        if let env = Environment.get("OIDC_ISSUERS") { return env }
+        if let legacy = Environment.get("ZITADEL_ISSUER") { return legacy }
+        guard !isProduction else { return "" }
+        return "https://auth.acdgbrasil.com.br"
+    }()
+    let audiencesCsv: String = {
+        if let env = Environment.get("OIDC_AUDIENCES") { return env }
+        if let legacy = Environment.get("ZITADEL_PROJECT_ID") { return legacy }
+        guard !isProduction else { return "" }
+        return "363110312318140539"
+    }()
+
+    guard let validators = OIDCJWTValidators.fromValues(
+        issuersCsv: issuersCsv,
+        audiencesCsv: audiencesCsv
+    ) else {
+        throw Abort(
+            .internalServerError,
+            reason: "OIDC_ISSUERS / OIDC_AUDIENCES vazios — IdP misconfig (fail-fast no boot)."
+        )
     }
+    app.oidcValidators = validators
+    // AppSec CRITICAL-1: registrar globalmente para que `OIDCJWTPayload.verify(using:)`
+    // valide iss/aud/exp/nbf em TODO codepath — defense-in-depth.
+    OIDCJWTPayloadBootstrap.shared.set(validators)
+    app.logger.info(
+        "OIDC validators: \(validators.allowedIssuers.count) issuers, \(validators.allowedAudiences.count) audiences"
+    )
 
     // MARK: - Token Introspection (fallback for service accounts without role claims)
 

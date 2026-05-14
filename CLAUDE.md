@@ -47,7 +47,8 @@ Domain ← Application ← IO (HTTP, Persistence, EventBus)
 - **Repository contracts são `protocol`** definidos em Domain (ex: `PatientRepository` em `Domain/Registry/Repository/`).
 - **`ServiceContainer`** em `IO/HTTP/Bootstrap/` é o composition root — instancia todos os handlers e repositórios, acessível via `Request.services`.
 - **StandardResponse\<T\>** com `meta.timestamp` envolve todas as respostas HTTP.
-- **Header `X-Actor-Id`** obrigatório em mutações (auditoria/audit trail).
+- **Audit trail via `JWT.sub`**: `Request+ActorId.swift::extractActorId()` retorna `requireAuthenticatedUser().userId` (extraído do `sub` claim em `JWTAuthMiddleware.swift` — busque por âncora `// ADR-023:`). Adapters HTTP upstream (BFFs, gateways) DEVEM encaminhar o header `Authorization: Bearer <jwt>` — não há header customizado de identidade do ator. Ver ADR-023 do handbook frontend (`handbook/architecture/DECISIONS/ADR-023-bff-adapter-bearer-forwarding.md`).
+- **Multi-issuer OIDC (ADR-027 + ADR-031)**: durante a migração Zitadel → Authentik, o serviço aceita tokens de ambos os issuers (env `OIDC_JWKS_URLS`, `OIDC_ISSUERS`, `OIDC_AUDIENCES` em CSV). `OIDCJWTPayload` (substitui `ZitadelJWTPayload`) lê roles via precedência: claim `roles` (Authentik com property mapping `acdg-roles`) → `groups` (Authentik default) → `urn:zitadel:iam:org:project:roles` (Zitadel legado). Defense-in-depth: `OIDCJWTPayloadBootstrap` registra validators globalmente no boot — `verify(using:)` valida iss/aud/exp/nbf em todo codepath, não apenas no middleware.
 
 ### Sequência obrigatória em command handlers
 

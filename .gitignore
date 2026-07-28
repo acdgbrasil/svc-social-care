@@ -16,3 +16,7 @@ Package.pins
 # Temp
 .cache/
 .tmp/
+
+# Claude Code — settings.json é compartilhado; o .local.json é por máquina
+# (permissões com paths absolutos do dev) e não deve ser versionado.
+.claude/settings.local.json

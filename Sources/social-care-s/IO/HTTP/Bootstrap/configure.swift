@@ -220,6 +220,9 @@ func configure(_ app: Application) async throws {
 
     // Code-review M2: carregar JWKS em PARALELO — pior caso reduzido de 180s
     // (sequencial) para ~90s (paralelo) com 2 IdPs ativos durante migracao.
+    // ADR-040: guardamos os JSONs carregados para semear `knownKids` do refresher
+    // (espelho inicial do key store — evita on-demand para kid ja conhecido).
+    var loadedJWKSJSONs: [String] = []
     try await withThrowingTaskGroup(of: (String, String).self) { group in
         for jwksUrl in jwksUrls {
             group.addTask {
@@ -250,6 +253,7 @@ func configure(_ app: Application) async throws {
 
         for try await (jwksUrl, jwksJSON) in group {
             try await app.jwt.keys.add(jwksJSON: jwksJSON)
+            loadedJWKSJSONs.append(jwksJSON)
             app.logger.info("JWKS loaded from \(jwksUrl)")
         }
     }
@@ -285,6 +289,33 @@ func configure(_ app: Application) async throws {
     app.logger.info(
         "OIDC validators: \(validators.allowedIssuers.count) issuers, \(validators.allowedAudiences.count) audiences"
     )
+
+    // MARK: - JWKS runtime refresh (ADR-040 / issue #23)
+    //
+    // O boot carregou o JWKS uma vez (acima). Em runtime, o IdP pode ROTACIONAR
+    // a chave de assinatura → tokens novos trazem `kid` desconhecido → 401 em
+    // massa ate o restart. Refresh hibrido (paridade com people-context):
+    //   (a) periodico — background task no lifecycle re-fetcha a cada
+    //       OIDC_JWKS_REFRESH_INTERVAL (default 10min), upsert por `kid`;
+    //   (b) on-demand — JWTAuthMiddleware, ao ver `kid` novo, dispara refresh
+    //       (com OIDC_JWKS_REFRESH_COOLDOWN, default 30s) e retenta 1x.
+    // O key store e o proprio `app.jwt.keys` (JWTKeyCollection, ja actor) — o
+    // upsert propaga para a verificacao.
+    let refreshInterval = Environment.get("OIDC_JWKS_REFRESH_INTERVAL").flatMap(Double.init) ?? 600
+    let refreshCooldown = Environment.get("OIDC_JWKS_REFRESH_COOLDOWN").flatMap(Double.init) ?? 30
+    let jwksRefresher = JWKSRefresher(
+        urls: jwksUrls,
+        fetcher: HTTPJWKSFetcher(client: app.client),
+        keyStore: app.jwt.keys,
+        interval: refreshInterval,
+        cooldown: refreshCooldown,
+        logger: app.logger
+    )
+    // Semeia knownKids com os kids ja carregados no boot (espelho inicial do
+    // key store) — assim o on-demand nao dispara para um kid que ja conhecemos.
+    await jwksRefresher.seedKnownKids(fromJWKS: loadedJWKSJSONs)
+    app.jwksRefresher = jwksRefresher
+    app.lifecycle.use(JWKSRefreshScheduler(refresher: jwksRefresher, logger: app.logger))
 
     // MARK: - Token Introspection (fallback for service accounts without role claims)
 

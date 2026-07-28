@@ -1,3 +1,4 @@
+import Foundation
 import Vapor
 import JWT
 
@@ -24,8 +25,28 @@ struct JWTAuthMiddleware: AsyncMiddleware {
             // via OIDCJWTPayloadBootstrap (AppSec CRITICAL-1 — defense-in-depth).
             payload = try await request.jwt.verify(as: OIDCJWTPayload.self)
         } catch {
-            request.logger.warning("JWT verify falhou", metadata: LogSanitizer.metadata(for: error))
-            throw Abort(.unauthorized, reason: Self.unauthorizedReason)
+            // ADR-040: a falha pode ser rotacao de chave do IdP (kid novo apos
+            // rotacao). Se o kid do token NAO esta entre os conhecidos, dispara
+            // um refresh de JWKS (com cooldown, anti-hammering) e retenta a
+            // verificacao UMA vez. Caminho de erro apenas — o caminho feliz
+            // (kid conhecido) nao paga custo extra. 401 continua generico.
+            guard
+                let refresher = request.application.jwksRefresher,
+                let kid = Self.extractKid(fromToken: request.bearerToken),
+                await refresher.refreshIfKidUnknown(kid)
+            else {
+                request.logger.warning("JWT verify falhou", metadata: LogSanitizer.metadata(for: error))
+                throw Abort(.unauthorized, reason: Self.unauthorizedReason)
+            }
+            do {
+                payload = try await request.jwt.verify(as: OIDCJWTPayload.self)
+            } catch {
+                request.logger.warning(
+                    "JWT verify falhou apos refresh JWKS on-demand",
+                    metadata: LogSanitizer.metadata(for: error)
+                )
+                throw Abort(.unauthorized, reason: Self.unauthorizedReason)
+            }
         }
 
         var roles = payload.roleNames
@@ -64,6 +85,38 @@ struct JWTAuthMiddleware: AsyncMiddleware {
         )
 
         return try await next.respond(to: request)
+    }
+
+    // MARK: - kid extraction (ADR-040)
+
+    /// Extrai o `kid` do **header** do JWT (1o segmento), decodificado como
+    /// base64url — **sem** verificar a assinatura (ainda nao ha chave para o kid
+    /// novo; a verificacao real acontece no retry apos o refresh). Retorna `nil`
+    /// se o token esta ausente/malformado ou nao traz `kid`.
+    static func extractKid(fromToken token: String?) -> String? {
+        guard let token else { return nil }
+        let segments = token.split(separator: ".")
+        guard segments.count >= 2 else { return nil }
+        guard
+            let headerData = decodeBase64URL(String(segments[0])),
+            let object = try? JSONSerialization.jsonObject(with: headerData) as? [String: Any],
+            let kid = object["kid"] as? String
+        else {
+            return nil
+        }
+        return kid
+    }
+
+    /// Decodifica uma string base64url (JWT usa base64url sem padding) em `Data`.
+    private static func decodeBase64URL(_ input: String) -> Data? {
+        var base64 = input
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let remainder = base64.count % 4
+        if remainder > 0 {
+            base64 += String(repeating: "=", count: 4 - remainder)
+        }
+        return Data(base64Encoded: base64)
     }
 }
 

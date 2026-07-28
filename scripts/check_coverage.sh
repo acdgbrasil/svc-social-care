@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Locale-safe: jq emite números com ponto decimal; sob LC_NUMERIC com vírgula
+# (ex.: pt_BR) o `printf '%.2f'` aborta com "número inválido" e, com `set -e`,
+# derruba o script antes do gate. Forçar ponto decimal em todo o script.
+export LC_ALL=C
+
 THRESHOLD="${1:-70}"
 TARGET_REGEX="/Sources/social-care-s/"
 

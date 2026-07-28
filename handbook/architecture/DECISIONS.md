@@ -45,6 +45,7 @@ estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
 | [029](DECISIONS/ADR-029-oidc-role-precedence.md) | Precedência de roles multi-claim + property mapping `acdg-roles` | Aceito | 2026-07-04 | — |
 | [031](DECISIONS/ADR-031-oidc-defense-in-depth-and-acdg-claims.md) | Defense-in-depth no `verify` OIDC + claims ACDG (org_id/person_id/legacy_sub) | Aceito | 2026-07-04 | — |
 | [039](DECISIONS/ADR-039-erasure-policy-people-person-deleted.md) | Política de erasure ao consumir `people.person.deleted` (LGPD × No-Delete) | Aceito | 2026-06-09 | — |
+| [040](DECISIONS/ADR-040-jwks-runtime-refresh.md) | Refresh de JWKS em runtime (periódico + on-demand por `kid`) | Aceito | 2026-07-04 | — |
 
 > **Faixa 026-038 (reconciliada em 2026-07-04):** originalmente **reservada** aos
 > tickets T-025..T-038 do `REMEDIATION_PIPELINE_2026_05_14.md`. Na prática, a
@@ -60,7 +61,7 @@ estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
 > Ainda **reservados** (planejados no pipeline, ADR criado conforme o ticket
 > fecha): **026, 028, 030, 032-038**. Observação: **T-028** (cursor pagination)
 > já foi implementado em v0.7.0 sem ADR formal — dívida de documentação a fechar.
-> Próximo ID livre fora da reserva: **040**.
+> Próximo ID livre fora da reserva: **041** (040 usado pelo JWKS runtime refresh, issue #23).
 
 ## Regra de promoção `Proposto` → `Aceito` (ADR-003)
 

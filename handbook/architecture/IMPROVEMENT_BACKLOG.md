@@ -383,6 +383,81 @@ tem essa necessidade — estado durável é Postgres. Skip.
 
 ---
 
+## Revisão externa de stack — 2026-08-31
+
+> **Origem:** parecer externo sobre o `Package.swift`, recebido durante o bump
+> de dependências (SwiftPM 26 deps + toolchain 6.3.3). Avaliado contra o código
+> real. **Dois dos cinco itens partiam de premissa factualmente falsa** — o
+> registro abaixo existe para que as mesmas recomendações não retornem.
+
+| # | Proposta | Veredito | Evidência no código |
+|---:|---|:-:|---|
+| E1 | Migrar Vapor 4 → **Hummingbird 2** | ⚠️ **registrado, não adotado** | Justificativa era "uso intenso de `async let` nos handlers": `grep -rn "async let" Sources/` → **0 ocorrências**. Ver detalhe abaixo. |
+| E2 | Trocar `sql-kit` por **PostgresNIO puro** | ❌ **rejeitado** | Troca query builder por SQL em string. `CHANGELOG` 0.5.3 registra incidente causado por sutileza de serialização do SQLKit — SQL cru **aumenta** essa superfície. 37 arquivos, 21 migrations. |
+| E3 | Adicionar **VaporToOpenAPI** | ❌ **lib rejeitada**, problema real | É *code-first*; o monorepo é *contract-first* (`contracts/` = repo git separado, 195 YAMLs, spec do social-care com 1396 linhas). Adotar criaria duas fontes de verdade. |
+| E4 | Manter `vapor/jwt` 5 | ✅ **concorda com status quo** | Nenhuma ação. |
+| E5 | `platforms: .macOS(.v26)` → `.v14`/`.v15` | ❌ **FALSO — não aplicar** | `.v26` é válido. `swift package dump-package` → `platformName: macos, version: "26.0"`; build release + 487 testes passam. Ver comentário blindando isso no `Package.swift`. |
+| E6 | Migrar REST → **gRPC + protobuf** (padronização) | ⚠️ **registrado, escopo organizacional** | Ver detalhe abaixo. |
+
+### E1 — Hummingbird 2 (registrado para reavaliação futura)
+
+**A favor:** Hummingbird 2 foi desenhado sobre Swift Concurrency, sem vazar
+`EventLoop` do NIO na API pública. Menor footprint e menos context switching que
+o Vapor 4, que adaptou `async/await` sobre engine baseada em `EventLoop`.
+
+**Contra (medido):**
+
+- A premissa do parecer é falsa: **0 ocorrências de `async let`** em `Sources/`.
+  A frase veio de um comentário impreciso do próprio `Package.swift` (já
+  corrigido), que descrevia o serviço como "BFF com uso pesado de `async let`".
+- **Este serviço não é um BFF.** O BFF é `frontend/apps/social_care_bff` (Dart)
+  e consome *este* serviço. Aqui é microserviço de domínio (Clean Arch + DDD).
+- Custo: **22 arquivos** importam Vapor; 3 middlewares (`JWTAuthMiddleware`,
+  `RoleGuardMiddleware`, `AppErrorMiddleware`), 6 controllers, 66 rotas,
+  `ServiceContainer`, DTOs `Content` e `vapor/jwt` (acoplado ao Vapor).
+- Ganho **não medido**. O gargalo de um serviço transacional deste perfil é I/O
+  do PostgreSQL, não o overhead do router.
+
+**Gatilho para reabrir:** performance de framework virar problema *medido*
+(profiling apontando router/serialização, não banco). Só então vale ADR.
+
+### E6 — gRPC + protobuf no lugar de REST
+
+**Objetivo declarado:** padronização de contratos.
+
+**O paradoxo:** migrar **apenas** o `social-care` produz o oposto do objetivo.
+Hoje o monorepo tem **zero arquivos `.proto`**; `people-context` é Node,
+`analysis-bi` é Go, e o contrato canônico é OpenAPI (sync) + AsyncAPI (async).
+Padronizar em gRPC seria um **programa organizacional** (todos os serviços + BFF),
+não uma tarefa do `social-care`.
+
+**Bloqueio técnico concreto:** o BFF tem alvo **`web`**
+(`frontend/apps/social_care_bff/web`). Navegadores não falam gRPC nativo —
+exigiria gRPC-Web ou Connect mais proxy de borda (Envoy) no `edge-cloud-infra`.
+
+**Custo:** 66 rotas em 6 controllers; 1396 linhas de OpenAPI + schemas; JWT/RBAC
+hoje são middlewares Vapor e virariam interceptors; `StandardResponse<T>` e os
+códigos de `AppError` (`PAT-001`) precisariam remapear para status gRPC +
+rich error model.
+
+**O que já cobre parte do objetivo:** o assíncrono já é binário/tipado via NATS
+(`NATSEventPublisher`/`NATSEventSubscriber`) com AsyncAPI. E tipagem forte com
+zero drift no lado síncrono é alcançável gerando clientes Swift/Dart a partir dos
+OpenAPI já existentes — sem trocar o transporte.
+
+**Se for reaberto**, o recorte de menor risco é gRPC **apenas em rotas internas
+serviço-a-serviço** (ex.: `social-care` ↔ `people-context`), mantendo REST na
+borda consumida pelo BFF. Isso exige ADR e decisão em nível de organização.
+
+### E3 — o núcleo aproveitável (não priorizado)
+
+Drift entre `contracts/services/social-care/openapi/openapi.yaml` e as 66 rotas
+implementadas **não tem gate hoje**. A direção correta é validar a implementação
+*contra* o contrato em CI (preservando contract-first), não gerar spec a partir
+do código. Não priorizado nesta sessão; vale ADR quando entrar.
+
+---
+
 ## Critério de promoção
 
 Uma proposta vira "aceita" quando:
@@ -397,3 +472,8 @@ Uma proposta vira "aceita" quando:
 - **2026-05-14** — criação. Avaliação inicial das 13 propostas vindas de
   `ia_orquestration/handbook/melhorias/`. 4 promovidas (05, 09, 11, 12),
   2 adaptadas (01→G16, 10→ADR pendente), 7 rejeitadas.
+- **2026-08-31** — seção "Revisão externa de stack". 6 itens avaliados contra o
+  código durante o bump de dependências: 2 registrados sem adoção (E1
+  Hummingbird, E6 gRPC), 3 rejeitados (E2, E3-lib, E5), 1 sem ação (E4). E5
+  (`.macOS(.v26)` "inválido") era **factualmente falso** e foi blindado por
+  comentário no `Package.swift`.

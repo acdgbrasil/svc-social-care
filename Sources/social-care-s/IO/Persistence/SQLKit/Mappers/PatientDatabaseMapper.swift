@@ -166,7 +166,7 @@ struct PatientDatabaseMapper {
 
         let domainFamily = try familyMembers.map { m in
             let docs = docsByMember[m.person_id] ?? []
-            return try FamilyMember(
+            return FamilyMember(
                 personId: try PersonId(m.person_id.uuidString),
                 relationshipId: try LookupId(m.relationship_id.uuidString),
                 isPrimaryCaregiver: m.is_primary_caregiver,

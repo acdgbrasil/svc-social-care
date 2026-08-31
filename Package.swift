@@ -11,14 +11,33 @@
 // seguem compilando.
 //
 // Swift 6.3.1 (2026-04-17) fixa stack-allocation bugs em async functions
-// ("freed pointer was not the last allocation" em `swift_asyncLet_finish`) —
-// crítico para um BFF com uso pesado de `async let` em handlers.
+// ("freed pointer was not the last allocation" em `swift_asyncLet_finish`).
+// NOTA: este serviço NÃO usa `async let` (zero ocorrências em Sources/) e NÃO
+// é um BFF — o BFF é `frontend/apps/social_care_bff` (Dart), que consome ESTE
+// serviço. Aqui é microserviço de domínio (Clean Architecture + DDD). Uma
+// redação anterior descrevia o oposto e já induziu uma revisão externa a
+// recomendar troca de framework com base em premissa falsa.
+//
+// PISO DE TOOLCHAIN: 6.3.3 é OBRIGATÓRIO, não cosmético. Em 6.3.2 o resolver
+// do SwiftPM rejeita o grafo com:
+//   "Disabled default traits on package 'async-http-client' that declares no traits"
+// async-http-client 1.36.0 (transitivo do Vapor) declara
+// `.package(swift-configuration, traits: [])` para evitar linkar Foundation, e
+// o 6.3.2 avalia isso como erro mesmo com swift-configuration 1.2.0 declarando
+// traits corretamente. O 6.3.3 corrige. Não baixe `.swift-version` para 6.3.2:
+// o `swift package resolve` quebra antes de compilar.
 
 import PackageDescription
 
 let package = Package(
     name: "SOCIAL-CARE",
     platforms: [
+        // `.v26` é VÁLIDO (macOS 26 "Tahoe"). A Apple saltou a numeração de 15
+        // (Sequoia) para 26 no ciclo 2025-26, então `.v15` não é "o mais novo".
+        // Confirmável com `swift package dump-package` → platformName macos,
+        // version "26.0". NÃO baixar para .v14/.v15: é downgrade gratuito que
+        // restringe APIs disponíveis. Isto também NÃO afeta CI/Docker — lá o
+        // build é Linux (swift:6.3-jammy), onde `platforms: [.macOS]` é ignorado.
         .macOS(.v26)
     ],
     dependencies: [

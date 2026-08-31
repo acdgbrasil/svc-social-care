@@ -30,6 +30,14 @@ import SQLKit
 /// | `program_id` | `ingress_linked_programs` | `dominio_programa_social` |
 ///
 /// Ticket: T-008. ADR: ADR-008.
+///
+/// - Note: As interpolações usam `\(unsafeRaw:)` porque nomes de tabela e de
+///   constraint não podem ser bind parameters em DDL — o PostgreSQL não aceita
+///   placeholder em `ALTER TABLE`/`ADD CONSTRAINT`. Não há risco de injeção:
+///   todos os valores vêm de `specs`, um array literal e fechado deste arquivo,
+///   sem qualquer origem em request, banco ou environment. O SQLKit 3.36.0
+///   renomeou `\(raw:)` para `\(unsafeRaw:)` apenas para tornar essa avaliação
+///   explícita no ponto de uso — a semântica é idêntica.
 struct DeclareLookupFKs: Migration {
     let name = "2026_05_14_DeclareLookupFKs"
 
@@ -84,10 +92,10 @@ struct DeclareLookupFKs: Migration {
         // PASSO 2 — Adicionar as 7 FKs.
         for spec in specs {
             try await db.raw("""
-                ALTER TABLE \(raw: spec.sourceTable)
-                ADD CONSTRAINT \(raw: spec.constraintName)
-                FOREIGN KEY (\(raw: spec.sourceColumn))
-                REFERENCES \(raw: spec.targetTable)(id)
+                ALTER TABLE \(unsafeRaw: spec.sourceTable)
+                ADD CONSTRAINT \(unsafeRaw: spec.constraintName)
+                FOREIGN KEY (\(unsafeRaw: spec.sourceColumn))
+                REFERENCES \(unsafeRaw: spec.targetTable)(id)
                 ON DELETE RESTRICT
             """).run()
         }
@@ -97,8 +105,8 @@ struct DeclareLookupFKs: Migration {
         // Ordem inversa, IF EXISTS para idempotência.
         for spec in specs.reversed() {
             try await db.raw("""
-                ALTER TABLE \(raw: spec.sourceTable)
-                DROP CONSTRAINT IF EXISTS \(raw: spec.constraintName)
+                ALTER TABLE \(unsafeRaw: spec.sourceTable)
+                DROP CONSTRAINT IF EXISTS \(unsafeRaw: spec.constraintName)
             """).run()
         }
     }
@@ -118,10 +126,10 @@ struct DeclareLookupFKs: Migration {
     private func firstOrphan(on db: any SQLDatabase, spec: FKSpec) async throws -> String? {
         let nullClause = spec.nullable ? "AND s.\(spec.sourceColumn) IS NOT NULL" : ""
         let row = try await db.raw("""
-            SELECT s.\(raw: spec.sourceColumn) AS orphan_id
-              FROM \(raw: spec.sourceTable) s
-              LEFT JOIN \(raw: spec.targetTable) t ON s.\(raw: spec.sourceColumn) = t.id
-              WHERE t.id IS NULL \(raw: nullClause)
+            SELECT s.\(unsafeRaw: spec.sourceColumn) AS orphan_id
+              FROM \(unsafeRaw: spec.sourceTable) s
+              LEFT JOIN \(unsafeRaw: spec.targetTable) t ON s.\(unsafeRaw: spec.sourceColumn) = t.id
+              WHERE t.id IS NULL \(unsafeRaw: nullClause)
               LIMIT 1
         """).first()
         guard let row else { return nil }

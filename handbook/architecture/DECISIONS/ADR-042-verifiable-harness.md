@@ -1,11 +1,16 @@
 # ADR-042: Harness verificável — o `.claude/` afirma só o que um comando comprova
 
 **Data:** 2026-09-01
-**Status:** Proposto
+**Status:** Aceito
 **Supersedes:** —
 
-> **Promoção → Aceito (ADR-003):** fica `Proposto` até `scripts/check_harness.sh`
-> existir e rodar no CI — ver "Teste de regressão".
+> **Promoção → Aceito (ADR-003):** promovido em 2026-09-01 com
+> `scripts/check_harness.sh` no CI. A primeira execução encontrou **21
+> divergências reais** na documentação viva: 12 menções à role `social_worker`
+> (que nunca existiu), 4 ao header `X-Actor-Id` (aposentado pelo ADR-023,
+> incluindo o `README.md`), 4 à promessa de gate de 95% e, depois,
+> `handbook/Agents/implementor.md` afirmando que o framework HTTP é
+> Hummingbird. Todas corrigidas neste mesmo commit.
 
 ## Contexto
 
@@ -75,8 +80,8 @@ passa a ser `Package.resolved`, o header do módulo ou a doc oficial. A
 reconstrução também **órfãou 70 referências** em 32 arquivos do handbook — quase
 todo ADR aponta, na seção "Better Pattern", para uma skill que não existe mais.
 
-**Ações requeridas.** Feitas em `d9c617e`, `86ae9eb`, `603d0fe`, `ba23d42`. Falta
-o `check_harness.sh` (este ADR) e a tabela de equivalência no `DECISIONS.md`.
+**Ações requeridas.** Feitas em `d9c617e`, `86ae9eb`, `603d0fe`, `ba23d42`,
+`dc37113` (tabela de equivalência) e no commit deste ADR (`check_harness.sh`).
 
 ## Plano de adoção
 
@@ -86,8 +91,8 @@ o `check_harness.sh` (este ADR) e a tabela de equivalência no `DECISIONS.md`.
 3. ✅ Hooks de enforcement e `permissions` com `deny`/`ask`.
 4. ✅ Plugin `acdg` (`tooling/acdg-plugin/`) para o que serve a qualquer serviço
    da organização — hoje o LSP de Swift e o guard de git.
-5. ⏳ `scripts/check_harness.sh` no CI.
-6. ⏳ Tabela de equivalência skill antiga → nova em `DECISIONS.md`.
+5. ✅ `scripts/check_harness.sh` no CI, rodando antes do build (0,22s).
+6. ✅ Tabela de equivalência skill antiga → nova em `DECISIONS.md`.
 
 ## Como reverter
 

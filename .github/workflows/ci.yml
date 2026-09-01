@@ -29,6 +29,11 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
+      # Roda antes do build porque leva 0,2s e falha cedo: documentacao que
+      # mente sobre o codigo e defeito, nao detalhe (ADR-042).
+      - name: Verify harness
+        run: ./scripts/check_harness.sh
+
       - name: Resolve dependencies
         run: swift package resolve
 

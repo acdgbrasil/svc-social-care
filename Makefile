@@ -33,6 +33,9 @@ test: ## Executa os testes
 regression: ## Executa apenas o suite de regressão (alvo < 5s; ADR-002)
 	swift test --filter "Regression"
 
+check-harness: ## Verifica que o harness (.claude/) bate com o codigo (ADR-042)
+	./scripts/check_harness.sh
+
 coverage: ## Executa testes + gate de cobertura (30%)
 	./scripts/check_coverage.sh 30
 

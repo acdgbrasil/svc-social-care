@@ -1,12 +1,14 @@
 # ADR-041: Cobertura de teste é termômetro, não gate
 
 **Data:** 2026-09-01
-**Status:** Proposto
+**Status:** Aceito
 **Supersedes:** —
 
-> **Promoção → Aceito (ADR-003):** este ADR fica `Proposto` até o mecanismo de
-> enforcement existir e rodar no CI — ver "Teste de regressão". A regra é do
-> próprio projeto e vale para quem a escreveu.
+> **Promoção → Aceito (ADR-003):** promovido em 2026-09-01, quando
+> `scripts/check_harness.sh` passou a existir e a rodar no CI (12 checagens,
+> 0,22s). Na primeira execução ele encontrou 4 lugares onde a promessa de gate
+> ainda estava viva — dois deles títulos de seção do próprio
+> `IMPLEMENTATION_PLAN.md`.
 
 ## Contexto
 
@@ -84,7 +86,7 @@ modo, e correção dos seis documentos.
 2. ✅ `ci.yml` roda `./scripts/check_coverage.sh report` no lugar de `swift test`.
 3. ✅ Documentação corrigida onde afirmava 95%; `handbook/reports/` intocado por
    ser histórico.
-4. ⏳ `scripts/check_harness.sh` barra o reaparecimento da promessa (ADR-042).
+4. ✅ `scripts/check_harness.sh` barra o reaparecimento da promessa (ADR-042).
 5. ⏳ Reavaliar a catraca quando G10 fechar.
 
 ## Como reverter

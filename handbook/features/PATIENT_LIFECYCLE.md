@@ -57,8 +57,8 @@
 Base: `POST /api/v1/patients/:patientId/<acao>`
 
 Todos os endpoints exigem:
-- **JWT** com role `social_worker` ou `admin`
-- **Header** `X-Actor-Id` (registrado no audit trail)
+- **JWT** com role `worker` ou `admin`
+- **actorId** extraido do `sub` do JWT via `req.extractActorId()` e registrado no audit trail (ADR-023)
 
 ### POST /admit
 
@@ -227,7 +227,7 @@ Ao consultar um paciente via GET, o `PatientResponse` inclui:
 
 - **PII protegido:** `patientId` vai para `safeContext`, nunca exposto em respostas de erro ou logs
 - **Autenticacao:** JWT via Zitadel OIDC obrigatorio
-- **Autorizacao:** Role guard (`social_worker` ou `admin`)
+- **Autorizacao:** Role guard (`worker` ou `admin`)
 - **Audit trail:** `actorId` registrado em cada transicao de estado (`dischargedBy`, `withdrawnBy`)
 - **Eventos de dominio:** publicados via Transactional Outbox apos persistencia
 

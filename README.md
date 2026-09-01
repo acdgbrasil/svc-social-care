@@ -4,7 +4,7 @@ Microservico de cuidado social da **ACDG Brasil** (Associacao Brasileira de Prof
 
 ## Stack
 
-- **Linguagem:** Swift 6.2 (Strict Concurrency)
+- **Linguagem:** Swift 6.3 (Strict Concurrency)
 - **Framework HTTP:** Vapor 4
 - **Database:** PostgreSQL 15 (via SQLKit + PostgresKit)
 - **Build:** Swift Package Manager (SwiftPM)
@@ -17,10 +17,10 @@ Clean Architecture + DDD com CQRS e Transactional Outbox.
 
 ```
 Sources/social-care-s/
-  Domain/         Agregados, entidades, ~24 value objects
-  Application/    17 command handlers + 2 query handlers
+  Domain/         Agregados, entidades, value objects (11 so no Kernel)
+  Application/    25 command handlers + read-side em Query/
   IO/
-    HTTP/         6 controllers, 24 rotas (Vapor)
+    HTTP/         6 controllers, 35 rotas (Vapor)
     Persistence/  SQLKit repository, migrations, mapper
   shared/         AppError, DomainEventRegistry, protocolos
 ```
@@ -34,12 +34,12 @@ Sources/social-care-s/
 | **AssessmentController** | `PUT` housing-condition, socioeconomic-situation, work-and-income, educational-status, health-status, community-support-network, social-health-summary |
 | **ProtectionController** | `PUT` placement-history, `POST` violation-reports, `POST` referrals |
 | **CareController** | `POST` appointments, `PUT` intake-info |
-| **LookupController** | `GET /dominios/:tableName` |
+| **LookupController** | `GET /dominios/:tableName`, lookup-requests (create/list/approve/reject), admin (create/update item) |
 
 ### Funcionalidades transversais
 
 - **StandardResponse\<T\>** com `meta.timestamp` em todos os endpoints
-- **X-Actor-Id** header obrigatorio em mutations
+- **actorId** derivado do `sub` do JWT em toda mutation (ADR-023) — nao existe header de identidade
 - **Audit trail** com before/after diff e filtro por eventType
 - **Validacao metadata-driven** (flags em lookup tables)
 - **Validacoes cruzadas** (sexo/gestante, idade/acolhimento)
@@ -49,7 +49,7 @@ Sources/social-care-s/
 
 ### Requisitos
 
-- Swift 6.2+
+- Swift 6.3+ (via Swiftly — le o `.swift-version`)
 - PostgreSQL 15+ (ou Docker)
 - jq (para coverage report)
 

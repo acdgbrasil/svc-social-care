@@ -46,8 +46,8 @@ estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
 | [031](DECISIONS/ADR-031-oidc-defense-in-depth-and-acdg-claims.md) | Defense-in-depth no `verify` OIDC + claims ACDG (org_id/person_id/legacy_sub) | Aceito | 2026-07-04 | — |
 | [039](DECISIONS/ADR-039-erasure-policy-people-person-deleted.md) | Política de erasure ao consumir `people.person.deleted` (LGPD × No-Delete) | Aceito | 2026-06-09 | — |
 | [040](DECISIONS/ADR-040-jwks-runtime-refresh.md) | Refresh de JWKS em runtime (periódico + on-demand por `kid`) | Aceito | 2026-07-04 | — |
-| [041](DECISIONS/ADR-041-coverage-as-thermometer.md) | Cobertura de teste é termômetro, não gate | Proposto | 2026-09-01 | — |
-| [042](DECISIONS/ADR-042-verifiable-harness.md) | Harness verificável — o `.claude/` afirma só o que um comando comprova | Proposto | 2026-09-01 | — |
+| [041](DECISIONS/ADR-041-coverage-as-thermometer.md) | Cobertura de teste é termômetro, não gate | Aceito | 2026-09-01 | — |
+| [042](DECISIONS/ADR-042-verifiable-harness.md) | Harness verificável — o `.claude/` afirma só o que um comando comprova | Aceito | 2026-09-01 | — |
 
 > **Faixa 026-038 (reconciliada em 2026-07-04):** originalmente **reservada** aos
 > tickets T-025..T-038 do `REMEDIATION_PIPELINE_2026_05_14.md`. Na prática, a

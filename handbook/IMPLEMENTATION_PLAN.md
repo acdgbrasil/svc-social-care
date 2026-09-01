@@ -74,7 +74,7 @@
 8. [Fase 5 — Outbox Relay + Event Delivery](#fase-5)
 9. [Fase 6 — Queries / Read Side](#fase-6)
 10. [Fase 7 — Cross-Cutting (Error, Health, Observability)](#fase-7)
-11. [Fase 8 — Testes de Integracao + Cobertura 95%](#fase-8)
+11. [Fase 8 — Testes de Integracao + Cobertura](#fase-8)
 12. [Fase 9 — Production Readiness](#fase-9)
 13. [Checklist Final](#checklist-final)
 
@@ -391,7 +391,7 @@ Todos retornados no campo `computedAnalytics` do `PatientResponse`:
 - [x] Health check (`GET /health`) e readiness (`GET /ready` — testa conexao DB)
 - [x] Graceful shutdown (Vapor lifecycle hooks — `GracefulShutdownHandler` com log de startup/shutdown, compativel com SIGTERM do K8s)
 - [x] JWT Authentication (`JWTAuthMiddleware` — valida tokens via JWKS do Zitadel, skipa /health e /ready)
-- [x] RBAC (`RoleGuardMiddleware` — 3 roles: `social_worker` full CRUD, `owner` read-only, `admin` read-only + gestao)
+- [x] RBAC (`RoleGuardMiddleware` — 3 roles: `worker` full CRUD, `owner` read-only, `admin` read-only + gestao)
 
 ### 7.2 Autenticacao e Autorizacao (OIDC multi-issuer — ADR-027/029/031)
 
@@ -412,12 +412,12 @@ Ambos self-hosted, deploy via FluxCD no K3s.
 
 | Controller | Operacao | Roles permitidas |
 |------------|----------|-----------------|
-| PatientController | GET (read) | `social_worker`, `owner`, `admin` |
-| PatientController | POST/PUT/DELETE (write) | `social_worker` |
-| AssessmentController | PUT (write) | `social_worker` |
-| CareController | POST/PUT (write) | `social_worker` |
-| ProtectionController | PUT/POST (write) | `social_worker` |
-| LookupController | GET (read) | `social_worker`, `owner`, `admin` |
+| PatientController | GET (read) | `worker`, `owner`, `admin` |
+| PatientController | POST/PUT/DELETE (write) | `worker` |
+| AssessmentController | PUT (write) | `worker` |
+| CareController | POST/PUT (write) | `worker` |
+| ProtectionController | PUT/POST (write) | `worker` |
+| LookupController | GET (read) | `worker`, `owner`, `admin` |
 | HealthController | GET (public) | Sem autenticacao (skipped pelo JWTAuthMiddleware) |
 
 ### 7.3 Decisoes de Arquitetura (Edge Cloud)
@@ -426,7 +426,7 @@ Ambos self-hosted, deploy via FluxCD no K3s.
 |------|---------|--------|
 | CORS | **Resolvido no Caddy (VPS Gateway)** | Caddy e o ponto de entrada publico; headers CORS globais la evitam duplicacao no app. |
 | Auth/JWT | **Implementado no app** | JWTAuthMiddleware valida tokens JWT via JWKS do Zitadel. actorId extraido do `sub` claim. |
-| Authorization (roles) | **Implementado no app** | RoleGuardMiddleware com 3 roles: social_worker (CRUD), owner (read), admin (read + gestao). |
+| Authorization (roles) | **Implementado no app** | RoleGuardMiddleware com 3 roles: worker (CRUD), owner (read), admin (read + gestao). |
 | Request logging | **Simplificado** | Traefik (ingress K3s) ja faz access log. O app usa o Logger padrao do Vapor para eventos de negocio. |
 
 ### Entregaveis Fase 7:
@@ -439,11 +439,11 @@ Ambos self-hosted, deploy via FluxCD no K3s.
 - [x] CORS (Caddy — infra, nao app)
 - [x] Request logging (Traefik access log + Vapor Logger)
 - [x] JWT Authentication (JWTAuthMiddleware + JWKS do Zitadel)
-- [x] RBAC Authorization (RoleGuardMiddleware — social_worker, owner, admin)
+- [x] RBAC Authorization (RoleGuardMiddleware — worker, owner, admin)
 
 ---
 
-## FASE 8 — Testes Completos + 95% Cobertura
+## FASE 8 — Testes Completos + Cobertura medida (ADR-041)
 
 **Estrategia de Testes Hibrida:**
 - **Domain Layer:** Testes UNITARIOS exaustivos. Foco em logica de negocio, VOs e Agregados. Sem dependencias de IO.
@@ -587,7 +587,7 @@ Quando TODOS os itens abaixo estiverem marcados, o microservico esta pronto para
 - [x] CORS (resolvido no Caddy/VPS Gateway — decisao de infra)
 - [x] Request logging (Traefik access log + Vapor Logger)
 - [x] JWT Authentication (`JWTAuthMiddleware` — OIDC multi-issuer, JWKS Zitadel + Authentik; ADR-027/029/031)
-- [x] RBAC Authorization (`RoleGuardMiddleware` — social_worker, owner, admin)
+- [x] RBAC Authorization (`RoleGuardMiddleware` — worker, owner, admin)
 
 ### Persistencia (I/O)
 - [x] Repository usando transacao SQL

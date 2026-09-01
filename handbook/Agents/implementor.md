@@ -185,12 +185,12 @@ DESEJAVEL (operacional):
 
 ## Contexto Tecnico Rapido
 
-- **Swift 6.2**, strict concurrency, SwiftPM
-- **Hummingbird 2.0** — framework HTTP async
+- **Swift 6.3**, strict concurrency, SwiftPM
+- **Vapor 4** — framework HTTP (o `Package.swift` e a fonte de verdade)
 - **SQLKit + PostgresKit** — acesso a banco
 - **Swift Testing** — framework de testes (nao XCTest)
 - **Transactional Outbox** — eventos salvos na mesma transacao do agregado
-- **188 arquivos Swift** em Sources, **16 suites de teste**
+- Contagens deste documento envelhecem: recalcule com `./scripts/check_harness.sh`
 - **OpenAPI 3.1** com 8 endpoints, **AsyncAPI 3.0** com 5 canais
 
 ## Estrutura de Pastas para Referencia

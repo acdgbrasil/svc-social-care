@@ -135,7 +135,12 @@ Usuario -> Caddy (VPS/SSL) -> Tailnet -> K3s (Xeon) -> Pod social-care
 - **Banco:** PostgreSQL StatefulSet no Xeon (SSD 1TB)
 - **Segredos:** Bitwarden Secrets Manager (operador K8s)
 - **Health probes:** `/health` (liveness) e `/ready` (readiness com check de DB)
-- **CORS/SSL:** Caddy na VPS gateway
+- **SSL:** Caddy na VPS gateway
+- **CORS:** primeira camada no Caddy; o servico tem politica propria, desligada
+  por default (ADR-045). Ligar so quando um front-end web chamar direto.
+- **Rate limit:** ligado por default no servico (ADR-046). Atras do Caddy sem
+  `TRUST_PROXY`, o IP visto e o do proxy e o balde e compartilhado — o boot
+  avisa no log.
 
 ## Variaveis de ambiente
 
@@ -147,14 +152,24 @@ Usuario -> Caddy (VPS/SSL) -> Tailnet -> K3s (Xeon) -> Pod social-care
 | `DB_USER` | `postgres` | Usuario do banco |
 | `DB_PASSWORD` | `postgres` | Senha do banco |
 | `DB_NAME` | `social_care` | Nome do banco |
+| `CORS_ALLOWED_ORIGINS` | — (desligado) | CSV de origens permitidas. Sem ela, o servico nao emite header de CORS. `*` e recusado em producao (ADR-045) |
+| `RATE_LIMIT_ENABLED` | `true` | `false`/`0`/`no`/`off` desliga o teto de requisicoes (ADR-046) |
+| `RATE_LIMIT_REQUESTS` | `300` | Creditos por janela, por cliente |
+| `RATE_LIMIT_WINDOW_SECONDS` | `60` | Tamanho da janela |
+| `TRUST_PROXY` | `false` | Deriva o IP do cliente de `X-Forwarded-For`/`X-Real-IP`. **So ligue com um proxy que reescreve esses headers** — senao o limite vira opcional para quem ataca |
+
+Secrets aceitam o sufixo `_FILE` (`DB_PASSWORD_FILE`), que tem precedencia sobre
+a variavel. As de OIDC (`OIDC_JWKS_URLS`, `OIDC_ISSUERS`, `OIDC_AUDIENCES`)
+estao documentadas no `.env.example` e nos ADR-027/029/031.
 
 ## Qualidade
 
-- **487 testes** em **88 suites** (89 arquivos de teste), verdes.
-- Cobertura e **termometro, nao gate** — leitura de 2026-08-31: **30,72% global**.
-  Por camada: `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 9,1%**.
-  A camada IO tem 7.132 linhas (metade do codigo-fonte) e esta praticamente
-  descoberta: nao ha teste de integracao HTTP (nenhum `app.test`).
+- **550 testes** em **94 suites**, verdes.
+- Cobertura e **termometro, nao gate** — leitura de 2026-09-01: **34,97% global**.
+  Por camada: `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 18,4%**.
+  A camada IO tem 7.510 linhas (metade do codigo-fonte) e segue sendo a menor
+  cobertura, mas o pipeline HTTP passou a ser exercitado ponta a ponta: 31 testes
+  em `Tests/social-care-sTests/IO/HTTP/`.
 - Piso local de 25% como anti-regressao: `./scripts/check_coverage.sh 25`.
 - Leitura por camada, sem gate: `./scripts/check_coverage.sh report`.
 

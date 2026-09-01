@@ -472,6 +472,38 @@ do código. Não priorizado nesta sessão; vale ADR quando entrar.
 
 ---
 
+## #14 — Unit of Work cross-repository (2026-09-01)
+
+**Origem:** não é proposta nova — é o que sobrou de uma âncora quebrada. O
+`RegressionFixture` mantinha um `StubUnitOfWork` "placeholder até o ticket T-030
+/ ADR-030". O ADR-030 nunca foi escrito, o T-030 nunca foi executado, e os dois
+únicos testes que usavam o stub exercitavam o próprio stub. Removido em
+2026-09-01 (ver `docs/GAPS.md` § Dívida no registro de ADRs); a ideia fica
+registrada aqui para não voltar como descoberta.
+
+**Problema que resolveria:** escrever em **dois agregados diferentes** dentro da
+mesma transação, com rollback conjunto.
+
+**Por que não é necessário hoje:**
+
+- A atomicidade que de fato importa — agregado + eventos de domínio — já é
+  garantida pelo repositório, que grava os dois na mesma transação (ADR-014). O
+  próprio ADR-014 descartou a alternativa que exigiria UoW.
+- Um caso de uso escreve **um** agregado. É a regra de DDD que o ADR-019 firmou
+  ao decompor o god aggregate `Patient`; consistência entre agregados é
+  eventual, pelo Outbox.
+- O `PatientAssessment` em dual-write (ADR-025) é a única escrita dupla, e ela
+  acontece dentro de um repositório, não entre dois.
+
+**Gatilho para reabrir:** um caso de uso precisar mesmo escrever dois agregados
+atomicamente. Aí o ADR trata da porta (`UnitOfWorkPort` no `shared/Ports/`), da
+implementação SQLKit sobre `db.transaction`, e — o ponto que o stub nunca
+cobriu — do **teste de rollback**, que exige um fake que falhe no meio.
+
+**Custo estimado:** S. **Prioridade:** nenhuma, enquanto não houver o gatilho.
+
+---
+
 ## Critério de promoção
 
 Uma proposta vira "aceita" quando:
@@ -491,3 +523,7 @@ Uma proposta vira "aceita" quando:
   Hummingbird, E6 gRPC), 3 rejeitados (E2, E3-lib, E5), 1 sem ação (E4). E5
   (`.macOS(.v26)` "inválido") era **factualmente falso** e foi blindado por
   comentário no `Package.swift`.
+- **2026-09-01** — entra a #14 (Unit of Work cross-repository), herdada da
+  remoção do `StubUnitOfWork`. A #11 (métricas Prometheus) deixa de "casar com o
+  G12" e passa a ser o próximo passo dele: o G12 fechou com correlação e log de
+  acesso (ADR-044), sem métricas.

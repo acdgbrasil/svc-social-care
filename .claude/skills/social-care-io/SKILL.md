@@ -12,12 +12,14 @@ when_to_use: >
 
 # IO — adaptadores, e o único lugar que conhece o mundo externo
 
-Verificado em 2026-08-31: 6 controllers, 35 rotas, 21 migrations.
+Verificado em 2026-09-01: 6 controllers, 35 rotas, 21 migrations.
 
-> **Esta é a camada menos testada do serviço: 9,1% de cobertura em 7.132
-> linhas**, sem nenhum teste de integração HTTP (`app.test`). Ao mexer aqui,
-> assuma que a rede de proteção não existe — leia o código vizinho antes de
-> supor comportamento.
+> **Ainda é a camada menos testada do serviço: 18,4% de cobertura em 7.510
+> linhas** (`./scripts/check_coverage.sh report`). Era 9,1% até 2026-09-01,
+> quando entraram os 31 testes de integração HTTP de
+> `Tests/social-care-sTests/IO/HTTP/`. Fora
+> do pipeline HTTP, siga assumindo que a rede de proteção não existe — leia o
+> código vizinho antes de supor comportamento.
 
 ## Mapa
 
@@ -27,7 +29,8 @@ IO/
 │   ├── Bootstrap/     configure.swift (composition root), ServiceContainer
 │   ├── Controllers/   6 controllers, um por área
 │   ├── DTOs/          RequestDTOs.swift, ResponseDTOs.swift
-│   ├── Middleware/    SecurityHeaders, AppError, JWTAuth, RoleGuard
+│   ├── Middleware/    SecurityHeaders, RequestContext, CORSPolicy,
+│   │                  RateLimit, AppError, JWTAuth, RoleGuard
 │   ├── Auth/          OIDCJWTPayload, AuthenticatedUser, JWKSRefresher, TokenIntrospector
 │   ├── Validation/    CrossValidator, MetadataValidator
 │   └── Extensions/    Request+ActorId
@@ -35,6 +38,43 @@ IO/
 ├── EventBus/            NATSEventPublisher
 └── PeopleContext/       cliente HTTP de saída
 ```
+
+## Middlewares de borda — a ordem é o contrato
+
+```
+SecurityHeaders → RequestContext → CORS → RateLimit → AppError → JWTAuth → RoleGuard
+```
+
+Registrar cedo = ficar mais externo = enxergar a resposta de todos os que vêm
+depois, inclusive as de erro. Cada posição foi escolhida:
+
+- **SecurityHeaders** primeiro, para que a resposta de erro também receba os
+  headers (ADR-012).
+- **RequestContext** antes do `AppError`, para que o log do erro carregue o
+  `correlation_id` e o `X-Request-Id` volte mesmo num 401 (ADR-044).
+- **CORS** antes do `AppError`: resposta de erro sem header de CORS chega no
+  navegador como falha de rede opaca. É opt-in por `CORS_ALLOWED_ORIGINS` e
+  sempre `.any([...])` — `.originBased` (o default do Vapor) ecoa qualquer
+  origem, e `*` é recusado em produção (ADR-045).
+- **RateLimit** por fora do `AppError` — assim anexa a cota a toda resposta — e
+  antes do `JWTAuth`, porque o tráfego que mais precisa de teto é o não
+  autenticado. Token bucket por IP, em memória, ligado por default; o 429 usa
+  `AppErrorMiddleware.errorResponse`, o mesmo envelope do resto (ADR-046).
+- **AppError** é o mais interno da borda: tudo depois dele apenas lança.
+
+Mexeu na ordem? Há lint estrutural em `Regression/Security/` que lê o
+`configure.swift` e falha.
+
+## Observabilidade
+
+Log de HTTP carrega método, **template** de rota (`GET /api/v1/patients/:patientId`),
+status, duração, `correlation_id` e `actor_id`. **Nunca** query string, corpo ou
+header: `?search=` carrega nome e CPF (ADR-044, e ADR-017 pelo lado dos erros).
+Valor vindo de header do cliente passa por allowlist antes de virar conteúdo de
+log — senão um `X-Request-Id` com `\n` injeta linha no log agregado.
+
+IP é dado pessoal: o log do rate limit guarda a faixa (`/24`, `/48`), não o
+endereço. Não há `/metrics` nem tracing com collector (backlog #11).
 
 ## Controller
 

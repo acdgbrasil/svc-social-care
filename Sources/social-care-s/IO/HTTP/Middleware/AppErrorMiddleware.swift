@@ -30,11 +30,16 @@ struct AppErrorMiddleware: AsyncMiddleware {
                 request: request
             )
         } catch let abort as AbortError {
+            // `abort.headers` é propagado: um `Abort` pode carregar header que
+            // faz parte da resposta, não decoração — o 429 do rate limit precisa
+            // do `Retry-After` e da cota (ADR-046). Descartá-los transformava a
+            // resposta em "erro sem instrução".
             return makeResponse(
                 status: abort.status,
                 code: "HTTP-\(abort.status.code)",
                 message: abort.reason,
-                request: request
+                request: request,
+                extraHeaders: abort.headers
             )
         } catch {
             request.logger.error("Unhandled error", metadata: LogSanitizer.metadata(for: error))
@@ -57,19 +62,50 @@ struct AppErrorMiddleware: AsyncMiddleware {
         code: String,
         message: String,
         safeContext: [String: AnySendable] = [:],
-        request: Request
+        request: Request,
+        extraHeaders: HTTPHeaders = [:]
+    ) -> Response {
+        var details: String?
+        if Self.verboseErrors && !safeContext.isEmpty {
+            details = safeContext.map { "\($0.key): \($0.value.value)" }.joined(separator: "; ")
+        }
+        return Self.errorResponse(
+            status: status,
+            code: code,
+            message: message,
+            details: details,
+            extraHeaders: extraHeaders
+        )
+    }
+
+    /// O envelope de erro do serviço — `{"error": {"code", "message"}}` — em um
+    /// lugar só.
+    ///
+    /// É `static` porque **não é exclusivo deste middleware**: um middleware que
+    /// corta a requisição antes dele (o rate limit, ADR-046) precisa responder no
+    /// mesmo formato, e um segundo envelope, ainda que parecido, viraria dois
+    /// contratos para o BFF tratar.
+    static func errorResponse(
+        status: HTTPResponseStatus,
+        code: String,
+        message: String,
+        details: String? = nil,
+        extraHeaders: HTTPHeaders = [:]
     ) -> Response {
         var body: [String: String] = [
             "code": code,
             "message": message
         ]
-        if Self.verboseErrors && !safeContext.isEmpty {
-            body["details"] = safeContext.map { "\($0.key): \($0.value.value)" }.joined(separator: "; ")
+        if let details {
+            body["details"] = details
         }
         do {
             let data = try JSONEncoder().encode(["error": body])
             var headers = HTTPHeaders()
             headers.contentType = .json
+            for (name, value) in extraHeaders {
+                headers.replaceOrAdd(name: name, value: value)
+            }
             return Response(status: status, headers: headers, body: .init(data: data))
         } catch {
             return Response(status: .internalServerError)

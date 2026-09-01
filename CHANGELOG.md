@@ -17,6 +17,45 @@ Todas as mudanças relevantes deste serviço serão registradas aqui.
 > - **`v0.14.3` não é ancestral de `v0.15.0`.** A adoção da AGPL saiu numa linha
 >   paralela e só entrou na linha principal em `v0.16.0`.
 
+### Adicionado
+- **Correlação e log de acesso (G12, ADR-044)** — `RequestContextMiddleware`
+  adota o `X-Request-Id` do chamador (ou o `trace-id` de um `traceparent` do
+  W3C), devolve o header em toda resposta e emite uma linha de log por
+  requisição com rota, status e duração. **Sem query string, corpo ou header**:
+  `?search=` carrega nome e CPF. Id vindo de fora passa por allowlist — sem ela,
+  um `\n` no header injeta linha no log agregado.
+- **CORS opt-in por allowlist (G13, ADR-045)** — `CORSPolicy` monta a
+  configuração a partir de `CORS_ALLOWED_ORIGINS`; sem a variável, o middleware
+  não entra na cadeia. Sempre `.any([...])`, nunca o `.originBased` do default
+  do Vapor, que ecoa qualquer origem. `*` é recusado em produção.
+- **Rate limiting (G14, ADR-046)** — token bucket por IP em memória do processo,
+  ligado por default (300 req/60s), antes da autenticação. Responde 429 com
+  `Retry-After` e anexa `X-RateLimit-*` a toda resposta. `TRUST_PROXY` controla
+  o uso de `X-Forwarded-For`; o log guarda a faixa do IP (`/24`, `/48`), não o
+  endereço.
+- **ADR-034 (clock injetável)** — o código citava esse ADR em três lugares e o
+  arquivo não existia. Escrito, com o `ClockInjectionTest` que o
+  `Regression/DomainInvariants/README.md` prometia desde maio.
+- 45 testes novos (550 no total, 94 suites). Cobertura de `IO` de 9,1% para
+  18,4%.
+
+### Alterado
+- `AppErrorMiddleware` expõe `errorResponse(...)` como envelope de erro
+  compartilhado — o 429 do rate limit responde no mesmo formato — e propaga os
+  headers de um `Abort`, que antes eram descartados.
+- Ordem dos middlewares:
+  `SecurityHeaders → RequestContext → CORS → RateLimit → AppError → JWTAuth`.
+  Lint estrutural em `Regression/Security/` falha se ela mudar.
+- `TestClock` sai do arquivo de teste do JWKS e vira double reaproveitável em
+  `Tests/social-care-sTests/Application/TestDoubles/`.
+
+### Removido
+- `RegressionFixture.StubUnitOfWork` e seus dois testes. Era placeholder de um
+  "ticket T-030 / ADR-030" que nunca virou decisão, e a única coisa que os testes
+  exercitavam era o próprio stub. A atomicidade que ele prometia já é atendida
+  pelo repositório (ADR-014); a proposta ficou registrada em `docs/adr/BACKLOG.md`
+  (#14).
+
 ## [0.16.0] - 2026-07-28
 
 ### Adicionado

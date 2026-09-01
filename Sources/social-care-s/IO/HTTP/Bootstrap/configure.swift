@@ -339,11 +339,60 @@ func configure(_ app: Application) async throws {
     // (S-C5 / ADR-012). Default Vapor é 16 KB form, sem teto explícito p/ JSON.
     app.routes.defaultMaxBodySize = "512kb"
 
+    // A ORDEM É O CONTRATO. Registrar cedo = ficar mais externo = enxergar a
+    // resposta de todos os que vêm depois, inclusive as de erro.
+    //
+    //   SecurityHeaders → RequestContext → CORS → RateLimit → AppError → JWTAuth
+    //
     // Headers de defesa em profundidade (HSTS, nosniff, X-Frame-Options,
-    // Referrer-Policy, Cache-Control). Registrado primeiro → fica mais externo,
-    // então as responses de erro (tratadas adiante) também recebem os headers.
+    // Referrer-Policy, Cache-Control). Primeiro, para que as responses de erro
+    // (tratadas adiante) também recebam os headers — ADR-012.
     app.middleware.use(SecurityHeadersMiddleware())
+
+    // Correlação + log de acesso (G12, ADR-044). Antes do AppError para que o
+    // log do caminho de erro também carregue o `correlation_id`, e para que o
+    // `X-Request-Id` volte mesmo num 401/429.
+    app.middleware.use(RequestContextMiddleware())
+
+    // CORS é opt-in por allowlist (G13, ADR-045): sem `CORS_ALLOWED_ORIGINS` o
+    // middleware não entra na cadeia. Antes do AppError porque resposta de erro
+    // sem header de CORS chega no navegador como falha de rede opaca.
+    if let corsConfiguration = try CORSPolicy.configuration(
+        originsCSV: Environment.get(CORSPolicy.originsEnvKey),
+        isProduction: isProduction
+    ) {
+        app.middleware.use(CORSMiddleware(configuration: corsConfiguration))
+        app.logger.info("CORS habilitado: \(corsConfiguration.allowedOrigin)")
+    }
+
+    // Rate limit (G14, ADR-046) por fora do AppError — assim a cota é anexada a
+    // toda resposta, inclusive às de erro — e antes do JWTAuth, porque o tráfego
+    // que mais precisa de teto é o não autenticado. O 429 usa o mesmo envelope
+    // de erro (`AppErrorMiddleware.errorResponse`).
+    if let rateLimitConfiguration = RateLimitConfiguration.fromEnvironment() {
+        app.middleware.use(
+            RateLimitMiddleware(
+                limiter: RateLimiter(configuration: rateLimitConfiguration),
+                trustProxy: rateLimitConfiguration.trustProxy
+            )
+        )
+        app.logger.info(
+            "Rate limit: \(rateLimitConfiguration.limit) req / \(Int(rateLimitConfiguration.window))s por cliente"
+        )
+        if !rateLimitConfiguration.trustProxy {
+            // O serviço fica atrás do Caddy: sem TRUST_PROXY, o IP visto é o do
+            // proxy e o balde é compartilhado por todos os usuários.
+            app.logger.warning(
+                "Rate limit sem TRUST_PROXY — a chave é o IP do proxy, não o do cliente (ADR-046)"
+            )
+        }
+    }
+
+    // Traduz erro em resposta: é o mais interno dos middlewares de borda, para
+    // que tudo que vem depois (auth, RoleGuard, controllers) possa apenas
+    // lançar.
     app.middleware.use(AppErrorMiddleware())
+
     app.middleware.use(JWTAuthMiddleware())
 
     // MARK: - Content Configuration

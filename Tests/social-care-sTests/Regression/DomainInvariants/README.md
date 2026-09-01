@@ -24,6 +24,12 @@ Previne bugs onde o **domínio aceita estado que viola invariante de negócio**.
 | T-034 | `ClockInjectionTest` | S-H-A2 |
 | T-035 | `ForceUnwrapAuditTest` | S-H-D4 + S-H-P3 |
 
+> Esta tabela é o **plano** do pipeline de 2026-05-14, não o inventário do
+> diretório. Estado em 2026-09-01: `ClockInjectionTest` passou a existir junto
+> com o ADR-034; `ForceUnwrapAuditTest` (T-035) **ainda não existe**; os demais
+> estão aqui com os nomes de arquivo reais (`*Tests.swift`). Confira com
+> `ls Tests/social-care-sTests/Regression/DomainInvariants/`.
+
 ## Padrão típico
 
 ```swift

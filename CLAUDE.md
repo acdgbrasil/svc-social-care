@@ -181,10 +181,18 @@ Foi removido inteiro. O atual é fino e verificável:
 | Arquivo | Papel |
 |---|---|
 | `.claude/agents/social-care.md` | Ponto de entrada. Mapa do serviço, invariantes, roteamento por camada. |
+| `.claude/agents/social-care-reviewer.md` | Revisor read-only do diff contra as 12 invariantes. Não edita, só reporta. |
 | `.claude/skills/social-care-domain/` | `Domain/` — VOs, agregados, analytics, contratos de repositório. |
 | `.claude/skills/social-care-application/` | `Application/` — commands, queries, handlers, mapeamento de erro. |
 | `.claude/skills/social-care-io/` | `IO/` — Vapor, auth, SQLKit, migrations, Outbox. |
 | `.claude/skills/social-care-tests/` | `Tests/` — `swift-testing`, fakes, regressão. |
+| `.claude/hooks/regression-gate.sh` | Hook `Stop`: roda `make regression` e **bloqueia o fim do turno** com suite vermelha. Só dispara se o turno tocou `.swift`; anti-loop via `stop_hook_active`. |
+| `.claude/hooks/domain-imports.sh` | Hook `PostToolUse` (Edit/Write): barra `import` fora de `Foundation` em `Domain/`. |
+
+Os dois hooks existem porque regra escrita em documento depende de alguém
+lembrar. A regra inviolável do teste vermelho e a fronteira do domínio agora são
+mecanismo, não intenção. `settings.json` também traz `deny` para segredos e
+`git push --force`, e `ask` para `git push`.
 
 Duas regras para mantê-lo vivo: **skill não repete o handbook** (aponta para o
 ADR ou o arquivo-âncora), e **toda contagem vem com o comando que a remede** —

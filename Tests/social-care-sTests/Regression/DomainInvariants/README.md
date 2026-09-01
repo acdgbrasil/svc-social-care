@@ -41,7 +41,7 @@ func test_DB_8_summing_decimals_is_exact() {
 Para qualquer agregado raiz neste projeto:
 
 1. `init(_:) throws` em todo VO (validação no construtor, nunca no chamador)
-2. `Sendable, Equatable, Hashable` em VO (convenção handbook v2.0)
+2. `Sendable, Equatable, Hashable` em VO (convenção do projeto)
 3. `var uncommittedEvents: [any DomainEvent]` em agregado raiz
 4. Erros implementam `AppErrorConvertible`
 5. `Date` injetável via parâmetro `now: TimeStamp = .now`

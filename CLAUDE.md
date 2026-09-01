@@ -1,100 +1,46 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guia operacional do microserviço `social-care` (Swift 6.3 + Vapor 4).
 
-## Handbook como Source of Truth (regra #1)
+## ⚠️ REGRA INVIOLÁVEL — teste falhando é de quem está no comando
 
-A partir de 2026-05-14, o `handbook/` é a **fonte canônica** de arquitetura,
-decisões e contexto histórico do `social-care`. Este `CLAUDE.md` é apenas
-um índice operacional — quando houver conflito, o handbook prevalece.
+**Não existe "esse teste já falhava".** Se um teste falha enquanto você executa
+um ticket, consertá-lo é seu trabalho, mesmo que a quebra seja colateral.
 
-**Hierarquia em conflito:**
+- ❌ "não é do meu escopo, vou seguir"
+- ❌ "já falhava antes, documento como pré-existente"
+- ✅ "falhou — paro, investigo, conserto, valido a suite verde, sigo"
 
-```
-CLAUDE.md (índice operacional)
-  > handbook/architecture/README.md (visão arquitetural v2.0)
-    > handbook/architecture/DECISIONS/ADR-NNN-*.md (decisões versionadas)
-      > skills (.claude/skills/*) e agents (.claude/agents/*)
-```
+O CI não distingue falha sua de falha herdada: qualquer vermelho bloqueia merge.
+E falha antiga esconde falha nova por fadiga visual. **Exceção:** só se o
+usuário mandar pular, explicitamente, com justificativa que vira issue. Nunca
+por iniciativa do agente.
 
-**Antes de mexer em algo estrutural, leia (nessa ordem):**
+## Fonte de verdade, em ordem
 
-1. `handbook/architecture/README.md` — princípios v2.0 (Inteligência no
-   Domínio, PoP, CQRS, Metadata-Driven, CRU/No Delete).
-2. `handbook/architecture/DECISIONS.md` — índice de ADRs ativos.
-3. ADRs relevantes em `handbook/architecture/DECISIONS/ADR-NNN-*.md`.
-4. `handbook/IMPLEMENTATION_PLAN.md` — gaps abertos (G1-G17) e ordem.
-5. `handbook/architecture/IMPROVEMENT_BACKLOG.md` — propostas em avaliação.
-6. `handbook/features/<feature>.md` — quando tocar uma feature específica.
-
-### Quando criar um ADR
-
-Toda decisão que (a) afeta forma de codar/testar/operar, (b) tem trade-offs
-não-óbvios, (c) é difícil de reverter, ou (d) substitui decisão anterior →
-**ADR obrigatório**. Bug fixes e features de produto **não** viram ADR.
-
-**Fluxo:**
-
-1. Proposta vaga? Adicione em `handbook/architecture/IMPROVEMENT_BACKLOG.md`
-   (formato de proposta com trade-offs).
-2. Decisão fechada? Promova para ADR usando `DECISIONS/ADR-TEMPLATE.md`,
-   incrementa o ID em `DECISIONS.md` e referencia no PR.
-3. Decisão substituída? Atualiza Status do ADR antigo para `Superseded by
-   ADR-XXX` (não deletar — histórico vale).
-
-### Quando atualizar o handbook (não criar ADR)
-
-- Mudança de feature: atualizar `handbook/features/<feature>.md`.
-- Fechamento de gap G1-G17: marcar checkbox em `handbook/IMPLEMENTATION_PLAN.md`.
-- Sessão de trabalho relevante: criar `handbook/reports/SESSION_YYYY_MM_DD.md`.
-- Nova convenção de código: adicionar em `handbook/tooling/swift/<area>/`.
-
-### Quando NÃO usar o handbook
-
-- Comentários de código que explicam *o que* o código faz — vão inline ou
-  no PR description, não no handbook.
-- TODOs ephemeral — usam `TaskCreate` ou issue do GitHub, não o handbook.
-- Discussões de Pull Request — usam comentário do PR.
-
-## ⚠️ REGRA INVIOLÁVEL — Teste falhando é responsabilidade de quem está no comando
-
-**NÃO EXISTE teste falhar — mesmo que seja algo que VOCÊ não tenha mexido.** Se um teste falha enquanto você está executando um ticket, é **sua responsabilidade** consertar a falha, mesmo que seja colateral.
-
-- ❌ Errado: "esse teste falha mas não é do meu escopo, vou seguir"
-- ❌ Errado: "esse teste já falhava antes, vou documentar como pré-existente"
-- ✅ Certo: "teste falhou — paro o pipeline, investigo, conserto, valido suite verde, sigo"
-
-Razões:
-1. CI não distingue "minha falha" de "falha colateral" — qualquer red bloqueia merge
-2. Falhas antigas tendem a esconder novas (fadiga visual)
-3. Quem corrige primeiro paga menos — quem deixa correr paga 10x depois
-4. Cultura de "ignorar X porque é fora do escopo" corrói o suite até o ponto onde nada é verde
-
-**Exceções:** apenas se o usuário **explicitamente** disser para pular um teste com justificativa documentada (vai como TODO no PR + issue rastreável). Nunca por iniciativa do agente.
+1. **O código.** Toda contagem e todo nome são reconstituíveis por um comando.
+   Divergiu da doc? O código vence e a doc se corrige.
+2. `docs/adr/` — decisões versionadas (índice em `docs/adr/README.md`).
+3. `.claude/rules/` e `.claude/skills/` — como fazer, carregado sob demanda.
+4. Este arquivo — índice operacional.
 
 ## Comandos
 
 ```bash
-make deps              # Resolver dependências SwiftPM
-make build             # Build debug
-make build-release     # Build release (--product social-care-s)
-make dev               # swift run social-care-s (requer PostgreSQL rodando)
-make test              # Executar todos os testes
-make coverage          # Testes + gate de cobertura (30% local, 95% no CI)
-make ci                # Pipeline completo: deps → build-release → coverage
-
-# Teste individual
-swift test --filter NomeDoTeste
-
-# PostgreSQL via Docker para dev local
-docker compose up postgres -d
+make build                          # build debug
+make test                           # suite completa
+make regression                     # só regressão (alvo < 5s, ADR-002)
+swift test --filter NomeDoTeste     # um teste ou suite
+./scripts/check_coverage.sh report  # cobertura por camada, sem gate
+./scripts/check_harness.sh          # 14 checagens do harness (ADR-042)
+make ci                             # deps → build-release → coverage
+docker compose up postgres -d       # Postgres para rodar o serviço
 ```
 
 ## Arquitetura
 
-Microserviço Swift 6.3 / Vapor 4 com Clean Architecture + DDD, CQRS e Transactional Outbox. (Bump 2026-05-14: tools-version 6.2 → 6.3. Swift 6.3.1 fixa stack-allocation em `async let`; Dockerfile já usava `swift:6.3-jammy`.) Código fonte em `Sources/social-care-s/`, testes em `Tests/social-care-sTests/`.
-
-### Camadas e fluxo de dependência
+Clean Architecture + DDD, CQRS e Transactional Outbox. Executável único
+(`social-care-s`), fonte em `Sources/social-care-s/`.
 
 ```
 Domain ← Application ← IO (HTTP, Persistence, EventBus)
@@ -102,79 +48,109 @@ Domain ← Application ← IO (HTTP, Persistence, EventBus)
                        shared (AppError, DomainProtocols, Ports)
 ```
 
-- **Domain/** — Value Objects, Agregados, Entidades, Analytics services. Zero dependências externas. Organizado por bounded context: `Kernel/` (VOs cross-cutting), `Registry/`, `Assessment/`, `Care/`, `Protection/`, `Configuration/`.
-- **Application/** — Command/Query handlers. Cada use case segue a estrutura `<UseCase>/Command/`, `<UseCase>/UseCase/` (protocolo), `<UseCase>/Services/` (handler `actor`), `<UseCase>/Error/`. Organizado por BC: `Registry/`, `Assessment/`, `Care/`, `Protection/`, `Configuration/`, `Query/`.
-- **IO/** — Adapters. `HTTP/` (Controllers, DTOs, Middleware, Auth, Validation, Bootstrap), `Persistence/SQLKit/` (repositórios, mappers, migrations), `EventBus/` (Outbox).
-- **shared/** — `AppError` (erro padronizado com código tipo PAT-001, category, severity), `DomainProtocols` (Command, Query, EventBus, EventSourcedAggregate), `Ports/` (protocolos de integração), `PersistenceConflictError`.
+- **Domain/** — VOs, agregados, entidades, analytics. Zero dependência externa.
+  Bounded contexts: `Kernel/`, `Registry/`, `Assessment/`, `Care/`,
+  `Protection/`, `Configuration/`.
+- **Application/** — command e query handlers, um diretório por use case
+  (`Command/`, `Services/`, `Error/`).
+- **IO/** — `HTTP/` (controllers, DTOs, middleware, auth, bootstrap),
+  `Persistence/SQLKit/`, `EventBus/`.
+- **shared/** — `AppError`, `DomainProtocols`, `Ports/`.
 
-### Padrões-chave
+### Invariantes (violar exige ADR, não opinião)
 
-- **Use cases são `actor`**: garantem exclusão mútua. Implementam `CommandHandling<C>` ou `ResultCommandHandling<C>`.
-- **VOs e Commands são `struct Sendable`**: imutáveis, seguros para concorrência.
-- **Validação de VOs via `init(_ raw:) throws`**: CPF, NIS, CEP, etc. fazem parsing no construtor.
-- **Erros de domínio implementam `AppErrorConvertible`**: traduzem para `AppError` na fronteira IO.
-- **`PersistenceConflictError.uniqueViolation`**: repositórios lançam este erro genérico para violações de unicidade; o handler de Application mapeia para o erro de negócio específico.
-- **Repository contracts são `protocol`** definidos em Domain (ex: `PatientRepository` em `Domain/Registry/Repository/`).
-- **`ServiceContainer`** em `IO/HTTP/Bootstrap/` é o composition root — instancia todos os handlers e repositórios, acessível via `Request.services`.
-- **StandardResponse\<T\>** com `meta.timestamp` envolve todas as respostas HTTP.
-- **Audit trail via `JWT.sub`**: `Request+ActorId.swift::extractActorId()` retorna `requireAuthenticatedUser().userId` (extraído do `sub` claim em `JWTAuthMiddleware.swift` — busque por âncora `// ADR-023:`). Adapters HTTP upstream (BFFs, gateways) DEVEM encaminhar o header `Authorization: Bearer <jwt>` — não há header customizado de identidade do ator. Ver ADR-023 do handbook frontend (`handbook/architecture/DECISIONS/ADR-023-bff-adapter-bearer-forwarding.md`).
-- **Multi-issuer OIDC (ADR-027, ADR-029, ADR-031)**: durante a migração Zitadel → Authentik, o serviço aceita tokens de ambos os issuers (env `OIDC_JWKS_URLS`, `OIDC_ISSUERS`, `OIDC_AUDIENCES` em CSV — **ADR-027**). `OIDCJWTPayload` (substitui `ZitadelJWTPayload`) lê roles via precedência: claim `roles` (Authentik com property mapping `acdg-roles`) → `groups` (Authentik default) → `urn:zitadel:iam:org:project:roles` (Zitadel legado) — **ADR-029** (precedência por presença, não por conteúdo: `roles` vazio ≠ fallback). Defense-in-depth: `OIDCJWTPayloadBootstrap` registra validators globalmente no boot — `verify(using:)` valida iss/aud/exp/nbf em todo codepath, não apenas no middleware — **ADR-031** (+ claims ACDG org_id/person_id/legacy_sub).
+1. **`Domain/` só importa `Foundation`.** Sem Vapor, SQLKit, JWT, NIO.
+2. **Dependência aponta só para dentro.** `IO` → `Application` → `Domain`.
+3. **Command handler é `actor`**; query handler é `struct`; VOs e commands são
+   `struct` imutáveis e `Sendable`.
+4. **Todo comando de mutação carrega `actorId: String`**, vindo do `sub` do JWT
+   via `req.extractActorId()`. Não existe header de identidade (ADR-023).
+5. **Sequência no handler:** `parse (VOs) → validate → domínio → persistir →
+   eventos`. Eventos na mesma transação do agregado (Outbox, ADR-014).
+6. **CRU, sem delete.** Histórico social inativa-se por flag; a exceção é a
+   anonimização LGPD (ADR-039).
+7. **Erro de domínio implementa `AppErrorConvertible`**, com código (`PAT-001`),
+   `safeContext` sem PII e status HTTP.
+8. **Toda rota sob `RoleGuardMiddleware`.** Só `/health` e `/ready` são públicas.
+   Roles: `worker`, `owner`, `admin`, `superadmin`.
+9. **Suite verde é condição de saída.**
 
-### Sequência obrigatória em command handlers
+### Outros pontos que economizam descoberta
 
-```
-parse (VOs) → validate (lookups, existence) → domain logic → persist → publish events
-```
-
-Erros são capturados com `do/catch` no handler e mapeados via função `mapError` local.
-
-### Testes
-
-- Framework: `swift-testing` (não XCTest)
-- Test doubles em `Tests/social-care-sTests/Application/TestDoubles/`: `InMemoryPatientRepository`, `InMemoryEventBus`, `InMemoryLookupValidator`, `PatientFixture`
-- Cobertura mínima: **95%** enforçada no CI via `scripts/check_coverage.sh`
-- Testes de domínio em `Tests/.../Domain/v2/`, de application em `Tests/.../Application/`, de IO em `Tests/.../IO/`
+- **`PersistenceConflictError.uniqueViolation`**: repositório lança o erro
+  genérico; o handler de Application traduz para o erro de negócio (ADR-010).
+- **`ServiceContainer`** (`IO/HTTP/Bootstrap/`) é o composition root, acessível
+  por `Request.services`.
+- **`StandardResponse<T>`** com `meta.timestamp` envolve as respostas HTTP.
+- **Multi-issuer OIDC (ADR-027, 029, 031)**: aceita Zitadel e Authentik em
+  paralelo via `OIDC_JWKS_URLS`, `OIDC_ISSUERS`, `OIDC_AUDIENCES` (CSV).
+  `OIDCJWTPayload` lê roles por precedência `roles` → `groups` → claim Zitadel.
+- **Não existe `EventBus` injetável** — removido pelo ADR-014. Handler que
+  recebe `eventBus:` no `init` é doc velha.
 
 ## Convenções
 
-- **Branches**: `feat/<slug>`, `fix/<slug>`, `chore/...`
-- **Commits**: Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `test:`)
-- **Tags SemVer**: obrigatórias para `feat:` (minor bump) e `fix:` (patch bump) em `main`. Consultar `git tag --sort=-v:refname | head -1` antes de criar nova tag.
-- **Strict concurrency**: Swift 6.3 com todas as checks habilitadas. Todo tipo público que cruza boundary de concorrência deve ser `Sendable`.
-- **ADR obrigatório**: para decisões estruturais (ver "Quando criar um ADR" acima). PR que muda arquitetura sem ADR é bloqueado em review.
-- **Toolchain local**: fixado em `.swift-version` (atualmente Swift 6.3.2). Use Swiftly — `swiftly install` baixa a versão do `.swift-version` automaticamente ao entrar no diretório.
+- **Branches**: `feat/<slug>`, `fix/<slug>`, `chore/...`, `docs/...`
+- **Commits**: Conventional Commits.
+- **Tags SemVer**: obrigatórias para `feat:` (minor) e `fix:` (patch) em `main`.
+  Consulte `git tag --sort=-v:refname | head -1` antes de criar. `/release`
+  automatiza.
+- **Strict concurrency**: Swift 6.3, todas as checagens. Tipo que cruza boundary
+  é `Sendable`. Toolchain fixada em `.swift-version` (6.3.3) via Swiftly.
+- **Segredos**: nunca hardcoded. `<KEY>_FILE` tem precedência sobre a env.
 
-## Mapa rápido do handbook
+### Quando criar um ADR
 
-```
-handbook/
-├── architecture/
-│   ├── README.md                       — Arquitetura v2.0 (5 princípios + regras de ouro)
-│   ├── DECISIONS.md                    — Índice de ADRs
-│   ├── DECISIONS/
-│   │   ├── ADR-TEMPLATE.md             — Template para novo ADR
-│   │   └── ADR-NNN-<slug>.md           — ADRs versionados
-│   ├── DOMAIN_EVOLUTION_PLAN.md        — Estado de evolução do Domain
-│   └── IMPROVEMENT_BACKLOG.md          — Propostas em avaliação (pré-ADR)
-├── IMPLEMENTATION_PLAN.md              — Plano mestre + gaps G1-G17
-├── features/<feature>.md               — Specs de feature (ex: PATIENT_LIFECYCLE.md)
-├── front_end_forms/<form>.md           — Forma dos payloads de formulário
-├── Agents/<agent>.md                   — Prompts de agents (implementor, reviewr)
-├── tooling/swift/                      — Refs Swift (API design, CQRS, PoP, swift_doc)
-└── reports/SESSION_YYYY_MM_DD.md       — Snapshots de sessão (histórico)
-```
+Decisão que (a) muda como se coda, testa ou opera, (b) tem trade-off não-óbvio,
+(c) é difícil de reverter, ou (d) substitui decisão anterior → **ADR
+obrigatório**. Bug fix e feature de produto **não** viram ADR.
 
-## Reference Network — consulta fria (especialistas externos)
+1. Proposta ainda vaga → `docs/adr/BACKLOG.md`.
+2. Decisão fechada → ADR novo a partir de `docs/adr/ADR-TEMPLATE.md`, indexado
+   em `docs/adr/README.md` e citado no PR.
+3. Decisão substituída → o ADR antigo vira `Superseded by ADR-XXX`. Não deletar.
 
-Para FATOS de documentação de tecnologias (sintaxe, versão exata, comportamento), não responda de memória nem chute: consulte o especialista **EXTERNO read-only**, que cita a doc oficial offline (`infra/reference/`) ou recusa. Divisão: você (interno) conhece o código e **decide**; ele (externo) só entrega o **fato citado** — nunca vê seu código.
+## Onde está o quê
 
-Invocação: delegue isolado via `subagent_type: "acdg-ref:ref-<tech>"`, ou direto `/acdg-ref:ref-<tech> <pergunta>`.
-
-| Dúvida sobre… | Consulte |
+| Preciso de… | Vá para |
 |---|---|
-| Vapor: rotas, middleware, Content, async, JWT/JWKS/OIDC (vapor/jwt) | `ref-vapor` |
-| SQL, tipos, funções, GUCs, índices, MVCC (PostgreSQL) | `ref-postgresql` |
-| NATS/JetStream: subjects, consumers, ack, Outbox/at-least-once | `ref-nats` |
-| Authentik: OIDC/OAuth2 provider, flows, claims/scopes | `ref-authentik` |
+| Por que uma decisão é assim | `docs/adr/` (índice em `README.md`) |
+| O que ainda está aberto | `docs/GAPS.md` |
+| Proposta antes de virar ADR | `docs/adr/BACKLOG.md` |
+| O que um campo significa para quem preenche | skill `social-care-suas` |
+| Como mexer numa camada | skills `social-care-{domain,application,io,tests}` |
+| Regra que vale sempre naquele path | `.claude/rules/` |
 
-Regras: passe a pergunta como **texto** (não mande "olhe meu arquivo X" — ele recusa). Se retornar `NÃO ENCONTRADO`, não invente: escale ou peça download da doc. Detalhes: `infra/reference-network/README.md`.
+O `handbook/` foi aposentado em 2026-09-01 (ADR-043): 63 mil linhas, das quais
+55 mil eram um espelho da doc do Swift e do Vapor — esta última em seis idiomas.
+O que era conhecimento real virou ADR, rule ou skill.
+
+## Harness (`.claude/`)
+
+| Arquivo | Papel |
+|---|---|
+| `agents/social-care.md` | Roteador de camada. `memory: project`. |
+| `agents/social-care-reviewer.md` | Revisor read-only do diff. `memory: project`. |
+| `skills/social-care-{domain,application,io,tests}/` | Uma por camada. |
+| `skills/social-care-suas/` | Norma do Prontuário SUAS (os 16 blocos). |
+| `skills/novo-usecase/` | `/novo-usecase <BC> <Nome>` — os sete lugares a tocar. |
+| `skills/revisar/` | `/revisar [alvo]` — reviewer num subagente isolado. |
+| `skills/release/` | `/release` — bump SemVer, CHANGELOG e tag. |
+| `rules/domain-analytics.md` | Carrega ao tocar `Domain/`. |
+| `rules/testing.md` | Carrega ao tocar `Tests/`. |
+| `hooks/regression-gate.sh` | `Stop`: bloqueia fim de turno com suite vermelha. |
+| `hooks/domain-imports.sh` | `PostToolUse`: fronteira de camada. `Domain/` só `Foundation` (allowlist); `Application/` sem framework de IO (denylist) — `Logging` passa. |
+| `hooks/git-guard.sh` | `PreToolUse`: bloqueia force push. |
+| `hooks/test-hooks.sh` | 38 casos cobrindo os hooks (`./.claude/hooks/test-hooks.sh`). |
+| `scripts/check_harness.sh` | 14 checagens de que o harness não mente (ADR-042). |
+
+Os hooks existem porque regra escrita depende de alguém lembrar. Regra de
+permissão casa **texto**, não semântica de shell: `git push origin main --force`
+escapa de um `deny` por prefixo — por isso o guard de verdade é o hook.
+
+`cleanupPeriodDays: 7` encurta a retenção do transcript: a conversa carrega
+trechos de payload de prontuário e o default são 30 dias.
+
+Duas regras para manter isso vivo: **skill não repete ADR** (aponta), e **toda
+contagem vem com o comando que a remede**. Para fato de biblioteca, leia a fonte
+(`Package.resolved`, o header do módulo, a doc oficial).

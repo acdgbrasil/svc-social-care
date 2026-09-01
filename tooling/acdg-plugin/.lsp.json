@@ -1,0 +1,8 @@
+{
+  "swift": {
+    "command": "${CLAUDE_PLUGIN_ROOT}/bin/acdg-sourcekit-lsp",
+    "extensionToLanguage": {
+      ".swift": "swift"
+    }
+  }
+}

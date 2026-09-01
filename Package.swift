@@ -69,6 +69,11 @@ let package = Package(
             // listar product/package. Test files usam `import Testing` direto.
             dependencies: [
                 "social-care-s",
+                // G10: `VaporTesting` (não `XCTVapor`) é o harness de teste do
+                // Vapor para swift-testing — dá `app.test(.GET, "/rota") { res in }`
+                // sem abrir socket. `XCTVapor` é o equivalente para XCTest e
+                // este projeto não usa XCTest.
+                .product(name: "VaporTesting", package: "vapor"),
             ],
             path: "Tests/social-care-sTests"
         ),

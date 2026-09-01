@@ -1,0 +1,9 @@
+{
+  "name": "acdg",
+  "description": "Ferramental compartilhado dos servicos da ACDG: LSP de Swift resolvido pela toolchain do projeto e guarda de historico do git.",
+  "version": "0.1.0",
+  "author": {
+    "name": "ACDG Technology"
+  },
+  "license": "AGPL-3.0"
+}

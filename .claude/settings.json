@@ -1,20 +1,101 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "cleanupPeriodDays": 7,
   "extraKnownMarketplaces": {
-    "acdg-reference-network": {
+    "acdg": {
       "source": {
         "source": "directory",
-        "path": "../infra/reference-network"
+        "path": "./tooling"
       }
     }
   },
   "enabledPlugins": {
-    "acdg-ref@acdg-reference-network": true
+    "acdg@acdg": true
   },
   "permissions": {
     "allow": [
-      "Read(../infra/reference/**)",
-      "Read(../web/handbook/reference/**)"
+      "Bash(swift build:*)",
+      "Bash(swift test:*)",
+      "Bash(swift package resolve)",
+      "Bash(swift package show-dependencies:*)",
+      "Bash(make deps)",
+      "Bash(make build)",
+      "Bash(make test)",
+      "Bash(make regression)",
+      "Bash(make coverage)",
+      "Bash(make coverage-report)",
+      "Bash(./scripts/check_coverage.sh:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git tag --list:*)",
+      "Bash(git branch --list:*)",
+      "Bash(git branch -v:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/*.p12)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git tag -d:*)",
+      "Bash(git tag -f:*)",
+      "Bash(git tag --delete:*)",
+      "Bash(git tag --force:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git branch -M:*)"
+    ],
+    "additionalDirectories": [
+      "../contracts",
+      "../frontend"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/git-guard.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/regression-gate.sh",
+            "timeout": 300,
+            "statusMessage": "Verificando suite de regressao..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/domain-imports.sh",
+            "timeout": 15
+          }
+        ]
+      }
     ]
   }
 }

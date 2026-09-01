@@ -1,6 +1,6 @@
 # Regression Suite — `social-care`
 
-> **Tipo:** suite de testes permanentes. Cada teste aqui corresponde a um achado documentado em `handbook/reports/REMEDIATION_PIPELINE_2026_05_14.md` e impede reintrodução do bug.
+> **Tipo:** suite de testes permanentes. Cada teste aqui corresponde a um achado do pipeline de remediacao de 2026-05-14 (historico no git) e impede reintrodução do bug.
 > **Criado em:** 2026-05-14 (ticket T-001).
 > **Política:** ADR-002.
 
@@ -51,7 +51,7 @@ Por quê: um teste chamado `testConcurrentSaveFails()` perde valor em 6 meses. C
 
 ## Anatomia de teste de regressão
 
-Um teste de regressão tem 3 partes obrigatórias (ver `handbook/tooling/swift/testing/regression-pattern.md`):
+Um teste de regressão tem 3 partes obrigatórias (ver a skill `social-care-tests`):
 
 1. **Reproduzir o bug original** (assert que o estado inválido era aceito antes)
 2. **Assert do invariante** que a fix garante

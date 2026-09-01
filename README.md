@@ -4,7 +4,7 @@ Microservico de cuidado social da **ACDG Brasil** (Associacao Brasileira de Prof
 
 ## Stack
 
-- **Linguagem:** Swift 6.2 (Strict Concurrency)
+- **Linguagem:** Swift 6.3 (Strict Concurrency)
 - **Framework HTTP:** Vapor 4
 - **Database:** PostgreSQL 15 (via SQLKit + PostgresKit)
 - **Build:** Swift Package Manager (SwiftPM)
@@ -17,10 +17,10 @@ Clean Architecture + DDD com CQRS e Transactional Outbox.
 
 ```
 Sources/social-care-s/
-  Domain/         Agregados, entidades, ~24 value objects
-  Application/    17 command handlers + 2 query handlers
+  Domain/         Agregados, entidades, value objects (11 so no Kernel)
+  Application/    25 command handlers + read-side em Query/
   IO/
-    HTTP/         6 controllers, 24 rotas (Vapor)
+    HTTP/         6 controllers, 35 rotas (Vapor)
     Persistence/  SQLKit repository, migrations, mapper
   shared/         AppError, DomainEventRegistry, protocolos
 ```
@@ -34,12 +34,12 @@ Sources/social-care-s/
 | **AssessmentController** | `PUT` housing-condition, socioeconomic-situation, work-and-income, educational-status, health-status, community-support-network, social-health-summary |
 | **ProtectionController** | `PUT` placement-history, `POST` violation-reports, `POST` referrals |
 | **CareController** | `POST` appointments, `PUT` intake-info |
-| **LookupController** | `GET /dominios/:tableName` |
+| **LookupController** | `GET /dominios/:tableName`, lookup-requests (create/list/approve/reject), admin (create/update item) |
 
 ### Funcionalidades transversais
 
 - **StandardResponse\<T\>** com `meta.timestamp` em todos os endpoints
-- **X-Actor-Id** header obrigatorio em mutations
+- **actorId** derivado do `sub` do JWT em toda mutation (ADR-023) — nao existe header de identidade
 - **Audit trail** com before/after diff e filtro por eventType
 - **Validacao metadata-driven** (flags em lookup tables)
 - **Validacoes cruzadas** (sexo/gestante, idade/acolhimento)
@@ -49,7 +49,7 @@ Sources/social-care-s/
 
 ### Requisitos
 
-- Swift 6.2+
+- Swift 6.3+ (via Swiftly — le o `.swift-version`)
 - PostgreSQL 15+ (ou Docker)
 - jq (para coverage report)
 
@@ -83,7 +83,7 @@ make run dev
 make help             # Lista comandos
 make run dev          # Rodar servico localmente
 make run test         # Executar testes
-make run coverage     # Testes + gate de 95%
+make run coverage     # Testes + piso local de 25%
 make ci               # Pipeline local (deps + build-release + coverage)
 make clean            # Limpar artefatos
 ```
@@ -109,7 +109,9 @@ Workflow: `.github/workflows/ci.yml`
 
 1. `swift package resolve`
 2. `swift build -c release`
-3. `swift test --enable-code-coverage` com gate de **>=95%**
+3. `./scripts/check_coverage.sh report` — roda a suite com instrumentacao de
+   cobertura e publica a leitura por camada no resumo do job. Reprova por teste
+   vermelho; o percentual e termometro, nao gate.
 
 ### Release (Push to main + Tags)
 
@@ -148,11 +150,13 @@ Usuario -> Caddy (VPS/SSL) -> Tailnet -> K3s (Xeon) -> Pod social-care
 
 ## Qualidade
 
-- Cobertura minima: **95%** (enforced no CI)
-- **149 testes** em **39 suites** (domain + application + IO)
-- 33 arquivos de teste + 4 test doubles (InMemoryPatientRepository, InMemoryEventBus, InMemoryLookupValidator, PatientFixture)
-- Camadas testadas: Domain (value objects, agregados, analytics), Application (17 command handlers + 1 query handler), IO (audit trail pipeline)
-- Script: `./scripts/check_coverage.sh 95`
+- **487 testes** em **88 suites** (89 arquivos de teste), verdes.
+- Cobertura e **termometro, nao gate** — leitura de 2026-08-31: **30,72% global**.
+  Por camada: `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 9,1%**.
+  A camada IO tem 7.132 linhas (metade do codigo-fonte) e esta praticamente
+  descoberta: nao ha teste de integracao HTTP (nenhum `app.test`).
+- Piso local de 25% como anti-regressao: `./scripts/check_coverage.sh 25`.
+- Leitura por camada, sem gate: `./scripts/check_coverage.sh report`.
 
 ## Seguranca
 

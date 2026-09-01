@@ -34,7 +34,7 @@ GET /api/v1/patients?search=&cursor=&limit=20
 |---|---|---|
 | `Authorization` | `Bearer <jwt_token>` | Token JWT do Zitadel |
 
-**Roles permitidas:** `social_worker`, `owner`, `admin`
+**Roles permitidas:** `worker`, `owner`, `admin`
 
 **Query parameters:**
 
@@ -314,7 +314,7 @@ Derivar `filled: true/false` pela presenca (nao-null) de cada campo no detalhe:
 | `400` | `QLP-001` | Cursor invalido | `cursor` nao e um UUID valido |
 | `400` | `QLP-002` | Limite fora do range | `limit` < 1 ou > 100 |
 | `401` | — | Token ausente ou expirado | Header `Authorization` faltando |
-| `403` | — | Role insuficiente | Usuario nao tem `social_worker`, `owner` ou `admin` |
+| `403` | — | Role insuficiente | Usuario nao tem `worker`, `owner` ou `admin` |
 
 ### Erros do detalhe
 

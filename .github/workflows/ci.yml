@@ -29,6 +29,15 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
+      # PRECISA vir antes do `Verify harness`. A imagem `swift:6.3-jammy` nao
+      # traz `jq`, e os hooks o usam para ler o JSON do stdin — sem ele saem
+      # com 2 (fail-closed, que e o comportamento correto de um guard). A
+      # bateria de hooks entao reprovava TODOS os casos que esperam exit 0,
+      # com 13 falhas que pareciam bug dos hooks e eram falta de dependencia.
+      # `jq` tambem calcula o percentual do JSON do llvm-cov mais adiante.
+      - name: Install jq
+        run: apt-get update && apt-get install -y --no-install-recommends jq
+
       # Roda antes do build porque leva 0,2s e falha cedo: documentacao que
       # mente sobre o codigo e defeito, nao detalhe (ADR-042).
       - name: Verify harness
@@ -39,10 +48,6 @@ jobs:
 
       - name: Build (release)
         run: swift build -c release
-
-      # jq computa o percentual a partir do JSON do llvm-cov (check_coverage.sh).
-      - name: Install jq
-        run: apt-get update && apt-get install -y --no-install-recommends jq
 
       # `report` roda a suite COM instrumentacao de cobertura e publica a leitura
       # no resumo do job. O que reprova este step e teste vermelho (o script roda

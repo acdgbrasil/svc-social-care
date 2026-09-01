@@ -8,6 +8,23 @@
 set -uo pipefail
 cd "$(dirname "$0")" || exit 1
 
+# Dependências da BATERIA e dos hooks que ela exercita. Checadas aqui de
+# propósito: sem `jq` os hooks saem com 2 (fail-closed — o comportamento certo
+# de um guard que não consegue ler o comando), e a bateria reprovava todos os
+# casos que esperam exit 0. Foram 13 falhas que pareciam bug dos hooks, num CI
+# rodando `swift:6.3-jammy`, imagem que não traz `jq`. Uma linha de diagnóstico
+# aqui vale mais que treze sintomas.
+MISSING=""
+for dep in jq python3; do
+  command -v "$dep" >/dev/null 2>&1 || MISSING="$MISSING $dep"
+done
+if [[ -n "$MISSING" ]]; then
+  echo "test-hooks: dependência ausente —$MISSING" >&2
+  echo "Os hooks leem o JSON do stdin com jq e a bateria monta esse JSON com python3." >&2
+  echo "No CI (container swift:*-jammy): apt-get install -y --no-install-recommends jq" >&2
+  exit 1
+fi
+
 FAIL=0
 run() { # hook, json, esperado, descrição
   local got

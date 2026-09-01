@@ -1,20 +1,28 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "extraKnownMarketplaces": {
-    "acdg-reference-network": {
-      "source": {
-        "source": "directory",
-        "path": "../infra/reference-network"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "acdg-ref@acdg-reference-network": true
-  },
   "permissions": {
     "allow": [
-      "Read(../infra/reference/**)",
-      "Read(../web/handbook/reference/**)"
+      "Bash(swift build:*)",
+      "Bash(swift test:*)",
+      "Bash(swift package resolve)",
+      "Bash(swift package show-dependencies:*)",
+      "Bash(make deps)",
+      "Bash(make build)",
+      "Bash(make test)",
+      "Bash(make regression)",
+      "Bash(make coverage)",
+      "Bash(make coverage-report)",
+      "Bash(./scripts/check_coverage.sh:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git tag:*)",
+      "Bash(git branch:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)"
     ]
   }
 }

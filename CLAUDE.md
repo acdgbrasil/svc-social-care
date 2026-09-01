@@ -148,7 +148,7 @@ Erros são capturados com `do/catch` no handler e mapeados via função `mapErro
 - **Tags SemVer**: obrigatórias para `feat:` (minor bump) e `fix:` (patch bump) em `main`. Consultar `git tag --sort=-v:refname | head -1` antes de criar nova tag.
 - **Strict concurrency**: Swift 6.3 com todas as checks habilitadas. Todo tipo público que cruza boundary de concorrência deve ser `Sendable`.
 - **ADR obrigatório**: para decisões estruturais (ver "Quando criar um ADR" acima). PR que muda arquitetura sem ADR é bloqueado em review.
-- **Toolchain local**: fixado em `.swift-version` (atualmente Swift 6.3.2). Use Swiftly — `swiftly install` baixa a versão do `.swift-version` automaticamente ao entrar no diretório.
+- **Toolchain local**: fixado em `.swift-version` (atualmente Swift 6.3.3). Use Swiftly — `swiftly install` baixa a versão do `.swift-version` automaticamente ao entrar no diretório.
 
 ## Mapa rápido do handbook
 
@@ -170,17 +170,23 @@ handbook/
 └── reports/SESSION_YYYY_MM_DD.md       — Snapshots de sessão (histórico)
 ```
 
-## Reference Network — consulta fria (especialistas externos)
+## Harness (`.claude/`) — reescrito do zero em 2026-08-31
 
-Para FATOS de documentação de tecnologias (sintaxe, versão exata, comportamento), não responda de memória nem chute: consulte o especialista **EXTERNO read-only**, que cita a doc oficial offline (`infra/reference/`) ou recusa. Divisão: você (interno) conhece o código e **decide**; ele (externo) só entrega o **fato citado** — nunca vê seu código.
+O anterior tinha 19.104 linhas em 9 skills e ensinava padrões que o código já
+havia abandonado (injetar um `EventBus` removido pelo ADR-014, role
+`social_worker` que nunca existiu, gate de cobertura de 95% que o CI nunca
+rodou), além de apontar para uma "reference network" em `../infra/` inexistente.
+Foi removido inteiro. O atual é fino e verificável:
 
-Invocação: delegue isolado via `subagent_type: "acdg-ref:ref-<tech>"`, ou direto `/acdg-ref:ref-<tech> <pergunta>`.
-
-| Dúvida sobre… | Consulte |
+| Arquivo | Papel |
 |---|---|
-| Vapor: rotas, middleware, Content, async, JWT/JWKS/OIDC (vapor/jwt) | `ref-vapor` |
-| SQL, tipos, funções, GUCs, índices, MVCC (PostgreSQL) | `ref-postgresql` |
-| NATS/JetStream: subjects, consumers, ack, Outbox/at-least-once | `ref-nats` |
-| Authentik: OIDC/OAuth2 provider, flows, claims/scopes | `ref-authentik` |
+| `.claude/agents/social-care.md` | Ponto de entrada. Mapa do serviço, invariantes, roteamento por camada. |
+| `.claude/skills/social-care-domain/` | `Domain/` — VOs, agregados, analytics, contratos de repositório. |
+| `.claude/skills/social-care-application/` | `Application/` — commands, queries, handlers, mapeamento de erro. |
+| `.claude/skills/social-care-io/` | `IO/` — Vapor, auth, SQLKit, migrations, Outbox. |
+| `.claude/skills/social-care-tests/` | `Tests/` — `swift-testing`, fakes, regressão. |
 
-Regras: passe a pergunta como **texto** (não mande "olhe meu arquivo X" — ele recusa). Se retornar `NÃO ENCONTRADO`, não invente: escale ou peça download da doc. Detalhes: `infra/reference-network/README.md`.
+Duas regras para mantê-lo vivo: **skill não repete o handbook** (aponta para o
+ADR ou o arquivo-âncora), e **toda contagem vem com o comando que a remede** —
+número sem comando envelhece calado. Para fato de biblioteca, leia a fonte
+(`Package.resolved`, o header do módulo, a doc oficial); não há atalho interno.

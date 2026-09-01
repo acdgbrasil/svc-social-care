@@ -17,6 +17,8 @@ Todas as mudanças relevantes deste serviço serão registradas aqui.
 > - **`v0.14.3` não é ancestral de `v0.15.0`.** A adoção da AGPL saiu numa linha
 >   paralela e só entrou na linha principal em `v0.16.0`.
 
+## [0.17.0] - 2026-09-01
+
 ### Adicionado
 - **Correlação e log de acesso (G12, ADR-044)** — `RequestContextMiddleware`
   adota o `X-Request-Id` do chamador (ou o `trace-id` de um `traceparent` do

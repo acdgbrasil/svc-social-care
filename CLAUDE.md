@@ -80,7 +80,7 @@ make build             # Build debug
 make build-release     # Build release (--product social-care-s)
 make dev               # swift run social-care-s (requer PostgreSQL rodando)
 make test              # Executar todos os testes
-make coverage          # Testes + gate local de 30%
+make coverage          # Testes + piso local de 25%
 make coverage-report   # Testes + leitura de cobertura por camada (sem gate)
 make ci                # Pipeline completo: deps → build-release → coverage
 
@@ -137,7 +137,7 @@ Erros são capturados com `do/catch` no handler e mapeados via função `mapErro
   e publica a leitura por camada no resumo do job. O que reprova o CI é teste
   vermelho, nunca o percentual. Leitura em 2026-08-31: **30,72% global** —
   `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 9,1%** (7.132 linhas,
-  metade do código-fonte, praticamente descoberta). O gate local de 30%
+  metade do código-fonte, praticamente descoberta). O piso local de 25%
   (`make coverage`) segue existindo como piso anti-regressão.
 - Testes de domínio em `Tests/.../Domain/v2/`, de application em `Tests/.../Application/`, de IO em `Tests/.../IO/`
 

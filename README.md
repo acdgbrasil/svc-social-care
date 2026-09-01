@@ -83,7 +83,7 @@ make run dev
 make help             # Lista comandos
 make run dev          # Rodar servico localmente
 make run test         # Executar testes
-make run coverage     # Testes + gate local de 30%
+make run coverage     # Testes + piso local de 25%
 make ci               # Pipeline local (deps + build-release + coverage)
 make clean            # Limpar artefatos
 ```
@@ -155,7 +155,7 @@ Usuario -> Caddy (VPS/SSL) -> Tailnet -> K3s (Xeon) -> Pod social-care
   Por camada: `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 9,1%**.
   A camada IO tem 7.132 linhas (metade do codigo-fonte) e esta praticamente
   descoberta: nao ha teste de integracao HTTP (nenhum `app.test`).
-- Gate local de 30% como piso anti-regressao: `./scripts/check_coverage.sh 30`.
+- Piso local de 25% como anti-regressao: `./scripts/check_coverage.sh 25`.
 - Leitura por camada, sem gate: `./scripts/check_coverage.sh report`.
 
 ## Seguranca

@@ -37,7 +37,6 @@ while IFS=: read -r file path; do
   fail "$file cita \`$path\`, que não existe"
   MISSING=$((MISSING + 1))
 done < <(
-  grep -ohE '`[^`]+`' $HARNESS_FILES 2>/dev/null >/dev/null
   for f in $HARNESS_FILES; do
     grep -oE '`[^`]+`' "$f" \
       | tr -d '`' \
@@ -94,8 +93,16 @@ compare "Migrations" \
 echo
 echo "3. Roles do RBAC"
 check
-ROLES=$(grep -rhoE 'RoleGuardMiddleware\([^)]*\)' Sources/ | grep -oE '"[a-z_]+"' | tr -d '"' | sort -u)
+# `tr -d '\n'` antes do grep: chamada quebrada em varias linhas nao casava, e a
+# role indocumentada ficava invisivel — o laco nao iterava e o check passava.
+ROLES=$(find Sources -name '*.swift' -exec cat {} + | tr -d '\n' \
+  | grep -oE 'RoleGuardMiddleware\([^)]*\)' | grep -oE '"[a-z_]+"' | tr -d '"' | sort -u)
 UNDOCUMENTED=0
+if [[ -z "$ROLES" ]]; then
+  # Nenhuma role encontrada e defeito do verificador, nao ausencia de RBAC.
+  fail "nenhuma role extraida de RoleGuardMiddleware — o RBAC mudou de forma e este check ficou cego"
+  UNDOCUMENTED=1
+fi
 for role in $ROLES; do
   if ! grep -qE "\`$role\`|\"$role\"" $HARNESS_FILES 2>/dev/null; then
     fail "role '$role' é usada em RoleGuardMiddleware e não aparece no harness"
@@ -129,7 +136,11 @@ LIVE_DOCS="$LIVE_DOCS CLAUDE.md README.md"
 # Uma menção é legítima quando o texto a marca como superada. Olhamos a linha
 # e suas vizinhas: em Markdown a negação costuma abrir o parágrafo ou o cenário,
 # e o termo cai na linha seguinte.
-NEGATION='não|nao|nunca|jamais|deixou|abandonad|removid|falso|era |foi |antig|inexistente|morto|apagad|substitu|~~|RESOLVIDO|anterior|correcao|corrigid|ignorando|forjav|placeholder'
+# Marcadores inequivocos, so. A lista anterior tinha `não`, `foi `, `era ` e
+# `anterior`: 348 das ~4.900 linhas dos LIVE_DOCS casavam por acidente, e o
+# check virava probabilistico. Estes exigem que o texto trate o termo como
+# superado, nao apenas que contenha uma negacao qualquer.
+NEGATION='~~|RESOLVIDO|nunca existiu|não existe|nao existe|aposentad|removid|abandonad|superad|deprecad|ignorando|forjáv|forjav|era falsa|é falsa|e falsa|deixou de|caminho morto|inexistente'
 
 banned() { # termo, por quê
   check
@@ -160,11 +171,44 @@ check
 SWIFT_VERSION="$(tr -d ' \n' < .swift-version)"
 SWIFT_MINOR="${SWIFT_VERSION%.*}"
 WRONG=0
+# Valida a SERIE (6.3.x), nao o patch: citar `Swift 6.3.1` numa nota historica
+# sobre qual patch corrigiu um bug e legitimo. O alvo aqui e a serie errada —
+# era `Swift 6.2` espalhado pelo README e pelo harness antigo.
 while IFS=: read -r file line text; do
-  fail "$file:$line cita Swift $(printf '%s' "$text" | grep -oE 'Swift [0-9]+\.[0-9]+' | head -1) — .swift-version fixa $SWIFT_VERSION"
+  cited="$(printf '%s' "$text" | grep -oE 'Swift [0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)"
+  fail "$file:$line cita $cited — .swift-version fixa $SWIFT_VERSION"
   WRONG=$((WRONG + 1))
-done < <(grep -nHoE 'Swift [0-9]+\.[0-9]+' $LIVE_DOCS 2>/dev/null | grep -vE "Swift ${SWIFT_MINOR}")
-[[ $WRONG -eq 0 ]] && pass "toda menção de versão bate com $SWIFT_VERSION"
+done < <(grep -nHoE 'Swift [0-9]+\.[0-9]+(\.[0-9]+)?' $LIVE_DOCS 2>/dev/null \
+  | grep -vE "Swift ${SWIFT_MINOR}")
+[[ $WRONG -eq 0 ]] && pass "toda menção pertence à série ${SWIFT_MINOR} (.swift-version: $SWIFT_VERSION)"
+
+# ---------------------------------------------------------------------------
+# 6. Hooks passam na propria bateria
+# ---------------------------------------------------------------------------
+echo
+echo "6. Bateria dos hooks"
+check
+if HOOK_OUT="$(.claude/hooks/test-hooks.sh 2>&1)"; then
+  pass "$(printf '%s' "$HOOK_OUT" | tail -1)"
+else
+  fail "bateria dos hooks falhou:"
+  printf '%s\n' "$HOOK_OUT" | grep '✘' | sed 's/^/      /'
+fi
+
+# ---------------------------------------------------------------------------
+# 7. A copia do git-guard no plugin nao divergiu
+#
+# Sao dois registros do mesmo hook (projeto e plugin) enquanto o plugin nao
+# carrega por padrao. Corrigir um furo so num deles deixa o outro aberto.
+# ---------------------------------------------------------------------------
+echo
+echo "7. Cópia do git-guard no plugin"
+check
+if cmp -s .claude/hooks/git-guard.sh tooling/acdg-plugin/hooks/git-guard.sh; then
+  pass "idêntica à do projeto"
+else
+  fail "tooling/acdg-plugin/hooks/git-guard.sh divergiu de .claude/hooks/git-guard.sh — sincronize (cp) ou remova uma das cópias"
+fi
 
 # ---------------------------------------------------------------------------
 echo

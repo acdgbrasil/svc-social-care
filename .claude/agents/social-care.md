@@ -33,7 +33,7 @@ arquivo-âncora. Se você precisar do porquê de uma decisão, leia o ADR.
 | Bounded contexts | Registry, Assessment, Care, Protection, Configuration (+ Kernel) | `ls Sources/social-care-s/Domain/` |
 | Use cases de escrita | 25 | `find Sources/social-care-s/Application -type d -name Command \| wc -l` |
 | Controllers | 6 | `ls Sources/social-care-s/IO/HTTP/Controllers/` |
-| Rotas | 35 | `grep -rcE "\.(get|post|put|patch|delete)\(" Sources/social-care-s/IO/HTTP/Controllers/` |
+| Rotas | 35 | `grep -rhoE "\.(get\|post\|put\|patch\|delete)\(" Sources/social-care-s/IO/HTTP/Controllers/ \| wc -l` |
 | Migrations | 21 (+ `Migration.swift` e o runner) | `ls Sources/social-care-s/IO/Persistence/SQLKit/Migrations/` |
 | Testes | 487 em 88 suites, verdes | `swift test` |
 | Cobertura | 30,72% global — `IO` 9,1%, `Application` 47,6%, `Domain` 58,6%, `shared` 76,6% | `./scripts/check_coverage.sh report` |
@@ -80,7 +80,7 @@ make test                         # suite completa
 make regression                   # só o suite de regressão (alvo < 5s, ADR-002)
 swift test --filter NomeDoTeste   # um teste
 ./scripts/check_coverage.sh report # cobertura por camada, sem gate
-make ci                           # deps → build-release → coverage (gate local 30%)
+make ci                           # deps → build-release → coverage (piso local 25%)
 docker compose up postgres -d      # Postgres para rodar o serviço
 ```
 

@@ -45,7 +45,7 @@ Abandonamos a meta numérica de cobertura no CI. Cobertura passa a ser
 **termômetro**: o CI mede sempre e publica a leitura **por camada** no resumo do
 job; quem reprova o CI é teste vermelho, nunca percentual.
 
-O gate local de 30% (`make coverage`) permanece como piso anti-regressão, e o
+O piso local (`make coverage`) permanece como anti-regressão, e o
 número que importa passa a ser o da camada, não o global — um global de 30,72%
 esconde `shared` a 76% e `IO` a 9%.
 
@@ -71,10 +71,15 @@ foi ela que transformou "cobertura baixa" em "`IO` tem 9% de 7.132 linhas e
 nenhum teste de integração HTTP", que é um plano de trabalho. Uma compilação
 só: o passo de teste e o de cobertura viraram o mesmo.
 
-**Negativas / custos.** Nada mecânico impede a cobertura de cair. A proteção
-passa a ser social — revisão de PR olhando a tabela do resumo do job. Aceitamos
-o custo por ora porque a alternativa mecânica (catraca) tem o efeito colateral
-descrito acima.
+**Negativas / custos.** Nada mecânico impede a cobertura de cair no CI. A
+proteção passa a ser social — revisão de PR olhando a tabela do resumo do job.
+
+Sobre o piso local: ele nasceu em 30% com a medição em **30,72%** — folga de
+0,72 pp, ou ~341 linhas não cobertas. Isso é uma catraca, exatamente o que a
+seção anterior descarta, e reprovaria `make ci` de qualquer PR que adicionasse
+um controller com DTO na camada mais descoberta. Baixado para **25%** em
+2026-09-01, o que dá ~800 linhas de folga e o mantém no papel de pegar
+regressão grosseira, não de travar trabalho legítimo.
 
 **Ações requeridas.** Feitas em `2ce948d`: modo `report` no
 `scripts/check_coverage.sh` com breakdown por camada, `ci.yml` chamando esse
@@ -92,15 +97,19 @@ modo, e correção dos seis documentos.
 ## Como reverter
 
 Trocar o argumento no `ci.yml` de `report` para um número
-(`./scripts/check_coverage.sh 30`) restabelece o gate; o modo numérico nunca foi
+(`./scripts/check_coverage.sh 25`) restabelece o gate; o modo numérico nunca foi
 removido do script.
 
 ## Teste de regressão
 
-`scripts/check_harness.sh` — verificação estrutural que falha quando a
-documentação viva volta a prometer gate de cobertura no CI (procura por
-afirmações do tipo "95%" associadas a *enforçado/gate no CI* em `README.md`,
-`CLAUDE.md`, `handbook/` fora de `reports/`, `docs/` e `.claude/`).
+`scripts/check_harness.sh` — verificação estrutural que proíbe a string `95%`
+na documentação viva (`README.md`, `CLAUDE.md`, `.claude/`, `docs/` e `handbook/`
+fora de `reports/`, `tooling/`, `IMPROVEMENT_BACKLOG.md` e dos ADRs). É proibição
+literal, não análise de contexto: uma menção só passa se a mesma linha ou uma
+vizinha a marcar como superada. O custo assumido é que um texto legítimo com
+"95%" (estatística de produto, por exemplo) reprovaria e teria de ser reescrito
+— aceitável, porque a promessa de gate voltou a aparecer 4 vezes na primeira
+execução, duas delas em títulos de seção.
 
 Complemento: o próprio `ci.yml` publica a medição a cada execução, então uma
 regressão silenciosa da política — CI que para de medir — aparece pela ausência

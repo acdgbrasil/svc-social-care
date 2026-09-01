@@ -9,9 +9,15 @@
 #   exit 2 → erro devolvido ao Claude para corrigir antes de seguir
 set -uo pipefail
 
-cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
+# Ancorado no proprio script: o hook nao pode depender do cwd de quem o chama.
+cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}" || exit 0
 
-FILE="$(cat | jq -r '.tool_input.file_path // empty')"
+if ! command -v jq >/dev/null 2>&1; then
+  echo "domain-imports: jq ausente — não dá para inspecionar a edição." >&2
+  exit 2
+fi
+
+FILE="$(jq -r '.tool_input.file_path // empty')"
 [[ -z "$FILE" ]] && exit 0
 
 # Normaliza para caminho relativo ao projeto.
@@ -24,7 +30,10 @@ esac
 
 [[ -f "$REL" ]] || exit 0
 
-OFFENDERS="$(grep -nE '^\s*import ' "$REL" | grep -vE '^\s*[0-9]+:\s*import Foundation\s*$' || true)"
+# Swift 6 aceita modificador antes do import: `public import`, `internal import`,
+# `@preconcurrency import`, `@_exported import`. Todos contam.
+IMPORT_RE='^[[:space:]]*(@[A-Za-z_]+[[:space:]]+|public[[:space:]]+|internal[[:space:]]+|package[[:space:]]+|private[[:space:]]+|fileprivate[[:space:]]+)*import[[:space:]]'
+OFFENDERS="$(grep -nE "$IMPORT_RE" "$REL" | grep -vE '^[0-9]+:[[:space:]]*import Foundation[[:space:]]*$' || true)"
 
 [[ -z "$OFFENDERS" ]] && exit 0
 

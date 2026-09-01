@@ -2,7 +2,7 @@ SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
 
-.PHONY: help run deps build build-release dev test regression coverage coverage-report ci clean
+.PHONY: check-harness help run deps build build-release dev test regression coverage coverage-report ci clean
 
 help: ## Lista os comandos disponíveis
 	@echo "Uso:"
@@ -36,8 +36,8 @@ regression: ## Executa apenas o suite de regressão (alvo < 5s; ADR-002)
 check-harness: ## Verifica que o harness (.claude/) bate com o codigo (ADR-042)
 	./scripts/check_harness.sh
 
-coverage: ## Executa testes + gate de cobertura (30%)
-	./scripts/check_coverage.sh 30
+coverage: ## Executa testes + piso local de cobertura (25%)
+	./scripts/check_coverage.sh 25
 
 coverage-report: ## Gera cobertura e imprime caminho do relatório JSON
 	swift test --enable-code-coverage

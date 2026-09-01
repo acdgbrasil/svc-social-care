@@ -18,8 +18,9 @@
       "Bash(git diff:*)",
       "Bash(git log:*)",
       "Bash(git show:*)",
-      "Bash(git tag:*)",
-      "Bash(git branch:*)",
+      "Bash(git tag --list:*)",
+      "Bash(git branch --list:*)",
+      "Bash(git branch -v:*)",
       "Bash(gh pr list:*)",
       "Bash(gh pr view:*)",
       "Bash(gh issue list:*)",
@@ -35,7 +36,13 @@
       "Read(./**/*.key)",
       "Read(./**/*.p12)",
       "Bash(git push --force:*)",
-      "Bash(git push -f:*)"
+      "Bash(git push -f:*)",
+      "Bash(git tag -d:*)",
+      "Bash(git tag -f:*)",
+      "Bash(git tag --delete:*)",
+      "Bash(git tag --force:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git branch -M:*)"
     ]
   },
   "hooks": {

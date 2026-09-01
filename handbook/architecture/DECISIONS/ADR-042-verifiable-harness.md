@@ -105,12 +105,18 @@ todo ADR aponta, na seção "Better Pattern", para uma skill que não existe mai
 
 1. **Caminhos citados existem** — todo caminho de arquivo/diretório entre crases
    nos arquivos de `.claude/` aponta para algo real no repositório.
-2. **Termos proibidos não voltaram** — `social_worker` (role inexistente),
-   `X-Actor-Id` (contrato removido pelo ADR-023), `infra/reference-network` e
-   `acdg-ref` (caminho morto), promessa de gate de 95% no CI (ADR-041).
-3. **Contagens batem** — os números afirmados no harness (use cases, controllers,
-   migrations, testes) conferem com o que o código responde; divergência falha
-   com a contagem correta na mensagem, para que corrigir seja trivial.
+2. **Termos proibidos não voltaram** — cinco: `social_worker` (role que nunca
+   existiu), `X-Actor-Id` (contrato removido pelo ADR-023),
+   `infra/reference-network` (caminho morto), `95%` (gate abandonado pelo
+   ADR-041) e `Hummingbird` (o framework é Vapor).
+3. **Contagens batem** — quatro: use cases, controllers, rotas e migrations,
+   lidas da tabela do agente e recalculadas do código; divergência falha com a
+   contagem correta na mensagem. O total de testes (`487 em 88 suites`) **não**
+   é verificado, porque exigiria rodar a suíte — quem o confere é o próprio
+   `swift test` no passo seguinte do CI.
+4. **Roles do RBAC** documentadas, **versão do Swift** na série do
+   `.swift-version`, **bateria dos hooks** (`.claude/hooks/test-hooks.sh`) e
+   **cópia do `git-guard` no plugin** idêntica à do projeto.
 
 O item 2 complementa, no nível de documentação, o que o teste S-C4
 (`Regression/EventPublication/`) já garante no nível de código.

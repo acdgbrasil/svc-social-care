@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Bateria dos hooks. Roda no CI via check_harness.sh.
+#
+# Existe porque a primeira versão do `git-guard.sh` foi commitada como "guard
+# real de force push, 12 casos testados" e tinha cinco escapes: os 12 casos
+# eram variações de `--force`, e o `git` aceita muito mais que isso. Cada caso
+# abaixo é um escape que já passou, ou um falso positivo que não pode voltar.
+set -uo pipefail
+cd "$(dirname "$0")" || exit 1
+
+FAIL=0
+run() { # hook, json, esperado, descrição
+  local got
+  printf '%s' "$2" | "./$1" >/dev/null 2>&1
+  got=$?
+  if [[ "$got" == "$3" ]]; then
+    printf '  ✔ %s\n' "$4"
+  else
+    printf '  ✘ %s — esperava exit %s, veio %s\n' "$4" "$3" "$got"
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+cmd() { python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":sys.argv[1]}}))' "$1"; }
+
+echo "git-guard — deve BLOQUEAR (exit 2)"
+run git-guard.sh "$(cmd 'git push --force')"                     2 'flag no início'
+run git-guard.sh "$(cmd 'git push origin main --force')"         2 'flag no fim'
+run git-guard.sh "$(cmd 'git push -f origin main')"              2 'forma curta'
+run git-guard.sh "$(cmd 'git push -fu origin main')"             2 'curta agrupada (-fu)'
+run git-guard.sh "$(cmd 'git push origin main -uf')"             2 'curta agrupada (-uf)'
+run git-guard.sh "$(cmd 'git push "--force"')"                   2 'entre aspas'
+run git-guard.sh "$(cmd 'git push --force=x origin')"            2 'com ='
+run git-guard.sh "$(cmd 'git push origin +main')"                2 'refspec + (força implícita)'
+run git-guard.sh "$(cmd 'git push origin +HEAD:refs/heads/main')" 2 'refspec + completo'
+run git-guard.sh "$(cmd 'git status && git push origin main --force')" 2 'comando composto'
+run git-guard.sh "$(cmd 'git push origin main \
+  --force')"                                                      2 'continuação de linha'
+run git-guard.sh "$(cmd 'git -C /tmp/x push --force')"           2 'com -C'
+run git-guard.sh "$(cmd 'git push --force-with-lease origin main --force')" 2 'lease + force'
+
+echo
+echo "git-guard — deve PASSAR (exit 0)"
+run git-guard.sh "$(cmd 'git push origin main')"                 0 'push normal'
+run git-guard.sh "$(cmd 'git push --force-with-lease origin main')" 0 'force-with-lease'
+run git-guard.sh "$(cmd 'git push origin main --force-if-includes')" 0 'force-if-includes'
+run git-guard.sh "$(cmd 'git log --oneline -f')"                 0 '-f fora de push'
+run git-guard.sh "$(cmd 'grep -rn force Sources/')"              0 'palavra force em outro comando'
+run git-guard.sh "$(cmd 'make test')"                            0 'comando sem git'
+run git-guard.sh "$(cmd 'git fetch origin +refs/heads/*:refs/remotes/origin/*')" 0 'refspec + em fetch (não é push)'
+
+echo
+echo "domain-imports — deve BLOQUEAR (exit 2)"
+PROBE="../../Sources/social-care-s/Domain/__hook_probe.swift"
+trap 'rm -f "$PROBE"' EXIT
+probe() { printf '%s\n' "$1" > "$PROBE"; }
+J='{"tool_input":{"file_path":"Sources/social-care-s/Domain/__hook_probe.swift"}}'
+
+probe 'import Vapor';                    run domain-imports.sh "$J" 2 'import simples'
+probe '@preconcurrency import Vapor';    run domain-imports.sh "$J" 2 '@preconcurrency'
+probe 'public import SQLKit';            run domain-imports.sh "$J" 2 'public import'
+probe 'internal import Vapor';           run domain-imports.sh "$J" 2 'internal import'
+probe '@_exported import Vapor';         run domain-imports.sh "$J" 2 '@_exported'
+probe '  import NIOCore';                run domain-imports.sh "$J" 2 'indentado'
+
+echo
+echo "domain-imports — deve PASSAR (exit 0)"
+probe 'import Foundation';               run domain-imports.sh "$J" 0 'Foundation'
+probe '// import Vapor faria o domínio depender de HTTP'
+                                         run domain-imports.sh "$J" 0 'menção em comentário'
+rm -f "$PROBE"
+run domain-imports.sh '{"tool_input":{"file_path":"Sources/social-care-s/IO/HTTP/Bootstrap/configure.swift"}}' 0 'arquivo fora de Domain/'
+
+echo
+if [[ $FAIL -eq 0 ]]; then
+  echo "Hooks: todos os casos passaram."
+  exit 0
+fi
+echo "Hooks: $FAIL caso(s) falharam." >&2
+exit 1

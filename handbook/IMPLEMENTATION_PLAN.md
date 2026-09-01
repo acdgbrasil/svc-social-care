@@ -528,7 +528,7 @@ Ambos self-hosted, deploy via FluxCD no K3s.
 - [ ] ~8 testes de integracao HTTP (VaporTesting)
 - [x] Cobertura medida e publicada no CI por camada (`check_coverage.sh report`).
       **Meta de 95% abandonada em 2026-08-31**: cobertura aqui e termometro, nao
-      contrato. Quem reprova o CI e teste vermelho. O gate local de 30% fica como
+      contrato. Quem reprova o CI e teste vermelho. O piso local de 25% fica como
       piso anti-regressao.
 
 ---
@@ -639,8 +639,8 @@ Prioridade 3:  Rate limiting (G14); target ACDGKit (#09, preventivo)
 > funcionalidade; alem delas o pipeline de remediacao (ADRs 004-025) e evolucoes
 > de produto (lifecycle, erasure LGPD, Configuration BC, OIDC multi-issuer). O
 > "~99% de progresso" media apenas features — **nao** solidez: a medicao de
-> cobertura de 2026-08-31 deu **30,72%**, com `IO` em **9,1%**, e o CI nunca
-> rodou o gate de 95% que este plano dava como verde. Itens genuinamente abertos
+> cobertura de 2026-08-31 deu **30,72%**, com `IO` em **9,1%**, e o gate de 95%
+> que este plano dava como verde era falsa promessa — o CI nunca o executou. Itens genuinamente abertos
 > estao no bloco STATUS do topo; o principal e G10 (integracao HTTP). Fonte de
 > verdade do progresso e o **codigo** (medido), nao as estimativas historicas
 > deste plano.

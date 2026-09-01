@@ -137,7 +137,7 @@
 | G7 | ~~PatientDatabaseModels nao persiste v2.0 fields~~ | Models + Migrations | ~~Dados perdidos~~ | RESOLVIDO (normalizado) |
 | G8 | ~~Response bodies padronizados~~ | `StandardResponse<T>` | ~~Sem wrapper padrao~~ | RESOLVIDO |
 | G9 | ~~Testes nao cobrem use cases v2.0~~ | Tests | ~~UpdateWorkAndIncome, UpdateEducationalStatus, UpdateHealthStatus, RegisterIngressInfo sem teste~~ | RESOLVIDO (7 suites com InMemory test doubles) |
-| G10 | **Sem testes HTTP (integration)** | Tests | Nenhum teste exercita controller -> service -> domain end-to-end | PENDENTE |
+| G10 | ~~Sem testes HTTP (integration)~~ | Tests | ~~Nenhum teste exercita controller -> service -> domain end-to-end~~ | RESOLVIDO (17 testes, `IO/HTTP/HTTPPipelineIntegrationTests.swift`) |
 
 ### 2.2 — Gaps Moderados (Qualidade / Operacional)
 
@@ -525,7 +525,8 @@ Ambos self-hosted, deploy via FluxCD no K3s.
 - [x] 17 suites de teste Application (todos os UCs) com Actor-based InMemory test doubles
 - [x] 4 test doubles (InMemoryPatientRepository, InMemoryEventBus, InMemoryLookupValidator, PatientFixture)
 - [x] Testes de audit trail (pipeline: DomainEventRegistry, Outbox mapper, AuditTrailEntryResponse, round-trip — 10 testes)
-- [ ] ~8 testes de integracao HTTP (VaporTesting)
+- [x] 17 testes de integracao HTTP (VaporTesting) — previstos ~8. Ver
+      `Tests/social-care-sTests/IO/HTTP/`.
 - [x] Cobertura medida e publicada no CI por camada (`check_coverage.sh report`).
       **Meta de 95% abandonada em 2026-08-31**: cobertura aqui e termometro, nao
       contrato. Quem reprova o CI e teste vermelho. O piso local de 25% fica como
@@ -612,9 +613,19 @@ Quando TODOS os itens abaixo estiverem marcados, o microservico esta pronto para
 - [x] Testes Application para todos os 25 UCs (Actor-based InMemory test doubles)
 - [x] Testes de audit trail (DomainEventRegistry, Outbox mapper, AuditTrailEntryResponse, round-trip)
 - [x] Suite de regressao (`Regression/`, 22 arquivos em 6 subpastas — pipeline T-001)
-- [x] Cobertura medida e publicada no CI por camada (30,72% global em 2026-08-31;
-      `IO` em 9,1%). Termometro, nao gate — ver Fase 8.
-- [ ] Testes de integracao HTTP end-to-end (VaporTesting) — **G10, unica lacuna de testes**
+- [x] Cobertura medida e publicada no CI por camada (33,73% global em 2026-09-01;
+      `IO` em 15,10%). Termometro, nao gate — ver Fase 8.
+      Leitura anterior: 30,72% / `IO` 9,1% em 2026-08-31, antes do G10.
+- [x] Testes de integracao HTTP end-to-end (VaporTesting) — **G10 FECHADO em
+      2026-09-01**. 17 testes em `IO/HTTP/HTTPPipelineIntegrationTests.swift`
+      cobrindo `SecurityHeaders -> AppError -> JWTAuth -> RoleGuard ->
+      controller`: rotas publicas, 401 (sem token / expirado / issuer alheio /
+      audience alheia / malformado), 403 do RoleGuard por role, caminho
+      autorizado ate o repositorio, headers de seguranca no error path
+      (ADR-012) e 404 no formato do middleware.
+      Sem PostgreSQL: `StubSQLDatabase` (zero linhas, `PostgresDialect` real)
+      permite montar o `ServiceContainer` de producao; o JWKS RS256 e trocado
+      por HMAC local, entao o que se exercita e o pipeline, nao o RS256.
 
 ### Producao
 - [x] Dockerfile

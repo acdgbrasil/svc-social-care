@@ -135,11 +135,21 @@ Erros são capturados com `do/catch` no handler e mapeados via função `mapErro
 - Test doubles em `Tests/social-care-sTests/Application/TestDoubles/`: `InMemoryPatientRepository`, `InMemoryEventBus`, `InMemoryLookupValidator`, `PatientFixture`
 - Cobertura é **termômetro, não gate**: o CI roda `./scripts/check_coverage.sh report`
   e publica a leitura por camada no resumo do job. O que reprova o CI é teste
-  vermelho, nunca o percentual. Leitura em 2026-08-31: **30,72% global** —
-  `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 9,1%** (7.132 linhas,
-  metade do código-fonte, praticamente descoberta). O piso local de 25%
-  (`make coverage`) segue existindo como piso anti-regressão.
+  vermelho, nunca o percentual. Leitura em 2026-09-01: **33,73% global** —
+  `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 15,10%** (7.132
+  linhas, metade do código-fonte). O `IO` saiu de 9,1% com o fechamento do G10.
+  O piso local de 25% (`make coverage`) segue existindo como piso anti-regressão.
 - Testes de domínio em `Tests/.../Domain/v2/`, de application em `Tests/.../Application/`, de IO em `Tests/.../IO/`
+- **Integração HTTP (G10)**: `Tests/.../IO/HTTP/` sobe uma `Application` real com
+  `VaporTesting` e percorre `SecurityHeaders → AppError → JWTAuth → RoleGuard →
+  controller`. Não usa PostgreSQL: `StubSQLDatabase` (zero linhas, mas
+  `PostgresDialect` real) permite montar o `ServiceContainer` de produção, e o
+  RS256/JWKS é trocado por HMAC local — o que se exercita é o pipeline.
+  Quem mexer em ordem de middleware, rota ou role vai encostar aqui primeiro.
+- ⚠️ `OIDCJWTPayloadBootstrap.shared` é **global de processo**, e duas suítes o
+  mutam. `.serialized` não protege entre suítes irmãs — todo teste que o toca
+  passa por `OIDCBootstrapGate.withExclusiveAccess`. Sem isso, o 401 aparece
+  intermitente e parece bug de auth.
 
 ## Convenções
 

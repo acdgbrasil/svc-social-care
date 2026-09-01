@@ -11,8 +11,9 @@ when_to_use: >
 
 # Testes — `swift-testing`, e suite verde não é negociável
 
-Verificado em 2026-08-31: 487 testes em 88 suites, verdes. Cobertura global
-30,72% — `Domain` 58,6%, `Application` 47,6%, `shared` 76,6%, **`IO` 9,1%**.
+Verificado em 2026-09-01: 504 testes em 89 suites, verdes. Cobertura global
+33,73% — `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 15,10%**
+(era 9,1% antes do G10).
 
 ## A regra de ouro
 
@@ -57,7 +58,8 @@ struct RegisterPatientTests {
 Tests/social-care-sTests/
 ├── Domain/v2/     VOs, agregados, analytics, invariantes
 ├── Application/   um arquivo por use case + TestDoubles/
-├── IO/            audit trail, Auth (OIDC, JWKS, AuthenticatedUser)
+├── IO/            audit trail, Auth (OIDC, JWKS, AuthenticatedUser),
+│                  HTTP/ (integração ponta a ponta — G10)
 └── Regression/    Concurrency, DataIntegrity, DomainInvariants,
                    ErrorMapping, EventPublication, Security
 ```
@@ -100,10 +102,41 @@ mostra onde ele está:
 ./scripts/check_coverage.sh report
 ```
 
-O buraco conhecido é `IO`: **não existe nenhum teste de integração HTTP**
-(`app.test` do VaporTesting não aparece no repo). Toda a cadeia
-`SecurityHeaders → AppError → JWTAuth → RoleGuard → controller` nunca foi
-exercitada ponta a ponta — é o gap G10 do `handbook/IMPLEMENTATION_PLAN.md`.
+`IO` ainda é o menor número, mas deixou de ser um vazio: o **G10 fechou em
+2026-09-01** e a cadeia `SecurityHeaders → AppError → JWTAuth → RoleGuard →
+controller` passou a ser exercitada ponta a ponta.
+
+## Integração HTTP (`IO/HTTP/`)
+
+`HTTPTestApp.withApp { app in ... }` sobe uma `Application` com a **mesma ordem
+de middleware** de `configure.swift` — a ordem é a regra sob teste — e entrega
+para `app.testing().test(.GET, "/rota") { res in }`.
+
+```swift
+try await HTTPTestApp.withApp { app in
+    let token = try await HTTPTestApp.token(roles: ["worker"])
+    try await app.testing().test(.GET, "/api/v1/patients", headers: .bearer(token)) { res async in
+        #expect(res.status == .ok)
+    }
+}
+```
+
+Duas trocas deliberadas em relação a produção, e o que cada uma implica:
+
+- **`StubSQLDatabase`** no lugar do PostgreSQL. Devolve zero linhas para toda
+  query, com o `PostgresDialect` real — então serve para afirmar *que a
+  requisição chegou no repositório* (`stub.executedSQL`), não para testar SQL.
+  Existe porque `ServiceContainer.init` só aceita `any SQLDatabase`: não há
+  ponto de injeção para fake de repositório.
+- **HMAC local** no lugar do JWKS/RS256. O que se exercita é o pipeline
+  (`verify` → roles → RoleGuard → controller), nunca a criptografia.
+
+⚠️ **`OIDCJWTPayloadBootstrap.shared` é global de processo.** Os testes de
+integração precisam dele preenchido; `OIDCJWTPayloadTests` o reseta a cada caso.
+`.serialized` só ordena os casos *dentro* de uma suíte — entre suítes irmãs não
+protege. Por isso todo teste que toca esse storage entra por
+`OIDCBootstrapGate.withExclusiveAccess`. Esqueça o gate e o sintoma é um 401
+intermitente que parece bug de auth.
 
 ## Comandos
 

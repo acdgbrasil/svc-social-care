@@ -274,44 +274,55 @@ struct OIDCJWTPayloadTests {
 
     // MARK: - AppSec CRITICAL-1 (review 2026-05-14): defense-in-depth
 
+    // Os três testes abaixo mutam `OIDCJWTPayloadBootstrap.shared`, que é
+    // global de processo. `.serialized` nesta suíte não basta: a suíte de
+    // integração HTTP (G10) precisa do mesmo storage PREENCHIDO durante suas
+    // requisições, e suítes irmãs rodam em paralelo — o `reset()` daqui cairia
+    // no meio de uma requisição de lá e produziria 401 intermitente. O gate é
+    // o escopo de exclusão que falta; ele também reseta o storage ao sair.
+    // Ver `IO/HTTP/TestDoubles/OIDCBootstrapGate.swift`.
+
     @Test("verify(using:) consulta storage global e valida iss/aud sem segunda passada manual")
     func verifyUsingConsultsGlobalBootstrap() async throws {
-        defer { OIDCJWTPayloadBootstrap.shared.reset() }
-        let validators = try #require(OIDCJWTValidators.fromValues(
-            issuersCsv: "https://auth.acdgbrasil.com.br",
-            audiencesCsv: "expected-aud"
-        ))
-        OIDCJWTPayloadBootstrap.shared.set(validators)
+        try await OIDCBootstrapGate.withExclusiveAccess {
+            let validators = try #require(OIDCJWTValidators.fromValues(
+                issuersCsv: "https://auth.acdgbrasil.com.br",
+                audiencesCsv: "expected-aud"
+            ))
+            OIDCJWTPayloadBootstrap.shared.set(validators)
 
-        let payload = makePayload(
-            iss: "https://auth.acdgbrasil.com.br",
-            aud: ["expected-aud"]
-        )
-        try await payload.verify(using: TestAlgorithm())
+            let payload = makePayload(
+                iss: "https://auth.acdgbrasil.com.br",
+                aud: ["expected-aud"]
+            )
+            try await payload.verify(using: TestAlgorithm())
+        }
     }
 
     @Test("verify(using:) FALHA se OIDCJWTPayloadBootstrap nao registrado (fail-closed)")
     func verifyUsingFailsClosedWithoutBootstrap() async throws {
-        OIDCJWTPayloadBootstrap.shared.reset()
-        defer { OIDCJWTPayloadBootstrap.shared.reset() }
+        await OIDCBootstrapGate.withExclusiveAccess {
+            OIDCJWTPayloadBootstrap.shared.reset()
 
-        let payload = makePayload(iss: "https://auth.acdgbrasil.com.br", aud: ["y"])
-        await #expect(throws: JWTError.self) {
-            try await payload.verify(using: TestAlgorithm())
+            let payload = makePayload(iss: "https://auth.acdgbrasil.com.br", aud: ["y"])
+            await #expect(throws: JWTError.self) {
+                try await payload.verify(using: TestAlgorithm())
+            }
         }
     }
 
     @Test("verify(using:) rejeita issuer fora da whitelist mesmo com signature valida (CRIT-2 mitigation)")
     func verifyUsingRejectsCrossIssuer() async throws {
-        defer { OIDCJWTPayloadBootstrap.shared.reset() }
-        OIDCJWTPayloadBootstrap.shared.set(try #require(OIDCJWTValidators.fromValues(
-            issuersCsv: "https://auth.acdgbrasil.com.br",
-            audiencesCsv: "y"
-        )))
+        try await OIDCBootstrapGate.withExclusiveAccess {
+            OIDCJWTPayloadBootstrap.shared.set(try #require(OIDCJWTValidators.fromValues(
+                issuersCsv: "https://auth.acdgbrasil.com.br",
+                audiencesCsv: "y"
+            )))
 
-        let payload = makePayload(iss: "https://malicious.example.com", aud: ["y"])
-        await #expect(throws: JWTError.self) {
-            try await payload.verify(using: TestAlgorithm())
+            let payload = makePayload(iss: "https://malicious.example.com", aud: ["y"])
+            await #expect(throws: JWTError.self) {
+                try await payload.verify(using: TestAlgorithm())
+            }
         }
     }
 

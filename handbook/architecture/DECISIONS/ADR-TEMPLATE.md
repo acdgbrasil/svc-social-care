@@ -91,13 +91,13 @@ Se nenhum teste/lint é aplicável (caso raro — geralmente ADR documental puro
 
 Indicar:
 
-1. **Skill atualizada:** `.claude/skills/swift-{domain-modeler|application-orchestrator|io-implementer|test-writer|expert}/SKILL.md` — qual skill ganha entrada na tabela "Lições Aprendidas (regressões prevenidas)".
+1. **Skill atualizada:** `.claude/skills/social-care-{domain|application|io|tests}/SKILL.md` — qual skill ganha entrada na tabela "Lições Aprendidas (regressões prevenidas)".
 2. **(Opcional) Doc do handbook:** `handbook/tooling/swift/<area>/<nome>.md` — pattern completo, anti-patterns, exemplos. Cite o caminho.
 3. **Regra resumida** em 1-3 linhas: a versão TL;DR que cabe na tabela da skill.
 
 Exemplo (extraído de ADR-002):
 
-> - **Skill atualizada:** `.claude/skills/swift-test-writer/SKILL.md` — entrada na tabela "Lições Aprendidas (regressões prevenidas)" com link para este ADR.
+> - **Skill atualizada:** `.claude/skills/social-care-tests/SKILL.md` — entrada com link para este ADR.
 > - **Handbook:** `handbook/tooling/swift/testing/regression-pattern.md` — padrão completo.
 > - **Regra resumida:** todo `@Test` de regressão tem ID do achado no nome, vive em `Tests/.../Regression/<subpasta>/`, e usa `RegressionFixture` para determinismo.
 

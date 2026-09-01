@@ -197,7 +197,7 @@ W0 RED → escreve teste em Regression/<tema>/<ArquivoRegressionTests>.swift
        → teste FALHA (porque a fix ainda não existe)
        → output: .pipeline/T-NNN/002-tests/REPORT.md
 
-W1 GREEN → swift-{domain|application|io}-* implementa fix
+W1 GREEN → skill social-care-{domain|application|io} implementa fix
         → teste passa
         → output: .pipeline/T-NNN/003-impl/REPORT.md
 
@@ -210,7 +210,7 @@ W3 QUALITY → make ci (inclui make regression)
          → output: .pipeline/T-NNN/005-quality/REPORT.md
 
 PÓS-MERGE → ADR criado em handbook/architecture/DECISIONS/
-        → swift-test-writer/SKILL.md ganha entrada em "Lições Aprendidas"
+        → social-care-tests/SKILL.md ganha entrada em "Lições Aprendidas"
         → IMPROVEMENT_BACKLOG.md marca ticket ✅
 ```
 

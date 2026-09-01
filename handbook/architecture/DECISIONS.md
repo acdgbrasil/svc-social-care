@@ -46,6 +46,8 @@ estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
 | [031](DECISIONS/ADR-031-oidc-defense-in-depth-and-acdg-claims.md) | Defense-in-depth no `verify` OIDC + claims ACDG (org_id/person_id/legacy_sub) | Aceito | 2026-07-04 | — |
 | [039](DECISIONS/ADR-039-erasure-policy-people-person-deleted.md) | Política de erasure ao consumir `people.person.deleted` (LGPD × No-Delete) | Aceito | 2026-06-09 | — |
 | [040](DECISIONS/ADR-040-jwks-runtime-refresh.md) | Refresh de JWKS em runtime (periódico + on-demand por `kid`) | Aceito | 2026-07-04 | — |
+| [041](DECISIONS/ADR-041-coverage-as-thermometer.md) | Cobertura de teste é termômetro, não gate | Proposto | 2026-09-01 | — |
+| [042](DECISIONS/ADR-042-verifiable-harness.md) | Harness verificável — o `.claude/` afirma só o que um comando comprova | Proposto | 2026-09-01 | — |
 
 > **Faixa 026-038 (reconciliada em 2026-07-04):** originalmente **reservada** aos
 > tickets T-025..T-038 do `REMEDIATION_PIPELINE_2026_05_14.md`. Na prática, a
@@ -61,7 +63,25 @@ estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
 > Ainda **reservados** (planejados no pipeline, ADR criado conforme o ticket
 > fecha): **026, 028, 030, 032-038**. Observação: **T-028** (cursor pagination)
 > já foi implementado em v0.7.0 sem ADR formal — dívida de documentação a fechar.
-> Próximo ID livre fora da reserva: **041** (040 usado pelo JWKS runtime refresh, issue #23).
+> Próximo ID livre fora da reserva: **043** (041 e 042 usados em 2026-09-01).
+
+## Skills citadas em ADRs antigos — tabela de equivalência
+
+O harness foi reconstruído em 2026-08-31 (**ADR-042**) e as skills mudaram de
+nome. A seção "Better Pattern para skills" dos ADRs anteriores continua citando
+os nomes antigos: **isso é proposital**. ADR é registro datado; reescrever o
+corpo de decisões passadas apagaria o contexto de quando foram tomadas. Ao ler
+um ADR antigo, traduza:
+
+| Citado no ADR (removido) | Onde a lição vive hoje |
+|---|---|
+| `.claude/skills/swift-domain-modeler/` | `.claude/skills/social-care-domain/` |
+| `.claude/skills/swift-application-orchestrator/` | `.claude/skills/social-care-application/` |
+| `.claude/skills/swift-io-implementer/` | `.claude/skills/social-care-io/` |
+| `.claude/skills/swift-test-writer/` | `.claude/skills/social-care-tests/` |
+| `.claude/skills/swift-expert/` | a skill da camada correspondente |
+| `.claude/agents/swift-orchestrator.md` | `.claude/agents/social-care.md` |
+| `swift-concurrency`, `swift-testing`, `swift-api-design-guidelines`, `swift-format-style` | sem equivalente — eram cópias de documentação de linguagem; consulte a fonte oficial |
 
 ## Regra de promoção `Proposto` → `Aceito` (ADR-003)
 

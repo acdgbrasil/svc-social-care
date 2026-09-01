@@ -186,13 +186,18 @@ Foi removido inteiro. O atual é fino e verificável:
 | `.claude/skills/social-care-application/` | `Application/` — commands, queries, handlers, mapeamento de erro. |
 | `.claude/skills/social-care-io/` | `IO/` — Vapor, auth, SQLKit, migrations, Outbox. |
 | `.claude/skills/social-care-tests/` | `Tests/` — `swift-testing`, fakes, regressão. |
+| `.claude/skills/novo-usecase/` | `/novo-usecase <BC> <Nome>` — os sete lugares que um use case de escrita precisa tocar. |
 | `.claude/hooks/regression-gate.sh` | Hook `Stop`: roda `make regression` e **bloqueia o fim do turno** com suite vermelha. Só dispara se o turno tocou `.swift`; anti-loop via `stop_hook_active`. |
 | `.claude/hooks/domain-imports.sh` | Hook `PostToolUse` (Edit/Write): barra `import` fora de `Foundation` em `Domain/`. |
+| `.claude/hooks/git-guard.sh` | Hook `PreToolUse` (Bash): bloqueia force push em qualquer posição da linha; `--force-with-lease` passa. |
 
-Os dois hooks existem porque regra escrita em documento depende de alguém
-lembrar. A regra inviolável do teste vermelho e a fronteira do domínio agora são
-mecanismo, não intenção. `settings.json` também traz `deny` para segredos e
-`git push --force`, e `ask` para `git push`.
+Os hooks existem porque regra escrita em documento depende de alguém lembrar. A
+regra inviolável do teste vermelho, a fronteira do domínio e a proibição de
+reescrever histórico publicado agora são mecanismo, não intenção. O
+`settings.json` traz ainda `deny` para segredos e `ask` para `git push` — mas
+regra de permissão casa **texto**, não semântica de shell: `git push origin main
+--force` escapa de um `deny` de prefixo, e é por isso que o guard de verdade é
+o hook, avaliado antes das regras.
 
 Duas regras para mantê-lo vivo: **skill não repete o handbook** (aponta para o
 ADR ou o arquivo-âncora), e **toda contagem vem com o comando que a remede** —

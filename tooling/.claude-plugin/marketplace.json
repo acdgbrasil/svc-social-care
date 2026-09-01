@@ -1,0 +1,16 @@
+{
+  "name": "acdg",
+  "owner": {
+    "name": "ACDG Technology"
+  },
+  "metadata": {
+    "description": "Marketplace interno da ACDG, versionado junto do serviço. Existe para que o plugin carregue sem --plugin-dir em toda sessão."
+  },
+  "plugins": [
+    {
+      "name": "acdg",
+      "source": "./acdg-plugin",
+      "description": "LSP de Swift resolvido pela toolchain do projeto e guarda de historico do git."
+    }
+  ]
+}

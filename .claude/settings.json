@@ -1,6 +1,17 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "cleanupPeriodDays": 7,
+  "extraKnownMarketplaces": {
+    "acdg": {
+      "source": {
+        "source": "directory",
+        "path": "./tooling"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "acdg@acdg": true
+  },
   "permissions": {
     "allow": [
       "Bash(swift build:*)",
@@ -43,6 +54,10 @@
       "Bash(git tag --force:*)",
       "Bash(git branch -D:*)",
       "Bash(git branch -M:*)"
+    ],
+    "additionalDirectories": [
+      "../contracts",
+      "../frontend"
     ]
   },
   "hooks": {

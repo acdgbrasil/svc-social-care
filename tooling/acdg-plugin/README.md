@@ -23,11 +23,27 @@ do domínio) continua no `.claude/` do próprio repositório. A regra de corte �
 
 ## Usar
 
-Durante o desenvolvimento, sem instalar:
+O `.claude/settings.json` do serviço registra o marketplace (`./tooling`) e
+habilita `acdg@acdg`, então o plugin deve carregar sozinho. Confirme com:
+
+```bash
+claude plugin details acdg@acdg   # deve listar 1 hook e 1 LSP server (swift)
+claude plugin validate ./tooling  # marketplace
+```
+
+**Estado em 2026-09-01:** `details` resolve o plugin corretamente, mas uma
+sessão `-p` recém-criada ainda respondeu `No LSP server available for
+file type: .swift`. A ativação depende de confiar no workspace na primeira
+sessão interativa — abra o `/plugin`, confirme que `acdg` aparece ativo e sem
+entrada na aba **Errors**, e rode `/reload-plugins` se ele pedir. Enquanto isso
+não for confirmado, o caminho garantido é carregar direto:
 
 ```bash
 claude --plugin-dir ./tooling/acdg-plugin
 ```
+
+Foi assim que o LSP foi validado ponta a ponta (`documentSymbol` em
+`DomainProtocols.swift` → `OK Core Domain Events`).
 
 Verificar o que ele carrega e quanto custa de contexto:
 

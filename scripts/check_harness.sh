@@ -48,7 +48,7 @@ done < <(
   for f in $HARNESS_FILES; do
     grep -oE '`[^`]+`' "$f" \
       | tr -d '`' \
-      | grep -E '^(Sources|Tests|handbook|scripts|docs|tooling|\.github|\.claude)/' \
+      | grep -E '^(Sources|Tests|scripts|docs|tooling|\.github|\.claude)/' \
       | grep -vE '[<>*$|]' \
       | sed "s|^|$f:|"
   done | sort -u
@@ -124,21 +124,22 @@ done
 #
 # Cada termo abaixo já foi verdade e deixou de ser. Mencioná-los é legítimo
 # quando o texto os marca como armadilha — daí a exceção por negação.
-# `handbook/reports/` e os ADRs ficam de fora: são registro histórico.
 # ---------------------------------------------------------------------------
 echo
 echo "4. Padrões abandonados"
 
-# `IMPROVEMENT_BACKLOG.md` fica de fora porque discutir alternativa nao adotada
-# e a funcao dele — proposta nao e afirmacao.
-# `handbook/tooling/` guarda copias de documentacao oficial (Vapor, Swift book):
-# o texto de terceiros nao responde pelas convencoes deste projeto. `reports/` e
-# os ADRs sao registro historico. Nenhum dos tres entra na verificacao.
-LIVE_DOCS=$(find .claude docs handbook -name '*.md' 2>/dev/null \
-  | grep -v '^handbook/reports/' \
-  | grep -v '^handbook/tooling/' \
-  | grep -v '^handbook/architecture/DECISIONS/' \
-  | grep -v '^handbook/architecture/IMPROVEMENT_BACKLOG.md$')
+# Ficam de fora da verificacao:
+#   - `docs/adr/ADR-*` — registro historico; um ADR superado descreve o que valia
+#     na epoca, e reescreve-lo apagaria o proprio ponto de existir um ADR.
+#   - `docs/adr/BACKLOG.md` — discutir alternativa nao adotada e a funcao dele;
+#     proposta nao e afirmacao.
+#   - `references/` das skills — copia de norma e de doc de terceiro (manuais do
+#     SUAS, payloads de formulario). Texto de terceiro nao responde pelas
+#     convencoes deste projeto.
+LIVE_DOCS=$(find .claude docs -name '*.md' 2>/dev/null \
+  | grep -v '^docs/adr/ADR-' \
+  | grep -v '^docs/adr/BACKLOG.md$' \
+  | grep -v '/references/')
 LIVE_DOCS="$LIVE_DOCS CLAUDE.md README.md"
 
 # Uma menção é legítima quando o texto a marca como superada. Olhamos a linha

@@ -89,9 +89,8 @@ O push dispara `release-ghcr.yml`, que publica a imagem em
 
 ## 6. Fechar o ciclo
 
-Se a release entrega algo que o `handbook/IMPLEMENTATION_PLAN.md` rastreia
-(gap G1-G17), marque o checkbox. Se um ADR saiu de `Proposto` com esta entrega,
-promova-o.
+Se a release fecha um gap rastreado em `docs/GAPS.md`, atualize o arquivo. Se um
+ADR saiu de `Proposto` com esta entrega, promova-o em `docs/adr/`.
 
 ## O que não fazer
 

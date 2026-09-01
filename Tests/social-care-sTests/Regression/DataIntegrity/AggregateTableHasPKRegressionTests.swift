@@ -120,6 +120,6 @@ struct AggregateTableHasPKRegressionTests {
             "drop constraint",
             "func revert"
         ])
-        #expect(result.matched, "Migration que adiciona PK em family_members não declara rollback simétrico (func revert + DROP CONSTRAINT). ADR-002 + handbook G17 exigem forward+rollback.")
+        #expect(result.matched, "Migration que adiciona PK em family_members não declara rollback simétrico (func revert + DROP CONSTRAINT). ADR-002 exige forward+rollback.")
     }
 }

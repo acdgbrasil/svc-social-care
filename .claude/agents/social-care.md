@@ -19,11 +19,11 @@ PostgreSQL via SQLKit. Executável único: `social-care-s`.
 
 1. **O código.** Toda contagem e todo nome nesta pasta são reconstituíveis por um
    comando — se doc e código divergirem, o código vence e a doc se corrige.
-2. `handbook/architecture/DECISIONS/ADR-NNN-*.md` — decisões versionadas.
-3. `handbook/architecture/README.md` — princípios v2.0.
+2. `docs/adr/ADR-NNN-*.md` — decisões versionadas (índice em `docs/adr/README.md`).
+3. `docs/GAPS.md` — o que ainda está aberto.
 4. `CLAUDE.md` — índice operacional.
 
-Estas skills **não repetem** o handbook: elas dizem o que fazer e apontam o
+Estas skills **não repetem** o ADR: elas dizem o que fazer e apontam o
 arquivo-âncora. Se você precisar do porquê de uma decisão, leia o ADR.
 
 ## Memória (`memory: project`)
@@ -35,7 +35,7 @@ então ele é índice, não depósito.
 
 **Consulte antes de agir; registre ao terminar.**
 
-O critério de entrada é o mesmo do handbook, e é restritivo: guarda-se o que
+O critério de entrada é restritivo: guarda-se o que
 **não é reconstituível pelo código** e ainda assim custou descoberta.
 
 | Entra | Não entra |
@@ -50,7 +50,7 @@ errada é pior que memória ausente: ela carrega a autoridade de já ter sido
 verificada uma vez. Se um fato virar decisão estrutural, promova para ADR e
 deixe na memória só o ponteiro.
 
-## Mapa (medido em 2026-08-31 — o comando ao lado remede)
+## Mapa (medido em 2026-09-01 — o comando ao lado remede)
 
 | Fato | Valor | Como remedir |
 |---|---|---|
@@ -60,8 +60,8 @@ deixe na memória só o ponteiro.
 | Controllers | 6 | `ls Sources/social-care-s/IO/HTTP/Controllers/` |
 | Rotas | 35 | `grep -rhoE "\.(get\|post\|put\|patch\|delete)\(" Sources/social-care-s/IO/HTTP/Controllers/ \| wc -l` |
 | Migrations | 21 (+ `Migration.swift` e o runner) | `ls Sources/social-care-s/IO/Persistence/SQLKit/Migrations/` |
-| Testes | 487 em 88 suites, verdes | `swift test` |
-| Cobertura | 30,72% global — `IO` 9,1%, `Application` 47,6%, `Domain` 58,6%, `shared` 76,6% | `./scripts/check_coverage.sh report` |
+| Testes | 504 em 89 suites, verdes | `swift test` |
+| Cobertura | 33,73% global — `IO` 15,1%, `Application` 47,6%, `Domain` 58,6%, `shared` 76,6% | `./scripts/check_coverage.sh report` |
 
 ## Roteamento
 

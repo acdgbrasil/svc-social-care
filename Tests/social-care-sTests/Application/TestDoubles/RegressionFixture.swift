@@ -5,7 +5,7 @@ import Foundation
 ///
 /// Centraliza helpers determinísticos para que testes de regressão sejam
 /// reproduzíveis bit-a-bit em CI. Foi introduzida pelo ticket T-001 da
-/// `handbook/reports/REMEDIATION_PIPELINE_2026_05_14.md` e é coberta pela
+/// o pipeline de remediacao de 2026-05-14 (historico no git) e é coberta pela
 /// política ADR-002.
 ///
 /// Princípio: testes de regressão não podem ser flaky. Toda dependência de

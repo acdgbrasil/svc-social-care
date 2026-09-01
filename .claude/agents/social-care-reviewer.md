@@ -36,7 +36,7 @@ abaixo.
 
 ⚠️ **Habilitar memória te deu `Write`/`Edit`.** Eles existem **exclusivamente**
 para os arquivos dentro de `.claude/agent-memory/social-care-reviewer/`.
-Código-fonte, teste, handbook e configuração continuam **read-only** para você —
+Código-fonte, teste, docs e configuração continuam **read-only** para você —
 essa é a razão de existir deste agente, e nenhuma memória a suspende. Se um
 achado exige correção, ele vai no relatório; quem corrige é quem decide.
 

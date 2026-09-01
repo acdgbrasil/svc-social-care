@@ -145,6 +145,6 @@ struct LookupFKsRegressionTests {
             "drop constraint",
             "func revert"
         ])
-        #expect(found, "DB-3: migration de lookup FKs sem revert simétrico (DROP CONSTRAINT). ADR-002 + handbook G17 exigem forward+rollback.")
+        #expect(found, "DB-3: migration de lookup FKs sem revert simétrico (DROP CONSTRAINT). ADR-002 exige forward+rollback.")
     }
 }

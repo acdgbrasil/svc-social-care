@@ -102,7 +102,7 @@ reais entre elas (trigger `touch_updated_at()`, FKs de lookup). Controle em
 
 Toda tabela tem PK declarada (ADR-006); coluna `*_id` com identidade semântica é
 tipada e ganha FK (ADR-007/008); tabela raiz tem `created_at`/`updated_at`
-automáticos (ADR-023 do handbook local).
+automáticos (ADR-023, em `docs/adr/`).
 
 ## Outbox e eventos
 

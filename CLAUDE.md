@@ -139,9 +139,9 @@ O que era conhecimento real virou ADR, rule ou skill.
 | `rules/domain-analytics.md` | Carrega ao tocar `Domain/`. |
 | `rules/testing.md` | Carrega ao tocar `Tests/`. |
 | `hooks/regression-gate.sh` | `Stop`: bloqueia fim de turno com suite vermelha. |
-| `hooks/domain-imports.sh` | `PostToolUse`: barra import proibido em `Domain/`. |
+| `hooks/domain-imports.sh` | `PostToolUse`: fronteira de camada. `Domain/` só `Foundation` (allowlist); `Application/` sem framework de IO (denylist) — `Logging` passa. |
 | `hooks/git-guard.sh` | `PreToolUse`: bloqueia force push. |
-| `hooks/test-hooks.sh` | 29 casos cobrindo os hooks. |
+| `hooks/test-hooks.sh` | 38 casos cobrindo os hooks (`./.claude/hooks/test-hooks.sh`). |
 | `scripts/check_harness.sh` | 14 checagens de que o harness não mente (ADR-042). |
 
 Os hooks existem porque regra escrita depende de alguém lembrar. Regra de

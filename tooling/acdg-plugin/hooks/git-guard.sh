@@ -13,6 +13,15 @@
 #
 # `--force-with-lease` e `--force-if-includes` passam: recusam sobrescrever
 # commit que você ainda não viu.
+#
+# POR QUE NÃO USAR O CAMPO `if` DO settings.json (avaliado em 2026-09-01):
+# `"if": "Bash(git push *)"` faria este hook rodar só em push, em vez de em todo
+# comando Bash, e o casamento do `if` é bom — entende `FOO=bar git push`, `&&` e
+# `$()`. Mesmo assim fica de fora: a economia é de ~10 ms por chamada, e o preço
+# é uma superfície nova onde um force push escapa se o casamento falhar em
+# alguma forma que ninguém previu. Este arquivo já nasceu uma vez com cinco
+# escapes; guard que falha aberto é pior que nenhum, porque quem confia nele
+# para de conferir. Rodar sempre é a escolha certa aqui.
 set -uo pipefail
 
 if ! command -v jq >/dev/null 2>&1; then

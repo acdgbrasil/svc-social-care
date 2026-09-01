@@ -69,7 +69,32 @@ probe 'import Foundation';               run domain-imports.sh "$J" 0 'Foundatio
 probe '// import Vapor faria o domínio depender de HTTP'
                                          run domain-imports.sh "$J" 0 'menção em comentário'
 rm -f "$PROBE"
-run domain-imports.sh '{"tool_input":{"file_path":"Sources/social-care-s/IO/HTTP/Bootstrap/configure.swift"}}' 0 'arquivo fora de Domain/'
+run domain-imports.sh '{"tool_input":{"file_path":"Sources/social-care-s/IO/HTTP/Bootstrap/configure.swift"}}' 0 'arquivo fora de Domain/ e Application/'
+
+# Application/ tem fronteira PRÓPRIA: denylist de framework de IO, não allowlist.
+# `Logging` passa de propósito — já é importado em 2 arquivos reais, e barrá-lo
+# quebraria o suite no primeiro commit.
+echo
+echo "domain-imports (Application/) — deve BLOQUEAR (exit 2)"
+APROBE="../../Sources/social-care-s/Application/__hook_probe.swift"
+trap 'rm -f "$PROBE" "$APROBE"' EXIT
+aprobe() { printf '%s\n' "$1" > "$APROBE"; }
+AJ='{"tool_input":{"file_path":"Sources/social-care-s/Application/__hook_probe.swift"}}'
+
+aprobe 'import Vapor';                   run domain-imports.sh "$AJ" 2 'Vapor em Application'
+aprobe 'import SQLKit';                  run domain-imports.sh "$AJ" 2 'SQLKit em Application'
+aprobe 'import PostgresKit';             run domain-imports.sh "$AJ" 2 'PostgresKit'
+aprobe '@preconcurrency import JWTKit';  run domain-imports.sh "$AJ" 2 'JWTKit com modificador'
+aprobe 'import NIOCore';                 run domain-imports.sh "$AJ" 2 'NIOCore'
+aprobe 'import AsyncHTTPClient';         run domain-imports.sh "$AJ" 2 'AsyncHTTPClient'
+
+echo
+echo "domain-imports (Application/) — deve PASSAR (exit 0)"
+aprobe 'import Foundation';              run domain-imports.sh "$AJ" 0 'Foundation'
+aprobe 'import Logging';                 run domain-imports.sh "$AJ" 0 'Logging (abstração, uso real no repo)'
+aprobe '// import Vapor aqui invertaria a dependência'
+                                         run domain-imports.sh "$AJ" 0 'menção em comentário'
+rm -f "$APROBE"
 
 echo
 if [[ $FAIL -eq 0 ]]; then

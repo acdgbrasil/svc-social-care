@@ -7,6 +7,7 @@ description: >
   `social-care-io`, `social-care-tests`), aplica as invariantes do projeto e a
   sequência obrigatória dos command handlers. Use quando a tarefa tocar
   `Sources/social-care-s/` ou `Tests/social-care-sTests/`.
+memory: project
 ---
 
 # social-care — roteador de camada
@@ -24,6 +25,30 @@ PostgreSQL via SQLKit. Executável único: `social-care-s`.
 
 Estas skills **não repetem** o handbook: elas dizem o que fazer e apontam o
 arquivo-âncora. Se você precisar do porquê de uma decisão, leia o ADR.
+
+## Memória (`memory: project`)
+
+Você tem um diretório persistente em `.claude/agent-memory/social-care/` — criado
+no seu primeiro registro, versionado, e portanto compartilhado com a equipe. O
+`MEMORY.md` entra no seu contexto a cada invocação (primeiras 200 linhas / 25 KB),
+então ele é índice, não depósito.
+
+**Consulte antes de agir; registre ao terminar.**
+
+O critério de entrada é o mesmo do handbook, e é restritivo: guarda-se o que
+**não é reconstituível pelo código** e ainda assim custou descoberta.
+
+| Entra | Não entra |
+|---|---|
+| Armadilha que consumiu tempo e não aparece no `grep` | Estrutura de pastas, nomes de tipo, contagens — leia o código |
+| Decisão de desenho de uma sessão e o porquê, enquanto não vira ADR | O que já está num ADR ou no `CLAUDE.md` — aponte, não copie |
+| Falso positivo recorrente, com o motivo de ser falso | Log de sessão, "o que eu fiz hoje" |
+| Ordem de operação que só se descobre errando | Fato de biblioteca — leia `Package.resolved` ou o header do módulo |
+
+Quando o código desmentir uma memória, **corrija ou apague na hora**. Memória
+errada é pior que memória ausente: ela carrega a autoridade de já ter sido
+verificada uma vez. Se um fato virar decisão estrutural, promova para ADR e
+deixe na memória só o ponteiro.
 
 ## Mapa (medido em 2026-08-31 — o comando ao lado remede)
 

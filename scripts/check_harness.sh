@@ -28,12 +28,20 @@ HARNESS_FILES=$(find .claude -name '*.md' 2>/dev/null)
 
 # ---------------------------------------------------------------------------
 # 1. Todo caminho citado no harness existe
+#
+# Exceção: `.claude/agent-memory/**`. Um agente com `memory:` no frontmatter
+# aponta para o diretório onde sua memória VAI viver; quem o cria é o Claude
+# Code, na primeira vez que o agente escreve. Cobrar existência aqui obrigaria
+# a versionar um MEMORY.md vazio só para satisfazer o check — inventar conteúdo
+# para agradar o verificador é o oposto do que o ADR-042 quer. O caminho é um
+# destino declarado, não uma afirmação sobre o presente.
 # ---------------------------------------------------------------------------
 echo "1. Caminhos citados no harness"
 check
 MISSING=0
 while IFS=: read -r file path; do
   [[ -e "$path" ]] && continue
+  [[ "$path" == .claude/agent-memory/* ]] && continue
   fail "$file cita \`$path\`, que não existe"
   MISSING=$((MISSING + 1))
 done < <(

@@ -81,6 +81,10 @@ Domain ← Application ← IO (HTTP, Persistence, EventBus)
   genérico; o handler de Application traduz para o erro de negócio (ADR-010).
 - **`ServiceContainer`** (`IO/HTTP/Bootstrap/`) é o composition root, acessível
   por `Request.services`.
+- **A ordem dos middlewares de borda é contrato, com lint que a enforça**:
+  `SecurityHeaders → RequestContext → CORS → RateLimit → AppError → JWTAuth`
+  (ADR-012, 044, 045, 046). Log de HTTP nunca leva query string, corpo ou
+  header — `?search=` carrega nome e CPF.
 - **`StandardResponse<T>`** com `meta.timestamp` envolve as respostas HTTP.
 - **Multi-issuer OIDC (ADR-027, 029, 031)**: aceita Zitadel e Authentik em
   paralelo via `OIDC_JWKS_URLS`, `OIDC_ISSUERS`, `OIDC_AUDIENCES` (CSV).

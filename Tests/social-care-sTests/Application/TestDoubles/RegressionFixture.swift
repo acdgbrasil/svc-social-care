@@ -67,31 +67,14 @@ enum RegressionFixture {
         AllowAllLookupValidator()
     }
 
-    // MARK: - UnitOfWork (placeholder até T-030)
-
-    /// Stub de Unit-of-Work que executa o bloco sem transação real.
-    ///
-    /// - Important: este stub existe para que testes de regressão que
-    ///   dependem de UoW possam ser escritos **antes** da implementação
-    ///   real (ticket T-030, ADR-030). Quando T-030 fechar, este stub é
-    ///   substituído por implementação que respeita rollback.
-    ///
-    /// - Warning: stub NÃO testa atomicidade. Testes que precisam validar
-    ///   rollback cross-repository devem aguardar T-030 ou usar o
-    ///   `FailingUnitOfWork` (futuro).
-    struct StubUnitOfWork: Sendable {
-        init() {}
-
-        func transaction<T: Sendable>(
-            _ work: @Sendable () async throws -> T
-        ) async throws -> T {
-            try await work()
-        }
-    }
-
-    static func stubUnitOfWork() -> StubUnitOfWork {
-        StubUnitOfWork()
-    }
+    // O `StubUnitOfWork` que vivia aqui foi removido em 2026-09-01. Era
+    // placeholder do ticket T-030 do pipeline de remediação, que nunca virou
+    // decisão — o ADR reservado àquele ID jamais foi escrito, e a atomicidade
+    // que ele prometia resolver já é atendida pelo repositório, que grava
+    // agregado e eventos na mesma transação (ADR-014). O stub não testava
+    // atomicidade (executava o bloco direto) e seus dois únicos testes
+    // exercitavam o próprio stub. A proposta de Unit of Work cross-repository,
+    // se voltar, está em `docs/adr/BACKLOG.md` (#14).
 
     // MARK: - UUID determinístico
 

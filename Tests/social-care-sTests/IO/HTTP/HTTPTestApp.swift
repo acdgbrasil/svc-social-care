@@ -29,14 +29,31 @@ enum HTTPTestApp {
 
     /// Sobe a app, entrega ao `body` e derruba — tudo sob o gate do storage
     /// global de validators (ver `OIDCBootstrapGate`).
+    ///
+    /// - Parameters:
+    ///   - cors: configuração de CORS a registrar. `nil` reproduz o default de
+    ///     produção, que é **não registrar** o middleware (ADR-045).
+    ///   - rateLimit: teto por cliente. O default reproduz o de produção; um
+    ///     teste que exercita o 429 passa um limite pequeno.
+    ///   - clock: relógio do limitador (ADR-034) — deixa o teste avançar o tempo
+    ///     em vez de dormir.
     static func withApp(
         databaseFailure: (any Error)? = nil,
+        cors: CORSMiddleware.Configuration? = nil,
+        rateLimit: RateLimitConfiguration? = RateLimitConfiguration(),
+        clock: @escaping @Sendable () -> Date = { Date() },
         _ body: (Application) async throws -> Void
     ) async throws {
         try await OIDCBootstrapGate.withExclusiveAccess {
             let app = try await Application.make(.testing)
             do {
-                try await configureForTests(app, databaseFailure: databaseFailure)
+                try await configureForTests(
+                    app,
+                    databaseFailure: databaseFailure,
+                    cors: cors,
+                    rateLimit: rateLimit,
+                    clock: clock
+                )
                 try await body(app)
             } catch {
                 try? await app.asyncShutdown()
@@ -48,7 +65,10 @@ enum HTTPTestApp {
 
     private static func configureForTests(
         _ app: Application,
-        databaseFailure: (any Error)?
+        databaseFailure: (any Error)?,
+        cors: CORSMiddleware.Configuration?,
+        rateLimit: RateLimitConfiguration?,
+        clock: @escaping @Sendable () -> Date
     ) async throws {
         await app.jwt.keys.add(hmac: .init(stringLiteral: hmacSecret), digestAlgorithm: .sha256)
 
@@ -63,8 +83,21 @@ enum HTTPTestApp {
         // Mesmo teto de produção (ADR-012 / S-C5).
         app.routes.defaultMaxBodySize = "512kb"
 
-        // Ordem idêntica a `configure.swift` — ela é parte do contrato.
+        // Ordem idêntica a `configure.swift` — ela é parte do contrato:
+        // SecurityHeaders → RequestContext → CORS → RateLimit → AppError → JWTAuth.
         app.middleware.use(SecurityHeadersMiddleware())
+        app.middleware.use(RequestContextMiddleware(now: clock))
+        if let cors {
+            app.middleware.use(CORSMiddleware(configuration: cors))
+        }
+        if let rateLimit {
+            app.middleware.use(
+                RateLimitMiddleware(
+                    limiter: RateLimiter(configuration: rateLimit, now: clock),
+                    trustProxy: rateLimit.trustProxy
+                )
+            )
+        }
         app.middleware.use(AppErrorMiddleware())
         app.middleware.use(JWTAuthMiddleware())
 

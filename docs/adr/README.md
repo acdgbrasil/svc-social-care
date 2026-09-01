@@ -1,7 +1,7 @@
 # Architecture Decision Records — social-care
 
 Índice de ADRs (Architecture Decision Records) do microserviço. Cada decisão
-estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
+estrutural tem um arquivo dedicado em `docs/adr/ADR-NNN-<slug>.md`.
 
 > **Quando criar um ADR?** Qualquer decisão que: (a) afeta a forma de codar /
 > testar / operar; (b) tem trade-offs que outra pessoa precisará entender no
@@ -9,7 +9,7 @@ estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
 > decisão anterior. Bug fixes e features de produto não viram ADR — vão no
 > commit e no PR.
 >
-> Para propostas **ainda não aceitas**, use `handbook/architecture/IMPROVEMENT_BACKLOG.md`.
+> Para propostas **ainda não aceitas**, use [`BACKLOG.md`](BACKLOG.md).
 > Quando uma proposta vira decisão fechada, promova para um ADR aqui.
 
 ## Índice
@@ -44,11 +44,15 @@ estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
 | [027](ADR-027-oidc-multi-issuer.md) | OIDC multi-issuer (migração Zitadel → Authentik) | Aceito | 2026-07-04 | — |
 | [029](ADR-029-oidc-role-precedence.md) | Precedência de roles multi-claim + property mapping `acdg-roles` | Aceito | 2026-07-04 | — |
 | [031](ADR-031-oidc-defense-in-depth-and-acdg-claims.md) | Defense-in-depth no `verify` OIDC + claims ACDG (org_id/person_id/legacy_sub) | Aceito | 2026-07-04 | — |
+| [034](ADR-034-injectable-clock.md) | Clock injetável em toda leitura de tempo que decide | Aceito | 2026-09-01 | — |
 | [039](ADR-039-erasure-policy-people-person-deleted.md) | Política de erasure ao consumir `people.person.deleted` (LGPD × No-Delete) | Aceito | 2026-06-09 | — |
 | [040](ADR-040-jwks-runtime-refresh.md) | Refresh de JWKS em runtime (periódico + on-demand por `kid`) | Aceito | 2026-07-04 | — |
 | [041](ADR-041-coverage-as-thermometer.md) | Cobertura de teste é termômetro, não gate | Aceito | 2026-09-01 | — |
 | [042](ADR-042-verifiable-harness.md) | Harness verificável — o `.claude/` afirma só o que um comando comprova | Aceito | 2026-09-01 | — |
 | [043](ADR-043-retire-handbook.md) | Aposentadoria do `handbook/` — ADR, rule e skill no lugar | Aceito | 2026-09-01 | Supersedes a regra "Handbook como Source of Truth" |
+| [044](ADR-044-request-correlation-and-access-log.md) | Correlação de requisição e log de acesso sem PII | Aceito | 2026-09-01 | — |
+| [045](ADR-045-cors-allowlist.md) | CORS opt-in, por allowlist explícita | Aceito | 2026-09-01 | — |
+| [046](ADR-046-rate-limiting.md) | Rate limiting por token bucket em memória do processo | Aceito | 2026-09-01 | — |
 
 > **Faixa 026-038 (reconciliada em 2026-07-04):** originalmente **reservada** aos
 > tickets T-025..T-038 do `REMEDIATION_PIPELINE_2026_05_14.md`. Na prática, a
@@ -61,10 +65,24 @@ estrutural tem um arquivo dedicado em `DECISIONS/ADR-NNN-<slug>.md`.
 > promovido receberá **ID ≥040** (regra "tema novo fora do pipeline usa ≥039",
 > como fez a ADR-039).
 >
+> **034 saiu da reserva em 2026-09-01**: o código citava `ADR-034` em três
+> lugares e o arquivo não existia (dívida em `docs/GAPS.md`). O tema do ticket
+> T-034 era exatamente o que as âncoras diziam — clock injetável, achado
+> S-H-A2 —, então o ID foi usado para o seu tema original, e não reciclado.
+>
+> **030 continua reservado, e agora sem âncora órfã.** O único código que o
+> citava era o `StubUnitOfWork` do `RegressionFixture`: placeholder de uma
+> decisão que nunca foi tomada, cujos dois testes exercitavam o próprio stub.
+> Foi removido em 2026-09-01 — a atomicidade que ele prometia já é atendida pelo
+> repositório, que grava agregado e eventos na mesma transação (ADR-014). A
+> proposta de Unit of Work cross-repository, se voltar, está em
+> `docs/adr/BACKLOG.md` #14.
+>
 > Ainda **reservados** (planejados no pipeline, ADR criado conforme o ticket
-> fecha): **026, 028, 030, 032-038**. Observação: **T-028** (cursor pagination)
-> já foi implementado em v0.7.0 sem ADR formal — dívida de documentação a fechar.
-> Próximo ID livre fora da reserva: **043** (041 e 042 usados em 2026-09-01).
+> fecha): **026, 028, 030, 032, 033, 035-038**. Observação: **T-028** (cursor
+> pagination) já foi implementado em v0.7.0 sem ADR formal — dívida de
+> documentação a fechar.
+> Próximo ID livre fora da reserva: **047** (044-046 usados em 2026-09-01).
 
 ## Skills citadas em ADRs antigos — tabela de equivalência
 
@@ -118,11 +136,13 @@ Quando o ADR é puramente documental/governança (raro), citar **por que** teste
 ## Hierarquia (em conflito)
 
 ```
-CLAUDE.md (resumo operacional)
-  > handbook/architecture/README.md (visão v2.0)
-    > ADRs (DECISIONS/ADR-NNN-*.md)
-      > Skills (.claude/skills/*) e Agents (.claude/agents/*)
+O código (toda contagem e todo nome são reconstituíveis por um comando)
+  > ADRs (docs/adr/ADR-NNN-*.md)
+    > Rules (.claude/rules/*) e Skills (.claude/skills/*)
+      > CLAUDE.md (índice operacional)
 ```
+
+O `handbook/` que aparecia aqui foi aposentado em 2026-09-01 (ADR-043).
 
 Em conflito, **ADR prevalece sobre skill** porque ADR é decisão estrutural
 versionada com contexto; skill é guia operacional.

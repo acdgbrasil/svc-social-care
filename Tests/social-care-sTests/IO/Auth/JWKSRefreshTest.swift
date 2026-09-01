@@ -285,29 +285,6 @@ actor FakeKeyStore: JWKSKeyStore {
     }
 }
 
-/// Clock de teste com tempo controlado manualmente — permite exercitar o
-/// cooldown do refresher sem `sleep` real (ADR-034: clock injetável).
-/// `@unchecked Sendable`: estado protegido por `NSLock`.
-final class TestClock: @unchecked Sendable {
-    private let lock = NSLock()
-    private var current: Date
-
-    init(start: Date) {
-        self.current = start
-    }
-
-    /// Closure `@Sendable` para injetar como `now` no refresher.
-    var reader: @Sendable () -> Date {
-        { [self] in
-            lock.lock()
-            defer { lock.unlock() }
-            return current
-        }
-    }
-
-    func advance(by seconds: TimeInterval) {
-        lock.lock()
-        defer { lock.unlock() }
-        current = current.addingTimeInterval(seconds)
-    }
-}
+// O `TestClock` que este suite usa vive em
+// `Application/TestDoubles/TestClock.swift` — fake é reaproveitado, não
+// duplicado por arquivo (ADR-034, `.claude/rules/testing.md`).

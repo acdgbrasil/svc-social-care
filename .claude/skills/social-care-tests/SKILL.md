@@ -11,8 +11,8 @@ when_to_use: >
 
 # Testes — `swift-testing`, e suite verde não é negociável
 
-Verificado em 2026-09-01: 504 testes em 89 suites, verdes. Cobertura global
-33,73% — `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 15,10%**
+Verificado em 2026-09-01: 550 testes em 94 suites, verdes. Cobertura global
+34,97% — `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 18,43%**
 (era 9,1% antes do G10).
 
 ## A regra de ouro
@@ -70,7 +70,7 @@ Vivem em `Application/TestDoubles/` e são reaproveitados, não recriados por
 suite: `InMemoryPatientRepository`, `InMemoryPatientAssessmentRepository`,
 `InMemoryLookupValidator` (e `AllowAllLookupValidator`),
 `InMemoryLookupRequestRepository`, `InMemoryLookupAdminRepository`,
-`PatientFixture`, `RegressionFixture`.
+`PatientFixture`, `RegressionFixture`, `TestClock`.
 
 Fake de repositório é `actor` (o contrato é assíncrono) e expõe o que o teste
 precisa inspecionar — `allPatients`, `publishedEvents`. Precisou de um fake
@@ -84,6 +84,22 @@ nomeados, para que cada teste sobrescreva só o campo que está exercitando.
 Cobrir, no mínimo: caminho feliz, cada erro de validação que o handler mapeia, e
 o efeito colateral (agregado salvo, evento registrado). Como o repositório fake
 guarda os eventos, verificar publicação é `await repo.publishedEvents`.
+
+## Tempo em teste: `TestClock`, nunca `sleep` (ADR-034)
+
+Regra temporal — cooldown, janela de rate limit, duração — se testa **avançando
+o relógio**, não dormindo:
+
+```swift
+let clock = TestClock()                       // t = 1_000_000
+let limiter = RateLimiter(configuration: .init(limit: 3, window: 60), now: clock.reader)
+clock.advance(by: 20)                          // 1 crédito repôs
+```
+
+Quem carimba recebe `at:`/`now:` com default `.now` (`RegressionFixture
+.frozenTimestamp` congela); quem **decide** por tempo recebe
+`now: @escaping @Sendable () -> Date` no `init`. Um `sleep` de 30s num teste de
+cooldown estoura sozinho o alvo de 5s do suite de regressão.
 
 ## Regressão (ADR-002)
 
@@ -103,8 +119,9 @@ mostra onde ele está:
 ```
 
 `IO` ainda é o menor número, mas deixou de ser um vazio: o **G10 fechou em
-2026-09-01** e a cadeia `SecurityHeaders → AppError → JWTAuth → RoleGuard →
-controller` passou a ser exercitada ponta a ponta.
+2026-09-01** e a cadeia `SecurityHeaders → RequestContext → CORS → RateLimit →
+AppError → JWTAuth → RoleGuard → controller` passou a ser exercitada ponta a
+ponta.
 
 ## Integração HTTP (`IO/HTTP/`)
 
@@ -120,6 +137,10 @@ try await HTTPTestApp.withApp { app in
     }
 }
 ```
+
+O `withApp` aceita o que muda de teste para teste na borda: `cors:` (default
+`nil`, que é o de produção — CORS desligado), `rateLimit:` (default igual ao de
+produção; passe um limite pequeno para exercitar o 429) e `clock:` (ADR-034).
 
 Duas trocas deliberadas em relação a produção, e o que cada uma implica:
 

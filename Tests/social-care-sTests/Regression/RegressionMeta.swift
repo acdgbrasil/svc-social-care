@@ -50,19 +50,12 @@ struct RegressionMetaTests {
         #expect(!unknown, "Lookup não pre-populado NÃO DEVE existir")
     }
 
-    @Test("Sentinel — StubUnitOfWork executa o bloco e propaga resultado")
-    func sentinelStubUoW() async throws {
-        let uow = RegressionFixture.stubUnitOfWork()
-        let result = try await uow.transaction { "ok" }
-        #expect(result == "ok")
-    }
-
-    @Test("Sentinel — StubUnitOfWork propaga erro lançado dentro do bloco")
-    func sentinelStubUoWPropagatesError() async throws {
-        struct Boom: Error {}
-        let uow = RegressionFixture.stubUnitOfWork()
-        await #expect(throws: Boom.self) {
-            try await uow.transaction { throw Boom() }
-        }
+    @Test("Sentinel — TestClock avança sem dormir (ADR-034)")
+    func sentinelTestClockIsControllable() {
+        let clock = TestClock(start: Date(timeIntervalSince1970: 1_000_000))
+        let start = clock.reader()
+        clock.advance(by: 30)
+        #expect(clock.reader().timeIntervalSince(start) == 30,
+                "TestClock DEVE avançar exatamente o que se pede — é o gancho de todo teste de cooldown/janela.")
     }
 }

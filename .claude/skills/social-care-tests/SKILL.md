@@ -5,6 +5,8 @@ description: >
   XCTest) — testes de domínio, de use case com fakes in-memory, de IO e o suite
   de regressão do ADR-002. Use ao escrever ou corrigir qualquer teste, criar um
   fake, investigar teste vermelho ou decidir o que cobrir numa mudança.
+when_to_use: >
+  Gatilhos: teste, suite, swift-testing, @Test, @Suite, #expect, #require, fake, InMemory, fixture, regressao, cobertura, teste vermelho, TDD.
 ---
 
 # Testes — `swift-testing`, e suite verde não é negociável

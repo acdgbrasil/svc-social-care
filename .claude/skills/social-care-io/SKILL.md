@@ -6,6 +6,8 @@ description: >
   Outbox/NATS e o cliente people-context. Use ao criar ou alterar rota, DTO,
   middleware, validação HTTP, tabela, mapper, migration, publicação de evento ou
   integração HTTP de saída.
+when_to_use: >
+  Gatilhos: controller, rota, endpoint, DTO, middleware, JWT, OIDC, RBAC, RoleGuard, SQLKit, repositorio, migration, mapper, Outbox, NATS, people-context, StandardResponse.
 ---
 
 # IO — adaptadores, e o único lugar que conhece o mundo externo

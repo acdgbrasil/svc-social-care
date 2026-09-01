@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Resolve o sourcekit-lsp e entrega o processo a ele.
+#
+# Existe porque o binario mora em `~/.swiftly/bin`, que entra no PATH pelo rc do
+# shell — e o servidor LSP nao e lancado por um shell interativo. Apontar o
+# `.lsp.json` direto para um caminho absoluto resolveria numa maquina so; este
+# wrapper resolve em qualquer uma.
+#
+# Ordem de preferencia:
+#   1. Swiftly — e a toolchain que respeita o `.swift-version` do projeto;
+#      usar outra versao faz o indice divergir do que o `swift build` produz.
+#   2. PATH — quem ja tem o binario resolvido.
+#   3. Xcode (`xcrun`) — fallback em maquina sem Swiftly.
+set -uo pipefail
+
+SWIFTLY_BIN="${SWIFTLY_HOME_DIR:-$HOME/.swiftly}/bin/sourcekit-lsp"
+if [[ -x "$SWIFTLY_BIN" ]]; then
+  exec "$SWIFTLY_BIN" "$@"
+fi
+
+if FROM_PATH="$(command -v sourcekit-lsp 2>/dev/null)" && [[ -x "$FROM_PATH" ]]; then
+  exec "$FROM_PATH" "$@"
+fi
+
+if FROM_XCRUN="$(xcrun --find sourcekit-lsp 2>/dev/null)" && [[ -x "$FROM_XCRUN" ]]; then
+  exec "$FROM_XCRUN" "$@"
+fi
+
+echo "acdg-sourcekit-lsp: nenhum sourcekit-lsp encontrado." >&2
+echo "Instale a toolchain com 'swiftly install' (le o .swift-version do projeto)" >&2
+echo "ou instale o Xcode." >&2
+exit 127

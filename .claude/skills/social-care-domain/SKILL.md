@@ -7,6 +7,8 @@ description: >
   invariante de agregado, ou ao decidir onde um cálculo deve morar. Cobre os
   bounded contexts Registry, Assessment, Care, Protection, Configuration e o
   Kernel compartilhado.
+when_to_use: >
+  Gatilhos: Value Object, VO, agregado, entidade, invariante, regra de negocio, analytics, evento de dominio, contrato de repositorio, CPF/NIS/CEP/CNS/Money, Kernel, bounded context.
 ---
 
 # Domain — o núcleo sem infraestrutura

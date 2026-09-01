@@ -187,6 +187,7 @@ Foi removido inteiro. O atual é fino e verificável:
 | `.claude/skills/social-care-io/` | `IO/` — Vapor, auth, SQLKit, migrations, Outbox. |
 | `.claude/skills/social-care-tests/` | `Tests/` — `swift-testing`, fakes, regressão. |
 | `.claude/skills/novo-usecase/` | `/novo-usecase <BC> <Nome>` — os sete lugares que um use case de escrita precisa tocar. |
+| `.claude/skills/revisar/` | `/revisar [alvo]` — dispara o `social-care-reviewer` num subagente isolado e devolve só os achados. |
 | `.claude/hooks/regression-gate.sh` | Hook `Stop`: roda `make regression` e **bloqueia o fim do turno** com suite vermelha. Só dispara se o turno tocou `.swift`; anti-loop via `stop_hook_active`. |
 | `.claude/hooks/domain-imports.sh` | Hook `PostToolUse` (Edit/Write): barra `import` fora de `Foundation` em `Domain/`. |
 | `.claude/hooks/git-guard.sh` | Hook `PreToolUse` (Bash): bloqueia force push em qualquer posição da linha; `--force-with-lease` passa. |
@@ -198,6 +199,29 @@ reescrever histórico publicado agora são mecanismo, não intenção. O
 regra de permissão casa **texto**, não semântica de shell: `git push origin main
 --force` escapa de um `deny` de prefixo, e é por isso que o guard de verdade é
 o hook, avaliado antes das regras.
+
+O `cleanupPeriodDays: 7` encurta a retenção do transcript local: a conversa
+carrega trechos de payload de prontuário, e o default são 30 dias.
+
+### Plugin `acdg` (`tooling/acdg-plugin/`)
+
+O que serve a **qualquer** serviço da ACDG mora num plugin, não no `.claude/` de
+cada repo — foi copiar pasta à mão que produziu o harness anterior. A v0.1.0
+traz duas coisas:
+
+- **LSP de Swift.** Só plugin lê `.lsp.json`; sem ele não há `goToDefinition`
+  nem `findReferences` em `.swift`, e ler Clean Architecture no `grep` é caro.
+  O wrapper `bin/acdg-sourcekit-lsp` resolve o binário na ordem Swiftly → PATH →
+  Xcode, porque o servidor não é lançado por um shell interativo e
+  `~/.swiftly/bin` só entra no PATH pelo rc.
+- **`hooks/git-guard.sh`**, que é genérico.
+
+```bash
+claude --plugin-dir ./tooling/acdg-plugin   # usar sem instalar
+claude plugin validate ./tooling/acdg-plugin
+```
+
+Detalhes e a regra de corte entre plugin e projeto: `tooling/acdg-plugin/README.md`.
 
 Duas regras para mantê-lo vivo: **skill não repete o handbook** (aponta para o
 ADR ou o arquivo-âncora), e **toda contagem vem com o comando que a remede** —

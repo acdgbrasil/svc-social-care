@@ -6,6 +6,8 @@ description: >
   validação e mapeamento de erro. Use ao criar ou alterar um caso de uso,
   orquestrar domínio + repositório, adicionar validação de lookup ou de
   existência, ou traduzir erro de persistência em erro de negócio.
+when_to_use: >
+  Gatilhos: use case, caso de uso, command, query, handler, actor, CQRS, mapError, LookupValidating, PersonExistenceValidating, orquestracao, parse-validate-persist.
 ---
 
 # Application — orquestração, nunca regra de negócio

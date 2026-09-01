@@ -31,19 +31,48 @@ claude plugin details acdg@acdg   # deve listar 1 hook e 1 LSP server (swift)
 claude plugin validate ./tooling  # marketplace
 ```
 
-**Estado em 2026-09-01:** `details` resolve o plugin corretamente, mas uma
-sessão `-p` recém-criada ainda respondeu `No LSP server available for
-file type: .swift`. A ativação depende de confiar no workspace na primeira
-sessão interativa — abra o `/plugin`, confirme que `acdg` aparece ativo e sem
-entrada na aba **Errors**, e rode `/reload-plugins` se ele pedir. Enquanto isso
-não for confirmado, o caminho garantido é carregar direto:
+**Confirmado em 2026-09-01:** carrega sozinho, sem `--plugin-dir`. Numa sessão
+interativa `claude plugin details acdg@acdg` lista `Hooks (1)` e
+`LSP servers (1) swift`, e o wrapper resolve pela Swiftly — dois processos
+vivos, `~/.swiftly/bin/sourcekit-lsp` exec'ando o binário da toolchain
+`swift-6.3.3-RELEASE`, com `cwd` no repo. As seis operações foram exercitadas
+em código real:
 
-```bash
-claude --plugin-dir ./tooling/acdg-plugin
-```
+| Operação | Verificado com |
+|---|---|
+| `documentSymbol` | `CPF.swift` → 25 símbolos, com `FiscalRegion` aninhado |
+| `hover` | `CPF.init` → `public init(_ rawValue: String) throws` |
+| `goToDefinition` (módulo externo) | `String` → `Swift.String.swiftinterface` |
+| `goToDefinition` (cross-file) | `AppErrorConvertible` → `shared/Error/AppError.swift:250` |
+| `findReferences` | `CPF` → 17 refs em 8 arquivos, Domain → Application → IO |
+| `workspaceSymbol` | `RegisterPatientCommandHandler` → achou a classe |
 
-Foi assim que o LSP foi validado ponta a ponta (`documentSymbol` em
-`DomainProtocols.swift` → `OK Core Domain Events`).
+Se a sessão *ainda* responder `No LSP server available for file type: .swift`,
+aí sim a ativação travou na confiança do workspace: abra o `/plugin`, confirme
+que `acdg` aparece ativo e sem entrada na aba **Errors**, rode
+`/reload-plugins`, e use `claude --plugin-dir ./tooling/acdg-plugin` como
+contorno.
+
+### Warm-up: vazio nos primeiros minutos não é defeito
+
+O servidor sobe junto com a primeira chamada. Enquanto carrega o `IndexStoreDB`
+(RSS 43 MB → 264 MB, ~3–4 min), `hover`, `documentSymbol` e `goToDefinition`
+para módulo externo já respondem, mas **`findReferences`, `workspaceSymbol` e
+`goToDefinition` cross-file devolvem vazio** com "has not fully indexed the
+workspace". É o mesmo sintoma de um LSP mal configurado, e a causa é outra —
+**repita a chamada em vez de mexer na config.** Nas mesmas posições, passados os
+minutos, tudo respondeu.
+
+### O índice vem do build, não do editor
+
+O store lido é `.build/debug/index/store`, escrito pelo `swift build` /
+`swift test`. **Não há indexação contínua:** durante toda a validação nenhum
+arquivo foi tocado em `.build/index-build`, que segue parado desde 2026-07-06 —
+o servidor só carrega o que o build deixou pronto.
+
+Portanto o resultado de `findReferences` reflete o último build, não o working
+tree. Depois de editar `.swift`, rode `make build` antes de confiar na
+navegação — senão a resposta descreve o código de antes da sua mudança.
 
 Verificar o que ele carrega e quanto custa de contexto:
 

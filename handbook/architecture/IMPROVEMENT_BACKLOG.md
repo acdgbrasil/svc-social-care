@@ -52,7 +52,19 @@
 
 **Sobrou aberto:** #05 (fechar a parte interna), #09, #10, #11, #12 (parte DLQ).
 **Fechado desde 2026-05-14:** #01. Os gaps G1-G17 citados no rodape ja fecharam
-majoritariamente (ver `IMPLEMENTATION_PLAN.md`, bloco STATUS) — resta G10 e G14.
+majoritariamente (ver `IMPLEMENTATION_PLAN.md`, bloco STATUS) — restam **G10,
+G12, G13 e G14**.
+
+> Corrigido em 2026-09-01: esta linha dizia "resta G10 e G14", omitindo G12
+> (logging/tracing) e G13 (CORS), que a tabela do `IMPLEMENTATION_PLAN.md` marca
+> PENDENTE. Verificado contra o codigo — nenhum dos quatro existe:
+>
+> ```bash
+> grep -rl VaporTesting Tests/                                   # G10 → 0
+> grep -rliE "tracing|swift-metrics" Sources/.../HTTP/Middleware/ # G12 → 0
+> grep -rl CORSMiddleware Sources/                                # G13 → 0
+> grep -rliE "ratelimit|rate_limit" Sources/                      # G14 → 0
+> ```
 
 ---
 

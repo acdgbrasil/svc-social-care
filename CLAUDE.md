@@ -224,11 +224,24 @@ claude --plugin-dir ./tooling/acdg-plugin   # usar sem instalar
 claude plugin validate ./tooling/acdg-plugin
 ```
 
-O `settings.json` registra o marketplace (`./tooling`) e habilita `acdg@acdg`,
-então o plugin deve carregar sem `--plugin-dir` — confirme no primeiro
-`/plugin` da próxima sessão (a ativação pede confiança no workspace). Também
-libera `../contracts` e `../frontend` em `additionalDirectories`: ambos são
-citados por este arquivo e ficam fora do git root deste serviço.
+O `settings.json` registra o marketplace (`./tooling`) e habilita `acdg@acdg`.
+**Confirmado em 2026-09-01:** carrega sem `--plugin-dir` numa sessão interativa
+(`claude plugin details acdg@acdg` → 1 hook, 1 LSP server `swift`), e o wrapper
+resolve pela Swiftly na toolchain 6.3.3. Também libera `../contracts` e
+`../frontend` em `additionalDirectories`: ambos são citados por este arquivo e
+ficam fora do git root deste serviço.
+
+⚠️ **O LSP tem warm-up de ~3–4 min e o índice é do último build.** Ao subir, o
+servidor responde na hora `hover`, `documentSymbol` e `goToDefinition` para
+módulo externo — mas `findReferences`, `workspaceSymbol` e `goToDefinition`
+cross-file devolvem vazio com "has not fully indexed the workspace" enquanto
+carrega o `IndexStoreDB` (RSS 43 MB → 264 MB). **Vazio nos primeiros minutos não
+é LSP quebrado — é warm-up; repita a chamada.** Depois disso funciona: `CPF` →
+17 refs em 8 arquivos atravessando Domain → Application → IO. O store lido é
+`.build/debug/index/store`, escrito pelo `swift build`/`swift test` — **não há
+indexação contínua** (`.build/index-build` está parado desde 2026-07-06). Logo,
+resposta de `findReferences` reflete o último `make build`/`make test`, não o
+working tree; depois de editar `.swift`, rebuilde antes de confiar na navegação.
 
 Detalhes e a regra de corte entre plugin e projeto: `tooling/acdg-plugin/README.md`.
 

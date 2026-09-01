@@ -83,7 +83,7 @@ make run dev
 make help             # Lista comandos
 make run dev          # Rodar servico localmente
 make run test         # Executar testes
-make run coverage     # Testes + gate de 95%
+make run coverage     # Testes + gate local de 30%
 make ci               # Pipeline local (deps + build-release + coverage)
 make clean            # Limpar artefatos
 ```
@@ -109,7 +109,9 @@ Workflow: `.github/workflows/ci.yml`
 
 1. `swift package resolve`
 2. `swift build -c release`
-3. `swift test --enable-code-coverage` com gate de **>=95%**
+3. `./scripts/check_coverage.sh report` — roda a suite com instrumentacao de
+   cobertura e publica a leitura por camada no resumo do job. Reprova por teste
+   vermelho; o percentual e termometro, nao gate.
 
 ### Release (Push to main + Tags)
 
@@ -148,11 +150,13 @@ Usuario -> Caddy (VPS/SSL) -> Tailnet -> K3s (Xeon) -> Pod social-care
 
 ## Qualidade
 
-- Cobertura minima: **95%** (enforced no CI)
-- **149 testes** em **39 suites** (domain + application + IO)
-- 33 arquivos de teste + 4 test doubles (InMemoryPatientRepository, InMemoryEventBus, InMemoryLookupValidator, PatientFixture)
-- Camadas testadas: Domain (value objects, agregados, analytics), Application (17 command handlers + 1 query handler), IO (audit trail pipeline)
-- Script: `./scripts/check_coverage.sh 95`
+- **487 testes** em **88 suites** (89 arquivos de teste), verdes.
+- Cobertura e **termometro, nao gate** — leitura de 2026-08-31: **30,72% global**.
+  Por camada: `shared` 76,6%, `Domain` 58,6%, `Application` 47,6%, **`IO` 9,1%**.
+  A camada IO tem 7.132 linhas (metade do codigo-fonte) e esta praticamente
+  descoberta: nao ha teste de integracao HTTP (nenhum `app.test`).
+- Gate local de 30% como piso anti-regressao: `./scripts/check_coverage.sh 30`.
+- Leitura por camada, sem gate: `./scripts/check_coverage.sh report`.
 
 ## Seguranca
 

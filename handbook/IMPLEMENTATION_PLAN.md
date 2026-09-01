@@ -47,9 +47,12 @@
 
 **Ainda genuinamente aberto** (verificado no codigo, nao no doc):
 
-- **G10** — testes de integracao HTTP end-to-end (VaporTesting): 0 `app.test`. A
-  cobertura ≥95% e atingida por outros caminhos (CI verde), entao e lacuna
-  *arquitetural*, nao bloqueio de gate.
+- **G10** — testes de integracao HTTP end-to-end (VaporTesting): 0 `app.test`.
+  **Correcao de 2026-08-31:** a frase anterior ("cobertura ≥95% atingida por
+  outros caminhos") era falsa em dois niveis — o CI nunca rodou gate de
+  cobertura, e a medicao real e **30,72%**, com a camada `IO` em **9,1%** de
+  7.132 linhas. G10 nao e lacuna apenas arquitetural: e o maior buraco de teste
+  do servico.
 - **G14** — rate limiting: ausente.
 - **#11 backlog** — metricas Prometheus `/metrics`: ausente.
 - **#12 backlog** — retry + DLQ dedicado no Outbox (`attempts`/`dlq_at`): o
@@ -176,7 +179,7 @@ FASE 4: Persistencia Robusta (v2.0 fields)             ████████�
 FASE 5: Outbox Relay Real                              ██████████ COMPLETO (+ audit trail)
 FASE 6: Read Side / Queries                            ██████████ COMPLETO (+ calculos automaticos)
 FASE 7: Cross-Cutting (Error, Health, Auth)            ██████████ COMPLETO (health, shutdown, JWT/RBAC, OIDC multi-issuer)
-FASE 8: Testes (unit + integration + 95%)              █████████░ ~90% (87 arq, 474 testes, gate 95% verde; falta integration HTTP — G10)
+FASE 8: Testes (unit + integration)                    ██████░░░░ ~60% (89 arq, 487 testes verdes; cobertura 30,72% — IO em 9,1%; falta integration HTTP — G10)
 FASE 9: Production Readiness                           ██████████ COMPLETO (Dockerfile, compose, CI, README, CHANGELOG)
                                                        ─────────────────
                                                        Progresso: ~99% (v0.15.0)
@@ -523,7 +526,10 @@ Ambos self-hosted, deploy via FluxCD no K3s.
 - [x] 4 test doubles (InMemoryPatientRepository, InMemoryEventBus, InMemoryLookupValidator, PatientFixture)
 - [x] Testes de audit trail (pipeline: DomainEventRegistry, Outbox mapper, AuditTrailEntryResponse, round-trip — 10 testes)
 - [ ] ~8 testes de integracao HTTP (VaporTesting)
-- [ ] `make coverage` passando com >= 95%
+- [x] Cobertura medida e publicada no CI por camada (`check_coverage.sh report`).
+      **Meta de 95% abandonada em 2026-08-31**: cobertura aqui e termometro, nao
+      contrato. Quem reprova o CI e teste vermelho. O gate local de 30% fica como
+      piso anti-regressao.
 
 ---
 
@@ -534,7 +540,7 @@ Ambos self-hosted, deploy via FluxCD no K3s.
 - [x] .dockerignore
 - [x] `docker-compose.yml` (PostgreSQL + app com healthcheck)
 - [x] `.env.example` completo (PORT, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
-- [x] CI pipeline (`ci.yml`: resolve + build-release + coverage gate 95%)
+- [x] CI pipeline (`ci.yml`: resolve + build-release + testes com relatorio de cobertura)
 - [x] Release pipeline (`release-ghcr.yml`: reusable workflow + GHCR + tags sha/semver/latest)
 - [x] README.md atualizado (arquitetura, rotas, deploy Edge Cloud, variaveis de ambiente)
 - [x] CHANGELOG.md atualizado (historico completo desde v0.1.0)
@@ -606,7 +612,8 @@ Quando TODOS os itens abaixo estiverem marcados, o microservico esta pronto para
 - [x] Testes Application para todos os 25 UCs (Actor-based InMemory test doubles)
 - [x] Testes de audit trail (DomainEventRegistry, Outbox mapper, AuditTrailEntryResponse, round-trip)
 - [x] Suite de regressao (`Regression/`, 22 arquivos em 6 subpastas — pipeline T-001)
-- [x] Cobertura >= 95% (gate verde no CI)
+- [x] Cobertura medida e publicada no CI por camada (30,72% global em 2026-08-31;
+      `IO` em 9,1%). Termometro, nao gate — ver Fase 8.
 - [ ] Testes de integracao HTTP end-to-end (VaporTesting) — **G10, unica lacuna de testes**
 
 ### Producao
@@ -628,10 +635,12 @@ Prioridade 2:  Metricas Prometheus /metrics (#11) + retry/DLQ no Outbox (#12)
 Prioridade 3:  Rate limiting (G14); target ACDGKit (#09, preventivo)
 ```
 
-> **Nota (v0.15.0):** Progresso geral ~99%. Fases 0-9 completas; alem delas o
-> pipeline de remediacao (ADRs 004-025) e evolucoes de produto (lifecycle,
-> erasure LGPD, Configuration BC, OIDC multi-issuer). O gate de cobertura ≥95%
-> esta **verde no CI**. Itens genuinamente abertos estao no bloco STATUS do topo
-> — o principal e G10 (integracao HTTP), que e lacuna arquitetural e nao bloqueio
-> de gate. Fonte de verdade do progresso passa a ser o **codigo** (medido), nao
-> as estimativas historicas deste plano.
+> **Nota (v0.15.0, corrigida em 2026-08-31):** Fases 0-9 entregues no eixo de
+> funcionalidade; alem delas o pipeline de remediacao (ADRs 004-025) e evolucoes
+> de produto (lifecycle, erasure LGPD, Configuration BC, OIDC multi-issuer). O
+> "~99% de progresso" media apenas features — **nao** solidez: a medicao de
+> cobertura de 2026-08-31 deu **30,72%**, com `IO` em **9,1%**, e o CI nunca
+> rodou o gate de 95% que este plano dava como verde. Itens genuinamente abertos
+> estao no bloco STATUS do topo; o principal e G10 (integracao HTTP). Fonte de
+> verdade do progresso e o **codigo** (medido), nao as estimativas historicas
+> deste plano.

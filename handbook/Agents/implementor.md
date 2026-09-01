@@ -25,7 +25,8 @@ Sempre consulte este documento para saber:
 Ao guiar qualquer implementacao, SEMPRE respeitar:
 
 1. **Domain First** — Nunca modifique HTTP/IO sem ter o dominio estavel.
-2. **TDD** — Escreva testes antes ou junto com o codigo. Meta: >= 95%.
+2. **TDD** — Escreva testes antes ou junto com o codigo. Cobre o caminho que voce
+   tocou; nao ha meta numerica de percentual (cobertura e termometro, nao gate).
 3. **PoP (Protocol-oriented Programming)** — Defina protocolo primeiro, depois implementacao concreta.
 4. **CQRS** — Commands e Queries sao caminhos separados. Nunca misture.
 5. **DDD Rigoroso** — Agregados com comportamento real, VOs imutaveis com validacao no init, bounded contexts respeitados.

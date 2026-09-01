@@ -206,7 +206,7 @@ W2 REVIEW → maestro:code-reviewer audita
          → output: .pipeline/T-NNN/004-code-review/REVIEW.md
 
 W3 QUALITY → make ci (inclui make regression)
-         → cobertura ≥ 95%
+         → leitura de cobertura por camada (termômetro, sem meta numérica)
          → output: .pipeline/T-NNN/005-quality/REPORT.md
 
 PÓS-MERGE → ADR criado em handbook/architecture/DECISIONS/

@@ -17,7 +17,7 @@ Aplicação ao social-care:
 
 | Camada | O que já existe | O que este plano adiciona |
 |---|---|---|
-| **Unidade** (base, maior volume) | `Tests/Domain/v2/` (16 arquivos: VOs, analytics) + `Tests/Application/` (20 arquivos, 17 use cases) com gate de 95% no CI | Nada a adicionar — base sólida; manter o gate |
+| **Unidade** (base, maior volume) | `Tests/Domain/v2/` (VOs, analytics) + `Tests/Application/` (todos os 25 use cases) — cobertura medida: `Domain` 58,6%, `Application` 47,6% | Nada a adicionar — base sólida |
 | **Integração/Serviço** (meio) | `Tests/IO/` (audit trail) | Casos de API documentados nos arquivos `01`–`04` (Gherkin), executáveis contra o serviço rodando com Postgres do `docker-compose` |
 | **E2E/UI** (topo, menor volume) | — (frontend ainda será construído) | Fluxos de jornada do documento `05-fluxo-frontend.md`, que devem virar os poucos testes E2E do app Flutter |
 
@@ -37,7 +37,7 @@ Mapeamento dos quadrantes para o social-care:
 
 | Quadrante | Atividade neste projeto |
 |---|---|
-| Q1 — tecnologia, suporte ao time | Testes de unidade/integração existentes (swift-testing, 95% gate) |
+| Q1 — tecnologia, suporte ao time | Testes de unidade existentes (swift-testing, 487 testes verdes). A faixa de integração é justamente o buraco: `IO` está em 9,1% de cobertura |
 | Q2 — negócio, suporte ao time | Os cenários Gherkin dos arquivos `01`–`04` deste diretório — escritos ANTES do frontend existir, servem de critério de aceite para as telas |
 | Q3 — negócio, crítica ao produto | Testes exploratórios (seção 3) e validação com as assistentes sociais da ACDG usando dados realistas |
 | Q4 — tecnologia, crítica ao produto | Segurança (RBAC — arquivo `04`), limites (body 256 KB, paginação `limit` 1–100), resiliência (people-context fora → 503) |

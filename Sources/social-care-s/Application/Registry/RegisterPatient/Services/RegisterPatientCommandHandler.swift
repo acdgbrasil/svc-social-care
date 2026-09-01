@@ -131,7 +131,7 @@ public actor RegisterPatientCommandHandler: RegisterPatientUseCase {
 
             // 10. Domain Logic
             // O titular do prontuário é automaticamente inserido como o primeiro membro da família (a PR)
-            let holderAsMember = try FamilyMember(
+            let holderAsMember = FamilyMember(
                 personId: personId,
                 relationshipId: prId,
                 isPrimaryCaregiver: true,

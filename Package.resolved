@@ -1,5 +1,5 @@
 {
-  "originHash" : "e2cbba64f6cd0b4ddce0c5e69183a4da46665ffa26e84f980783af37dd5ad89e",
+  "originHash" : "00544ca542ed90a96ad3ba33e618b1960400735fe900483cd32ae167113295ba",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/postgres-kit.git",
       "state" : {
-        "revision" : "218aaf6810db9e61398f887aaaf26424142bdb53",
-        "version" : "2.16.1"
+        "revision" : "139b0c4712d97eaec09d97afd592d394cdb9dbde",
+        "version" : "2.17.0"
       }
     },
     {

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM swift:6.3-jammy AS build
+FROM swift:6.4-jammy AS build
 
 WORKDIR /build
 
@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/build/.build,sharing=locked \
     swift build -c release --product social-care-s \
     && cp /build/.build/release/social-care-s /build/social-care-s
 
-FROM swift:6.3-jammy-slim
+FROM swift:6.4-jammy-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* \
     && groupadd -r appgroup && useradd -r -g appgroup -d /app -s /sbin/nologin appuser
